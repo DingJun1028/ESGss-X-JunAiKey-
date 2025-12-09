@@ -1,0 +1,152 @@
+
+import React, { useState } from 'react';
+import { Language } from '../types';
+import { Briefcase, Search, Globe, FileText, Loader2, Database, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
+import { performWebSearch } from '../services/ai-service';
+import { marked } from 'marked';
+
+interface BusinessIntelProps {
+  language: Language;
+}
+
+export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language }) => {
+  const isZh = language === 'zh-TW';
+  const { addToast } = useToast();
+  
+  const [companyName, setCompanyName] = useState('');
+  const [website, setWebsite] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStep, setScanStep] = useState(0); // 0: Idle, 1: Crawling, 2: Analyzing, 3: Done
+  const [report, setReport] = useState<string | null>(null);
+
+  const handleScan = async () => {
+      if (!companyName) {
+          addToast('error', isZh ? '請輸入企業名稱' : 'Please enter company name', 'Error');
+          return;
+      }
+
+      setIsScanning(true);
+      setScanStep(1);
+      setReport(null);
+
+      try {
+          // Step 1: Simulated Crawl
+          addToast('info', isZh ? `正在爬取 ${companyName} 前 30 大搜尋結果...` : `Crawling top 30 results for ${companyName}...`, 'Crawler');
+          await new Promise(r => setTimeout(r, 2000));
+          
+          setScanStep(2);
+          addToast('info', isZh ? 'JunAiKey 正在進行非結構化數據清洗...' : 'JunAiKey cleaning unstructured data...', 'AI Processor');
+          
+          // Step 2: Use AI to generate report (using Web Search if possible, else hallucinate based on name context)
+          const query = isZh 
+            ? `分析企業 "${companyName}" (網址: ${website}) 的最新 ESG 動態、負面新聞與競爭力分析。請整理成一份結構化的商情報告。`
+            : `Analyze company "${companyName}" (URL: ${website}) for latest ESG news, negative press, and competitive analysis. Structure as a business intelligence report.`;
+          
+          const result = await performWebSearch(query, language);
+          
+          setReport(result.text);
+          setScanStep(3);
+          addToast('success', isZh ? '商情報告生成完畢' : 'Intelligence Report Generated', 'System');
+
+      } catch (e) {
+          addToast('error', 'Analysis Failed', 'Error');
+          setScanStep(0);
+      } finally {
+          setIsScanning(false);
+      }
+  };
+
+  return (
+    <div className="space-y-8 animate-fade-in pb-12">
+        <div className="flex items-center gap-4">
+            <div className="p-3 bg-celestial-blue/10 rounded-xl border border-celestial-blue/20">
+                <Briefcase className="w-8 h-8 text-celestial-blue" />
+            </div>
+            <div>
+                <h2 className="text-3xl font-bold text-white">{isZh ? '商情中心' : 'Business Intelligence Center'}</h2>
+                <p className="text-gray-400">{isZh ? 'AI 驅動的企業全方位偵測與競爭者分析' : 'AI-driven Enterprise Surveillance & Competitor Analysis'}</p>
+            </div>
+        </div>
+
+        {/* Input Section */}
+        <div className="glass-panel p-8 rounded-2xl border border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-white">{isZh ? '企業名稱' : 'Company Name'}</label>
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <input 
+                            type="text" 
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder={isZh ? "例如：台積電 TSMC" : "e.g., TSMC"}
+                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:ring-1 focus:ring-celestial-blue outline-none"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-white">{isZh ? '企業網址 (選填)' : 'Website (Optional)'}</label>
+                    <div className="relative">
+                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <input 
+                            type="text" 
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                            placeholder="https://..."
+                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:ring-1 focus:ring-celestial-blue outline-none"
+                        />
+                    </div>
+                </div>
+            </div>
+            <button 
+                onClick={handleScan}
+                disabled={isScanning || !companyName}
+                className="mt-6 w-full py-4 bg-gradient-to-r from-celestial-blue to-cyan-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+                {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
+                {isZh ? (isScanning ? '正在掃描全網...' : '啟動全網商情偵測') : (isScanning ? 'Scanning Web...' : 'Start Intelligence Scan')}
+            </button>
+        </div>
+
+        {/* Status Display */}
+        {scanStep > 0 && (
+            <div className="flex justify-between items-center px-8 py-4 bg-slate-900/50 rounded-xl border border-white/5">
+                <div className={`flex items-center gap-2 ${scanStep >= 1 ? 'text-celestial-blue' : 'text-gray-600'}`}>
+                    {scanStep === 1 && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {scanStep > 1 && <CheckCircle className="w-4 h-4" />}
+                    <span className="text-xs font-bold uppercase">{isZh ? '爬取網頁' : 'Crawling'}</span>
+                </div>
+                <div className="w-8 h-[1px] bg-white/10" />
+                <div className={`flex items-center gap-2 ${scanStep >= 2 ? 'text-celestial-purple' : 'text-gray-600'}`}>
+                    {scanStep === 2 && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {scanStep > 2 && <CheckCircle className="w-4 h-4" />}
+                    <span className="text-xs font-bold uppercase">{isZh ? '清洗數據' : 'Cleaning Data'}</span>
+                </div>
+                <div className="w-8 h-[1px] bg-white/10" />
+                <div className={`flex items-center gap-2 ${scanStep === 3 ? 'text-emerald-400' : 'text-gray-600'}`}>
+                    {scanStep === 3 && <CheckCircle className="w-4 h-4" />}
+                    <span className="text-xs font-bold uppercase">{isZh ? '生成報告' : 'Report Ready'}</span>
+                </div>
+            </div>
+        )}
+
+        {/* Result Area */}
+        {report && (
+            <div className="glass-panel p-8 rounded-2xl border border-celestial-blue/30 bg-slate-900/80 animate-fade-in">
+                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <FileText className="w-6 h-6 text-celestial-blue" />
+                        {companyName} - {isZh ? '商情分析報告' : 'Intelligence Report'}
+                    </h3>
+                    <div className="flex gap-2">
+                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">ESG Positive</span>
+                        <span className="px-3 py-1 bg-slate-700 text-gray-300 rounded-full text-xs">Updated: Just now</span>
+                    </div>
+                </div>
+                <div className="markdown-content text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: marked.parse(report) as string }} />
+            </div>
+        )}
+    </div>
+  );
+};

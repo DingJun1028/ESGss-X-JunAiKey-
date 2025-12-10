@@ -1,7 +1,11 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Sparkles, BrainCircuit, Search, Mic, MessageSquare, Book, StickyNote, Tag, CheckSquare, Server, Star, Layers, Eye } from 'lucide-react';
-import { ChatMessage, Language, View } from '../types';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { 
+    Bot, X, Send, Sparkles, BrainCircuit, Search, Mic, MessageSquare, Book, 
+    StickyNote, Tag, CheckSquare, Server, Star, Layers, Eye, Lightbulb, 
+    TrendingUp, ClipboardCheck, ArrowRight, Zap, AlertTriangle
+} from 'lucide-react';
+import { ChatMessage, Language, View, ProactiveInsight } from '../types';
 import { streamChat } from '../services/ai-service';
 import { useToast } from '../contexts/ToastContext';
 import { useCompany } from './providers/CompanyProvider';
@@ -37,11 +41,16 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
   const singleClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // AI Logic State
+  const [activeMode, setActiveMode] = useState<'chat' | 'secretary'>('secretary');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [currentStep, setCurrentStep] = useState<AgentStep | null>(null);
   const [neuralPulse, setNeuralPulse] = useState(false);
+  
+  // Secretary Mode State
+  const [insights, setInsights] = useState<ProactiveInsight[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
   
   // Voice State
   const [isListening, setIsListening] = useState(false);
@@ -50,7 +59,11 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
   const { addToast } = useToast();
   // Get full company context for injection
   const companyContext = useCompany(); 
-  const { userName, addNote, companyName, esgScores, carbonData, budget } = companyContext;
+  const { 
+      userName, addNote, companyName, esgScores, 
+      carbonData, budget, carbonCredits, collectedCards,
+      quests
+  } = companyContext;
   
   const STORAGE_KEY = 'esgss_universal_memory_v1';
   const isZh = language === 'zh-TW';
@@ -120,7 +133,89 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
       }
   };
 
-  // --- Interaction Handlers (Unchanged) ---
+  // --- Proactive Secretary Logic ---
+  const generateInsights = () => {
+      setIsScanning(true);
+      
+      setTimeout(() => {
+          const newInsights: ProactiveInsight[] = [];
+          
+          // 1. Next Best Action (Based on ESG Scores & Budget)
+          if (esgScores.environmental < 70 && budget > 10000) {
+              newInsights.push({
+                  id: 'act-env-boost',
+                  type: 'next_step',
+                  title: isZh ? '提升環境評分' : 'Boost Env Score',
+                  description: isZh ? '您的環境分數落後。建議啟動「供應鏈碳盤查」專案。' : 'Env score lagging. Initiate Supplier Carbon Audit.',
+                  actionLabel: isZh ? '前往碳資產' : 'Go to Carbon',
+                  targetView: View.CARBON,
+                  confidence: 92,
+                  impact: 'high'
+              });
+          }
+
+          if (quests.filter(q => q.status === 'active').length > 2) {
+              newInsights.push({
+                  id: 'act-clear-quests',
+                  type: 'next_step',
+                  title: isZh ? '清理待辦任務' : 'Clear Active Quests',
+                  description: isZh ? '您有 3+ 個活躍任務未完成。建議優先處理「上傳電費單」。' : '3+ active quests pending. Prioritize "Upload Bill".',
+                  actionLabel: isZh ? '查看任務' : 'View Quests',
+                  targetView: View.MY_ESG,
+                  confidence: 85,
+                  impact: 'medium'
+              });
+          }
+
+          // 2. Optimization (Efficiency)
+          if (carbonCredits < 500) {
+              newInsights.push({
+                  id: 'opt-credits',
+                  type: 'optimization',
+                  title: isZh ? '碳權庫存預警' : 'Low Carbon Credits',
+                  description: isZh ? '碳權庫存低於安全水位。建議現在以市價 $25 補進，預測下月將漲至 $30。' : 'Credits low. Buy now at $25; forecasted to hit $30 next month.',
+                  actionLabel: isZh ? '前往交易' : 'Go to Market',
+                  targetView: View.GOODWILL,
+                  confidence: 88,
+                  impact: 'high'
+              });
+          }
+
+          // 3. Preparation Protocol (Context Aware)
+          if (currentView === View.REPORT) {
+              newInsights.push({
+                  id: 'prep-report',
+                  type: 'preparation',
+                  title: isZh ? 'GRI 報告準備清單' : 'GRI Report Prep',
+                  description: isZh ? '偵測到您正在編輯報告。請確認已備妥：1. 範疇一二數據 2. 利害關係人問卷結果。' : 'Detected report editing. Ensure you have: 1. Scope 1/2 Data 2. Stakeholder Survey Results.',
+                  confidence: 95,
+                  impact: 'medium'
+              });
+          }
+          
+          if (currentView === View.CARBON) {
+               newInsights.push({
+                  id: 'prep-audit',
+                  type: 'optimization',
+                  title: isZh ? '數據異常偵測' : 'Anomaly Detected',
+                  description: isZh ? 'B 廠區電力數據波動異常 (+15%)。建議檢查 IoT 連線或手動校正。' : 'Plant B power spike (+15%). Check IoT or manual override.',
+                  confidence: 78,
+                  impact: 'high'
+              });
+          }
+
+          setInsights(newInsights);
+          setIsScanning(false);
+      }, 1200); // Simulate processing time
+  };
+
+  useEffect(() => {
+      if (isChatOpen && activeMode === 'secretary') {
+          generateInsights();
+      }
+  }, [isChatOpen, activeMode, currentView, esgScores]); // Re-scan on view change or score change
+
+  // --- Interaction Handlers ---
   const handlePointerDown = (e: React.PointerEvent) => {
       e.preventDefault();
       setIsDragging(true);
@@ -182,7 +277,17 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
       }
   };
 
-  // --- AI Chat Logic (Enhanced) ---
+  const handleInsightAction = (insight: ProactiveInsight) => {
+      if (insight.targetView && onNavigate) {
+          onNavigate(insight.targetView);
+          addToast('success', isZh ? `正在執行：${insight.title}` : `Executing: ${insight.title}`, 'AI Secretary');
+          setIsChatOpen(false); // Close window to let user work
+      } else {
+          addToast('info', isZh ? '已標記為處理中' : 'Marked as In Progress', 'System');
+      }
+  };
+
+  // --- AI Chat Logic ---
   useEffect(() => {
     const savedMemory = localStorage.getItem(STORAGE_KEY);
     if (savedMemory) {
@@ -212,7 +317,6 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
         setCurrentStep({ text: "Analyzing Context...", icon: BrainCircuit });
         
         // --- Context Injection ---
-        // Construct a prompt that knows the user's current location and company state
         const systemState = {
             currentView: currentView || 'Unknown',
             user: userName,
@@ -303,7 +407,7 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
                     ${isMenuOpen ? 'scale-90' : 'hover:scale-105'}
                     ${isListening ? 'scale-110 ring-4 ring-celestial-gold/30' : ''}
                 `}
-                title="Single: Chat | Double: Universal Tools | Hold: Voice"
+                title="Single: AI Secretary | Double: Universal Tools | Hold: Voice"
             >
                 <div className="absolute inset-0 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]" />
                 <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-50 mix-blend-overlay" />
@@ -317,37 +421,142 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
       )}
 
       {isChatOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[90vw] md:w-[400px] h-[600px] max-h-[80vh] flex flex-col rounded-3xl glass-panel overflow-hidden animate-fade-in border border-white/10 shadow-2xl backdrop-blur-xl bg-slate-900/90">
+        <div className="fixed bottom-6 right-6 z-50 w-[90vw] md:w-[450px] h-[650px] max-h-[85vh] flex flex-col rounded-3xl glass-panel overflow-hidden animate-fade-in border border-white/10 shadow-2xl backdrop-blur-xl bg-slate-900/90">
+             
+             {/* Header */}
              <div className="p-4 bg-white/5 border-b border-white/10 flex justify-between items-center">
-                <div className="flex flex-col">
-                    <h3 className="font-bold text-white flex items-center gap-2"><Sparkles className="w-4 h-4 text-celestial-gold"/> JunAiKey</h3>
-                    {currentView && <span className="text-[10px] text-celestial-emerald flex items-center gap-1"><Eye className="w-3 h-3"/> {isZh ? '正在查看: ' : 'Observing: '}{currentView}</span>}
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setActiveMode('secretary')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${activeMode === 'secretary' ? 'bg-celestial-purple text-white shadow-lg shadow-purple-500/20' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                    >
+                        <BrainCircuit className="w-3.5 h-3.5" />
+                        {isZh ? '秘書 (Secretary)' : 'Secretary'}
+                    </button>
+                    <button 
+                        onClick={() => setActiveMode('chat')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${activeMode === 'chat' ? 'bg-celestial-blue text-white shadow-lg shadow-blue-500/20' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                    >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        {isZh ? '對話 (Chat)' : 'Chat'}
+                    </button>
                 </div>
                 <button onClick={() => setIsChatOpen(false)}><X className="w-5 h-5 text-gray-400 hover:text-white"/></button>
              </div>
-             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                 {messages.map(m => (
-                     <div key={m.id} className={`p-3 rounded-xl text-sm ${m.role==='user'?'bg-celestial-purple/20 ml-auto max-w-[85%]':'bg-white/5 mr-auto max-w-[90%]'}`}>
-                         <div dangerouslySetInnerHTML={{__html: marked.parse(m.text) as string}} className="markdown-content text-gray-200" />
+
+             {/* Mode: Secretary */}
+             {activeMode === 'secretary' && (
+                 <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-slate-900/50 to-slate-950/80">
+                     <div className="flex items-center justify-between mb-2">
+                         <div className="flex items-center gap-2 text-xs text-gray-400">
+                             <Eye className="w-3 h-3 text-celestial-emerald" />
+                             {isZh ? '正在監控: ' : 'Observing: '}<span className="text-white font-bold">{currentView}</span>
+                         </div>
+                         <button onClick={generateInsights} className="text-[10px] text-celestial-purple hover:text-white flex items-center gap-1 transition-colors">
+                             <Sparkles className="w-3 h-3" /> Refresh
+                         </button>
                      </div>
-                 ))}
-                 {currentStep && (
-                     <div className="flex items-center gap-2 text-xs text-celestial-emerald animate-pulse bg-celestial-emerald/10 p-2 rounded-lg self-start">
-                         {React.createElement(currentStep.icon, { className: "w-3 h-3" })}
-                         <span>{currentStep.text}</span>
-                     </div>
-                 )}
-             </div>
-             <div className="p-4 border-t border-white/10 bg-white/5 flex gap-2">
-                 <input 
-                    value={input} 
-                    onChange={e => setInput(e.target.value)} 
-                    onKeyDown={e => e.key === 'Enter' && handleSend()}
-                    placeholder={isZh ? "詢問 JunAiKey (具備當前頁面感知)..." : "Ask JunAiKey (Context Aware)..."}
-                    className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-white outline-none focus:border-celestial-emerald"
-                 />
-                 <button onClick={handleSend} className="p-2 bg-celestial-emerald rounded-xl text-white"><Send className="w-5 h-5"/></button>
-             </div>
+
+                     {isScanning ? (
+                         <div className="flex flex-col items-center justify-center h-40 space-y-3 opacity-70">
+                             <div className="w-12 h-12 rounded-full border-4 border-celestial-purple/20 border-t-celestial-purple animate-spin" />
+                             <p className="text-xs text-gray-400 animate-pulse">{isZh ? 'JunAiKey 正在分析情境...' : 'JunAiKey is analyzing context...'}</p>
+                         </div>
+                     ) : (
+                         <>
+                            {insights.length === 0 ? (
+                                <div className="p-6 text-center text-gray-500 bg-white/5 rounded-2xl border border-white/5">
+                                    <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    <p className="text-xs">{isZh ? '目前系統運行平穩，無緊急建議。' : 'System nominal. No urgent insights.'}</p>
+                                </div>
+                            ) : (
+                                insights.map((insight) => (
+                                    <div 
+                                        key={insight.id} 
+                                        className={`p-4 rounded-xl border backdrop-blur-sm transition-all hover:scale-[1.02] group
+                                            ${insight.type === 'next_step' ? 'bg-celestial-purple/10 border-celestial-purple/30' : 
+                                              insight.type === 'optimization' ? 'bg-emerald-500/10 border-emerald-500/30' : 
+                                              'bg-blue-500/10 border-blue-500/30'}
+                                        `}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`p-1.5 rounded-lg ${
+                                                    insight.type === 'next_step' ? 'bg-celestial-purple/20 text-celestial-purple' : 
+                                                    insight.type === 'optimization' ? 'bg-emerald-500/20 text-emerald-400' : 
+                                                    'bg-blue-500/20 text-blue-400'
+                                                }`}>
+                                                    {insight.type === 'next_step' ? <TrendingUp className="w-4 h-4" /> : 
+                                                     insight.type === 'optimization' ? <Zap className="w-4 h-4" /> : 
+                                                     <ClipboardCheck className="w-4 h-4" />}
+                                                </div>
+                                                <span className={`text-xs font-bold uppercase tracking-wider ${
+                                                    insight.type === 'next_step' ? 'text-celestial-purple' : 
+                                                    insight.type === 'optimization' ? 'text-emerald-400' : 
+                                                    'text-blue-400'
+                                                }`}>
+                                                    {isZh ? (insight.type === 'next_step' ? '下一步行動' : insight.type === 'optimization' ? '效率優化' : '準備清單') : 
+                                                    insight.type.replace('_', ' ')}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-[10px] text-gray-500 font-mono bg-black/20 px-1.5 py-0.5 rounded">
+                                                <AlertTriangle className={`w-3 h-3 ${insight.impact === 'high' ? 'text-red-400' : 'text-gray-600'}`} />
+                                                {insight.confidence}%
+                                            </div>
+                                        </div>
+                                        
+                                        <h4 className="text-sm font-bold text-white mb-1">{insight.title}</h4>
+                                        <p className="text-xs text-gray-300 leading-relaxed mb-4">{insight.description}</p>
+                                        
+                                        {insight.actionLabel && (
+                                            <button 
+                                                onClick={() => handleInsightAction(insight)}
+                                                className={`w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all
+                                                    ${insight.type === 'next_step' ? 'bg-celestial-purple hover:bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 
+                                                      insight.type === 'optimization' ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 
+                                                      'bg-white/10 hover:bg-white/20 text-white border border-white/10'}
+                                                `}
+                                            >
+                                                {insight.actionLabel}
+                                                <ArrowRight className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                         </>
+                     )}
+                 </div>
+             )}
+
+             {/* Mode: Chat */}
+             {activeMode === 'chat' && (
+                 <>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        {messages.map(m => (
+                            <div key={m.id} className={`p-3 rounded-xl text-sm ${m.role==='user'?'bg-celestial-purple/20 ml-auto max-w-[85%]':'bg-white/5 mr-auto max-w-[90%]'}`}>
+                                <div dangerouslySetInnerHTML={{__html: marked.parse(m.text) as string}} className="markdown-content text-gray-200" />
+                            </div>
+                        ))}
+                        {currentStep && (
+                            <div className="flex items-center gap-2 text-xs text-celestial-emerald animate-pulse bg-celestial-emerald/10 p-2 rounded-lg self-start">
+                                {React.createElement(currentStep.icon, { className: "w-3 h-3" })}
+                                <span>{currentStep.text}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-4 border-t border-white/10 bg-white/5 flex gap-2">
+                        <input 
+                            value={input} 
+                            onChange={e => setInput(e.target.value)} 
+                            onKeyDown={e => e.key === 'Enter' && handleSend()}
+                            placeholder={isZh ? "詢問 JunAiKey..." : "Ask JunAiKey..."}
+                            className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-white outline-none focus:border-celestial-emerald"
+                        />
+                        <button onClick={handleSend} className="p-2 bg-celestial-emerald rounded-xl text-white"><Send className="w-5 h-5"/></button>
+                    </div>
+                 </>
+             )}
         </div>
       )}
     </>

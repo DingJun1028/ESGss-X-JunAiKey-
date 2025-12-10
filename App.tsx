@@ -94,8 +94,8 @@ const App: React.FC = () => {
                     case View.GOODWILL: return <GoodwillCoin language={language} />;
                     case View.SETTINGS: return <Settings language={language} />;
                     case View.YANG_BO: return <YangBoZone language={language} />;
-                    case View.BUSINESS_INTEL: return <BusinessIntel language={language} />;
-                    case View.HEALTH_CHECK: return <HealthCheck language={language} />;
+                    case View.BUSINESS_INTEL: return <BusinessIntel language={language} onNavigate={setCurrentView} />;
+                    case View.HEALTH_CHECK: return <HealthCheck language={language} onNavigate={setCurrentView} />;
                     case View.UNIVERSAL_TOOLS: return <UniversalTools language={language} />;
                     default: return <MyEsg language={language} onNavigate={setCurrentView} />;
                   }

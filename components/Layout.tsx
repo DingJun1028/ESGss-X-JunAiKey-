@@ -34,6 +34,90 @@ export const LogoIcon = ({ className }: { className?: string }) => (
   </div>
 );
 
+// --- Neural Fabric Component (Universal Intelligence Visualization) ---
+const NeuralFabric: React.FC = () => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let animationFrameId: number;
+        let particles: { x: number, y: number, vx: number, vy: number, size: number }[] = [];
+        
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        };
+
+        const initParticles = () => {
+            particles = [];
+            const count = Math.floor((window.innerWidth * window.innerHeight) / 25000);
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    size: Math.random() * 2
+                });
+            }
+        };
+
+        const draw = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw particles
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(139, 92, 246, 0.1)'; // Celestial Purple weak
+                ctx.fill();
+            });
+
+            // Draw Connections (Neural Links)
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 150) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(16, 185, 129, ${0.05 * (1 - dist / 150)})`; // Emerald connection
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(draw);
+        };
+
+        window.addEventListener('resize', resize);
+        resize();
+        draw();
+
+        return () => {
+            window.removeEventListener('resize', resize);
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, []);
+
+    return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 opacity-50" />;
+};
+
 interface NavItemProps {
   active: boolean;
   onClick: () => void;
@@ -45,7 +129,7 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ active, onClick, icon, label, highlight }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden
+    className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden text-left
       ${active 
         ? 'bg-celestial-purple text-white shadow-lg shadow-purple-500/25' 
         : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -149,9 +233,10 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
   return (
     <div className={`min-h-screen bg-celestial-900 text-gray-200 relative overflow-hidden font-sans selection:bg-celestial-emerald/30 transition-colors duration-1000 ${isCritical ? 'border-4 border-red-500/20' : ''}`}>
       
-      {/* Background Ambience: Aurora Flow */}
+      {/* Background Ambience: Aurora Flow & Neural Fabric */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-slate-950" />
+        <NeuralFabric />
         <div 
             className={`absolute top-[-20%] left-[-20%] w-[120%] h-[80%] rounded-[100%] blur-[120px] opacity-30 animate-blob mix-blend-screen transform -rotate-12 ${isCritical ? 'bg-red-900' : 'bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900'}`} 
             style={{ willChange: 'transform' }}
@@ -190,11 +275,11 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
             </div>
             
             <div className="flex flex-col relative z-10 hidden lg:flex">
-                <span className="font-bold text-2xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400">
+                <span className="font-bold text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-400">
                   ESGss
                 </span>
-                <span className="font-bold text-[10px] text-celestial-emerald tracking-[0.2em] uppercase glow-text-emerald">
-                  JunAiKey
+                <span className="font-bold text-[10px] text-celestial-emerald tracking-[0.1em] uppercase glow-text-emerald">
+                  善向永續 JunAiKey
                 </span>
             </div>
           </div>
@@ -203,7 +288,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
           <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6 custom-scrollbar">
             {navGroups.map((group, idx) => (
                 <div key={idx}>
-                    <div className="text-[10px] uppercase text-gray-500 px-4 mb-2 hidden lg:block font-semibold tracking-wider opacity-70">
+                    <div className="text-[10px] uppercase text-gray-500 px-4 mb-2 hidden lg:block font-semibold tracking-wider opacity-70 text-left">
                         {group.title}
                     </div>
                     <div className="space-y-1">
@@ -247,6 +332,13 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
                   </button>
               </div>
           )}
+
+          {/* OS Version Footer */}
+          <div className="hidden lg:block p-4 text-center border-t border-white/5">
+              <div className="text-[9px] text-gray-600 font-mono tracking-wide">
+                  Installed: <span className="text-celestial-emerald">善向紀元 Omni-OS v4.0</span>
+              </div>
+          </div>
         </aside>
 
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -447,10 +539,8 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
             </div>
         </div>
 
-      </div>
-      
-      {/* AI Assistant injected into Layout to always be available, now with context */}
-      <AiAssistant language={language} onNavigate={onNavigate} currentView={currentView} />
+        {/* AI Assistant injected into Layout to always be available, now with context */}
+        <AiAssistant language={language} onNavigate={onNavigate} currentView={currentView} />
     </div>
   );
 };

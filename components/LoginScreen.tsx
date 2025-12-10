@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Lock, User, ShieldCheck, ToggleLeft, ToggleRight, ArrowRight } from 'lucide-react';
+import { Lock, User, ShieldCheck, ToggleLeft, ToggleRight, ArrowRight, BrainCircuit, Activity } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { LogoIcon } from './Layout';
 
@@ -26,7 +26,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
     setTimeout(() => {
       setLoading(false);
       const welcomeTitle = isZh ? '登入成功' : 'Login Successful';
-      const welcomeMsg = isZh ? '歡迎回來，首席永續官 (CSO)。' : 'Welcome back, Chief Sustainability Officer.';
+      const welcomeMsg = isZh ? '歡迎來到 ESGss 善向永續系統。' : 'Welcome to ESGss Sustainability System.';
       addToast('success', welcomeMsg, welcomeTitle);
       onLogin();
     }, 1500);
@@ -49,6 +49,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
       </div>
 
+      {/* System Status Indicators */}
+      <div className="absolute top-8 left-8 flex gap-4 text-[10px] font-mono text-celestial-emerald opacity-60">
+          <div className="flex items-center gap-2">
+              <Activity className="w-3 h-3 animate-pulse" />
+              SYSTEM STATUS: ALL GREEN
+          </div>
+          <div className="hidden md:block">OS: Good Era Omni-OS v4.0</div>
+      </div>
+
       <div className="relative z-10 w-full max-w-md p-8">
         <div className="glass-panel p-8 rounded-3xl border-t border-white/20 shadow-2xl shadow-celestial-purple/20 backdrop-blur-xl bg-slate-900/40">
           
@@ -68,11 +77,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
             <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight text-center flex flex-col gap-1 drop-shadow-lg">
               <span>ESGss</span>
               <span className="text-xl text-transparent bg-clip-text bg-gradient-to-r from-celestial-emerald to-celestial-gold tracking-widest font-medium">
-                善向永續
+                善向永續 JunAiKey
               </span>
             </h1>
-            <p className="text-[10px] text-celestial-purple/80 mt-4 uppercase tracking-[0.2em] text-center border-t border-white/5 pt-4 w-full font-bold">
-              Powered by JunAiKey
+            <p className="text-[10px] text-celestial-purple/80 mt-2 font-mono uppercase tracking-[0.2em] text-center w-full">
+              Powered by 善向紀元 (Good Era)
             </p>
           </div>
 
@@ -128,7 +137,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {isZh ? "進入平台" : "Enter Platform"}
+                  {isZh ? "進入系統" : "Enter System"}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -137,7 +146,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
 
           <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
             <span className="text-xs text-gray-500 flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <BrainCircuit className="w-4 h-4 text-celestial-emerald" />
               {isZh ? "萬能智庫 已連結" : "Universal Intelligence Connected"}
             </span>
             <button 

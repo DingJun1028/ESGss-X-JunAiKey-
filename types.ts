@@ -50,6 +50,32 @@ export interface Toast {
   rewardData?: { xp?: number; coins?: number; card?: EsgCard; };
 }
 
+// --- Universal File System ---
+export interface AppFile {
+  id: string;
+  name: string;
+  type: string; // pdf, png, jpg, csv
+  size: string;
+  uploadDate: number;
+  sourceModule: string; // Where it came from (e.g., 'ResearchHub', 'UniversalTools')
+  status: 'scanning' | 'processed' | 'error';
+  tags: string[];
+  aiSummary?: string; // AI generated insight (Gap Filling)
+  confidence: number;
+}
+
+// --- Universal Intelligence System ---
+export interface IntelligenceItem {
+  id: string;
+  type: 'report' | 'news' | 'competitor' | 'regulation';
+  title: string;
+  source: string;
+  date: string;
+  summary: string;
+  tags: string[];
+  isRead: boolean;
+}
+
 export interface AuditLogEntry {
   id: string;
   timestamp: number;
@@ -88,6 +114,21 @@ export interface EsgCard {
   
   isPurified?: boolean;   // Has passed the knowledge quiz
   collectionSet: string;
+}
+
+// --- Synergy System (New) ---
+export interface SynergyEffect {
+    type: 'score_boost' | 'resource_gen' | 'discount';
+    target: 'environmental' | 'social' | 'governance' | 'credits' | 'budget';
+    value: number;
+}
+
+export interface CardSynergy {
+    id: string;
+    name: string;
+    description: string;
+    requiredCards: string[]; // Card IDs
+    effect: SynergyEffect;
 }
 
 export interface Badge {
@@ -171,6 +212,7 @@ export interface UniversalLabel {
   description?: string;
   definition?: string;
   formula?: string;
+  rationale?: string; // New: The "Why" behind the metric
 }
 
 export interface UniversalKnowledgeNode {
@@ -249,4 +291,18 @@ export interface DashboardWidget {
   title: string;
   config?: any;
   gridSize?: 'small' | 'medium' | 'large' | 'full';
+}
+
+// --- New AI Secretary Types ---
+export type InsightType = 'next_step' | 'optimization' | 'preparation';
+
+export interface ProactiveInsight {
+    id: string;
+    type: InsightType;
+    title: string;
+    description: string;
+    actionLabel?: string;
+    targetView?: View;
+    confidence: number; // 0-100%
+    impact: 'high' | 'medium' | 'low';
 }

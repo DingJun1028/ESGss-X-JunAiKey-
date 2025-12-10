@@ -1,5 +1,6 @@
 
-import { InteractionEvent, OmniEsgTrait, UniversalKnowledgeNode, UniversalLabel } from '../types';
+import { InteractionEvent, OmniEsgTrait, UniversalKnowledgeNode, UniversalLabel, CardSynergy } from '../types';
+import { getCardSynergies } from '../constants';
 
 type Listener = (node: UniversalKnowledgeNode) => void;
 
@@ -8,6 +9,7 @@ type Listener = (node: UniversalKnowledgeNode) => void;
  * Optimized v2.1: Targeted Subscriptions, Memory Management, Performance Capping.
  * Genesis v1.1: Pre-loaded with '428_Main' consciousness.
  * Update v2.2: Added SDR (Sustainability Data Repository) Module for global DB access.
+ * Update v2.3: Added Universal Synergy Calculation logic.
  */
 class UniversalIntelligenceEngine {
   private static STORAGE_KEY = 'jun_aikey_universal_mind_v1';
@@ -285,6 +287,14 @@ class UniversalIntelligenceEngine {
       // Simulate syncing with CDP, GRI, IFRS
       ['sdr-cdp', 'sdr-gri', 'sdr-ifrs'].forEach(id => this.sdrModules.add(id));
       this.save();
+  }
+
+  // --- Synergy Logic ---
+  public calculateActiveSynergies(collectedCardIds: string[], lang: 'zh-TW' | 'en-US'): CardSynergy[] {
+      const allSynergies = getCardSynergies(lang);
+      return allSynergies.filter(synergy => 
+          synergy.requiredCards.every(reqId => collectedCardIds.includes(reqId))
+      );
   }
 }
 

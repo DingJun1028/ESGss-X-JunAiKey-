@@ -1,10 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
-import { Database, ShieldCheck, Zap, Activity, BrainCircuit, Code, Terminal, Play, Loader2, Sparkles, AlertTriangle, Layers, Lock, Unlock, Network, Box, RefreshCw, Send, CheckCircle } from 'lucide-react';
+import { Database, ShieldCheck, Zap, Activity, BrainCircuit, Code, Terminal, Play, Loader2, Sparkles, AlertTriangle, Layers, Lock, Unlock, Network, Box, RefreshCw, Send, CheckCircle, Cpu, GitMerge, Infinity as InfinityIcon } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { universalIntelligence } from '../services/evolutionEngine';
+import { 
+    BilingualMatrixEngine, 
+    BridgingEngine, 
+    QuantumEvolutionLoop, 
+    SelfDefinitionField, 
+    ZeroOneInfinityEngine,
+    LifecycleStage
+} from '../services/quantum-canon';
 
 interface UniversalBackendProps {
   language: Language;
@@ -77,12 +85,30 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
   const [guardrailsEnabled, setGuardrailsEnabled] = useState(true);
   const [activeSchema, setActiveSchema] = useState('agent_manifest_v2.json');
   
+  // Quantum Canon State
+  const [lifecycleStage, setLifecycleStage] = useState<LifecycleStage>('One (MVP)');
+  const [evolutionStatus, setEvolutionStatus] = useState('Stable');
+  
   // Agents State
   const [agents, setAgents] = useState([
       { id: 'fin', name: 'Finance Agent', role: 'Worker', status: 'active', stress: 10 },
       { id: 'gov', name: 'Governance Guard', role: 'Safety', status: 'active', stress: 5 },
       { id: 'rpg', name: 'Report Generator', role: 'Worker', status: 'idle', stress: 0 },
   ]);
+
+  // Simulate Canon Engines Running
+  useEffect(() => {
+      const interval = setInterval(() => {
+          // Principle 9: Check Lifecycle
+          const stage = ZeroOneInfinityEngine.determineStage(Math.floor(Math.random() * 1500), 500);
+          setLifecycleStage(stage);
+
+          // Principle 4: Check Evolution
+          const evoLoop = new QuantumEvolutionLoop();
+          setEvolutionStatus(evoLoop.checkEvolution(Math.floor(Math.random() * 200)));
+      }, 5000);
+      return () => clearInterval(interval);
+  }, []);
 
   const handleCommandSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -91,6 +117,10 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
       setIsProcessing(true);
       setGeneratedUI(null);
       
+      // Principle 5: Self Definition
+      const parsed = SelfDefinitionField.parseIntent(command);
+      addToast('info', `Intent Parsed: ${parsed.intent} (${parsed.confidence * 100}%)`, 'Quantum Canon');
+
       // Simulate Chain of Thought
       setTimeout(() => {
           setIsProcessing(false);
@@ -119,6 +149,38 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
             </div>
         </div>
 
+        {/* --- Quantum Canon Status Panel --- */}
+        <div className="grid grid-cols-4 gap-4 p-4 bg-slate-900/50 rounded-2xl border border-white/10 shrink-0">
+            <div className="flex flex-col gap-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <Code className="w-3 h-3" /> Principle 1
+                </div>
+                <div className="font-bold text-white text-xs">Bilingual Matrix</div>
+                <div className="text-[10px] text-emerald-400 font-mono">ACTIVE (ZH/EN)</div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <GitMerge className="w-3 h-3" /> Principle 3
+                </div>
+                <div className="font-bold text-white text-xs">Bridging Engine</div>
+                <div className="text-[10px] text-blue-400 font-mono">Legacy Adapters: ON</div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <RefreshCw className="w-3 h-3" /> Principle 4
+                </div>
+                <div className="font-bold text-white text-xs">Evolution Loop</div>
+                <div className="text-[10px] text-purple-400 font-mono">{evolutionStatus.toUpperCase()}</div>
+            </div>
+            <div className="flex flex-col gap-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <InfinityIcon className="w-3 h-3" /> Principle 9
+                </div>
+                <div className="font-bold text-white text-xs">0-1-Infinity</div>
+                <div className="text-[10px] text-celestial-gold font-mono">{lifecycleStage}</div>
+            </div>
+        </div>
+
         <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
             
             {/* Left Column: Governance & Schema (3 Cols) */}
@@ -128,7 +190,7 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                 <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col">
                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                        {isZh ? 'AI 護欄監控' : 'AI Guardrails'}
+                        {isZh ? 'AI 護欄監控 (P6. Consistency)' : 'AI Guardrails (P6)'}
                     </h3>
                     
                     <div className="space-y-4">
@@ -161,7 +223,7 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                 <div className="glass-panel p-6 rounded-2xl border border-white/10 flex-1 overflow-hidden flex flex-col">
                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                         <Code className="w-4 h-4 text-celestial-blue" />
-                        {isZh ? '數據契約 (Schema Registry)' : 'Schema Registry'}
+                        {isZh ? '數據契約 (P2. TypeScript)' : 'Schema Registry (P2)'}
                     </h3>
                     
                     <div className="flex items-center justify-between mb-4">
@@ -196,7 +258,7 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                     </div>
                     <div className="mt-2 text-[10px] text-gray-500 flex items-center gap-1">
                         <CheckCircle className="w-3 h-3 text-emerald-500" />
-                        Valid Contract
+                        Valid Contract (Consistent)
                     </div>
                 </div>
             </div>
@@ -239,7 +301,7 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                             type="text" 
                             value={command}
                             onChange={(e) => setCommand(e.target.value)}
-                            placeholder={isZh ? "輸入自然語言指令 (例如: Show User Table)..." : "Enter intent (e.g., Show User Table)..."}
+                            placeholder={isZh ? "P5. 輸入自然語言指令 (例如: Show User Table)..." : "P5. Enter intent (e.g., Show User Table)..."}
                             className="w-full bg-transparent border-none outline-none py-4 pl-12 pr-12 text-white placeholder-gray-500 font-medium"
                             disabled={isProcessing}
                         />
@@ -256,7 +318,7 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                 {/* Processing Log (CoT) */}
                 {isProcessing && (
                     <div className="p-4 rounded-xl bg-black/40 border border-white/5 font-mono text-[10px] text-celestial-purple space-y-1 animate-fade-in">
-                        <div>> Analyzing intent...</div>
+                        <div>> Analyzing intent (SelfDefinitionField)...</div>
                         <div className="text-celestial-blue">> Decomposing tasks: [FetchData, GenerateUI, ValidateSchema]...</div>
                         <div className="text-emerald-400">> Routing to Agent: UI_Architect...</div>
                         <div className="animate-pulse">> Generating Component Tree...</div>
@@ -270,7 +332,7 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                     <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                         <h3 className="text-sm font-bold text-white flex items-center gap-2">
                             <Box className="w-4 h-4 text-celestial-purple" />
-                            GenUI Canvas
+                            GenUI Canvas (P7. Simple & Fast)
                         </h3>
                         <span className="text-[9px] px-2 py-1 bg-white/10 rounded text-gray-400">Read-Only Preview</span>
                     </div>

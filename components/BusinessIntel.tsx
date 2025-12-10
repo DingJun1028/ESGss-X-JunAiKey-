@@ -1,24 +1,28 @@
 
 import React, { useState } from 'react';
-import { Language } from '../types';
-import { Briefcase, Search, Globe, FileText, Loader2, Database, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { Language, View, IntelligenceItem } from '../types';
+import { Briefcase, Search, Globe, FileText, Loader2, Database, TrendingUp, AlertCircle, CheckCircle, ArrowRightLeft, Activity, Save } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { performWebSearch } from '../services/ai-service';
 import { marked } from 'marked';
+import { useCompany } from './providers/CompanyProvider';
 
 interface BusinessIntelProps {
   language: Language;
+  onNavigate?: (view: View) => void;
 }
 
-export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language }) => {
+export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language, onNavigate }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
+  const { setIntelligenceBrief, saveIntelligence } = useCompany();
   
   const [companyName, setCompanyName] = useState('');
   const [website, setWebsite] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanStep, setScanStep] = useState(0); // 0: Idle, 1: Crawling, 2: Analyzing, 3: Done
   const [report, setReport] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleScan = async () => {
       if (!companyName) {
@@ -29,6 +33,7 @@ export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language }) => {
       setIsScanning(true);
       setScanStep(1);
       setReport(null);
+      setIsSaved(false);
 
       try {
           // Step 1: Simulated Crawl
@@ -38,7 +43,7 @@ export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language }) => {
           setScanStep(2);
           addToast('info', isZh ? 'JunAiKey 正在進行非結構化數據清洗...' : 'JunAiKey cleaning unstructured data...', 'AI Processor');
           
-          // Step 2: Use AI to generate report (using Web Search if possible, else hallucinate based on name context)
+          // Step 2: Use AI to generate report
           const query = isZh 
             ? `分析企業 "${companyName}" (網址: ${website}) 的最新 ESG 動態、負面新聞與競爭力分析。請整理成一份結構化的商情報告。`
             : `Analyze company "${companyName}" (URL: ${website}) for latest ESG news, negative press, and competitive analysis. Structure as a business intelligence report.`;
@@ -54,6 +59,41 @@ export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language }) => {
           setScanStep(0);
       } finally {
           setIsScanning(false);
+      }
+  };
+
+  const handleSaveToKnowledge = () => {
+      if (!report) return;
+      
+      const newItem: IntelligenceItem = {
+          id: `intel-${Date.now()}`,
+          type: 'competitor',
+          title: `${companyName} - ${isZh ? '全方位分析' : 'Comprehensive Analysis'}`,
+          source: 'Business Intelligence Center',
+          date: new Date().toISOString(),
+          summary: isZh ? '包含 ESG 評分、負面新聞與競爭力分析的完整報告。' : 'Full report containing ESG scores, negative press, and competitive analysis.',
+          tags: ['Competitor', 'Auto-Generated'],
+          isRead: false
+      };
+
+      saveIntelligence(newItem);
+      setIsSaved(true);
+      addToast('success', isZh ? '報告已儲存至萬能智庫 (My Intelligence)' : 'Report saved to Universal Knowledge Base (My Intelligence)', 'Universal Brain');
+  };
+
+  const handleLinkToHealthCheck = () => {
+      // 1. Save intent to Provider
+      setIntelligenceBrief({
+          source: 'BusinessIntel',
+          targetCompany: companyName,
+          keyFindings: ['Supply Chain Resilience', 'Carbon Disclosure'],
+          action: 'compare'
+      });
+
+      // 2. Navigate
+      if (onNavigate) {
+          onNavigate(View.HEALTH_CHECK);
+          addToast('info', isZh ? `正在建立針對 ${companyName} 的落差分析模型...` : `Building gap analysis model vs ${companyName}...`, 'System Link');
       }
   };
 
@@ -133,15 +173,35 @@ export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language }) => {
 
         {/* Result Area */}
         {report && (
-            <div className="glass-panel p-8 rounded-2xl border border-celestial-blue/30 bg-slate-900/80 animate-fade-in">
+            <div className="glass-panel p-8 rounded-2xl border border-celestial-blue/30 bg-slate-900/80 animate-fade-in relative">
                 <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <FileText className="w-6 h-6 text-celestial-blue" />
                         {companyName} - {isZh ? '商情分析報告' : 'Intelligence Report'}
                     </h3>
                     <div className="flex gap-2">
-                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">ESG Positive</span>
-                        <span className="px-3 py-1 bg-slate-700 text-gray-300 rounded-full text-xs">Updated: Just now</span>
+                        {/* Action: Save to My Intelligence */}
+                        <button 
+                            onClick={handleSaveToKnowledge}
+                            disabled={isSaved}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg 
+                                ${isSaved 
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                                    : 'bg-celestial-purple hover:bg-purple-600 text-white'}
+                            `}
+                        >
+                            {isSaved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                            {isZh ? (isSaved ? '已儲存' : '儲存至智庫') : (isSaved ? 'Saved' : 'Save to Knowledge')}
+                        </button>
+
+                        {/* Action: Link to Health Check */}
+                        <button 
+                            onClick={handleLinkToHealthCheck}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg"
+                        >
+                            <Activity className="w-4 h-4" />
+                            {isZh ? '執行內部落差分析' : 'Run Gap Analysis'}
+                        </button>
                     </div>
                 </div>
                 <div className="markdown-content text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: marked.parse(report) as string }} />

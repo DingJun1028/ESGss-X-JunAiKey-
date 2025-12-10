@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext';
 import { performLocalRAG } from '../services/ai-service';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { universalIntelligence } from '../services/evolutionEngine';
+import { useCompany } from './providers/CompanyProvider';
 
 interface ResearchHubProps {
   language: Language;
@@ -75,7 +76,8 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
   const t = TRANSLATIONS[language].research;
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'explorer' | 'scanner' | 'sdr' | 'cases'>('cases'); // Default to cases for demo
+  const { addFile, files } = useCompany(); // Hook into Global File System
+  const [activeTab, setActiveTab] = useState<'explorer' | 'scanner' | 'sdr' | 'cases'>('cases'); 
   
   // Explorer State
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -84,9 +86,8 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<{text: string, sources?: any[]} | null>(null);
 
-  // Scanner State
+  // Scanner State (Now mostly UI state, data lives in CompanyProvider)
   const [isScanning, setIsScanning] = useState(false);
-  const [scannedFiles, setScannedFiles] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // SDR State
@@ -124,20 +125,13 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
           setIsScanning(true);
           addToast('info', `Uploading ${file.name} to JunAiKey OCR Engine...`, 'Document Scanner');
 
-          // Simulate scanning process
+          // Delegate to Universal File System
+          addFile(file, 'ResearchHub');
+          
           setTimeout(() => {
-              const newDoc = {
-                  id: Date.now(),
-                  name: file.name,
-                  size: (file.size / 1024).toFixed(1) + ' KB',
-                  status: 'processed',
-                  tags: ['GRI 305', 'Scope 1', 'Verified'],
-                  confidence: 98.5
-              };
-              setScannedFiles(prev => [newDoc, ...prev]);
               setIsScanning(false);
-              addToast('success', 'Document analysis complete. Entities extracted.', 'JunAiKey');
-          }, 3000);
+              addToast('success', 'Document analysis complete. Entities extracted and synced to My Files.', 'JunAiKey');
+          }, 1000); // Visual feedback delay, real logic happens in addFile
       }
   };
 
@@ -195,6 +189,10 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
           color: 'border-amber-500/30'
       },
   ];
+
+  // Filter files relevant to ResearchHub for display here (optional, or show all)
+  // For this view, we might just show recently scanned files
+  const scannedFiles = files.filter(f => f.sourceModule === 'ResearchHub');
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -528,7 +526,7 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
                       {isScanning ? <Loader2 className="w-10 h-10 text-celestial-purple animate-spin" /> : <Upload className="w-10 h-10 text-celestial-purple" />}
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">{language === 'zh-TW' ? '拖放或點擊上傳' : 'Drag & Drop or Click to Upload'}</h3>
-                  <p className="text-gray-400 mb-6 max-w-xs">{language === 'zh-TW' ? '支援 PDF, PNG, JPG。JunAiKey 將自動辨識 ESG 關鍵指標。' : 'Supports PDF, PNG, JPG. JunAiKey automatically extracts ESG metrics.'}</p>
+                  <p className="text-gray-400 mb-6 max-w-xs">{language === 'zh-TW' ? '支援 PDF, PNG, JPG。JunAiKey 將自動辨識 ESG 關鍵指標並同步至檔案中心。' : 'Supports PDF, PNG, JPG. JunAiKey automatically extracts ESG metrics and syncs to File Center.'}</p>
                   <button className="px-6 py-2 bg-celestial-purple text-white rounded-xl font-bold hover:bg-celestial-purple/80 transition-colors pointer-events-none">
                       {language === 'zh-TW' ? '選擇文件' : 'Select File'}
                   </button>
@@ -538,7 +536,7 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
               <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                       <ScanLine className="w-5 h-5 text-celestial-emerald" />
-                      {language === 'zh-TW' ? '掃描結果 (Live Stream)' : 'Scan Results'}
+                      {language === 'zh-TW' ? '最近掃描 (Live Stream)' : 'Scan Results'}
                   </h3>
                   
                   <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
@@ -556,11 +554,11 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
                                       </div>
                                       <div>
                                           <div className="text-sm font-bold text-white">{file.name}</div>
-                                          <div className="text-xs text-gray-400">{file.size} • {new Date().toLocaleTimeString()}</div>
+                                          <div className="text-xs text-gray-400">{file.size} • {new Date(file.uploadDate).toLocaleTimeString()}</div>
                                       </div>
                                   </div>
                                   <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded">
-                                      <CheckCircle className="w-3 h-3" /> {file.status}
+                                      <CheckCircle className="w-3 h-3" /> {file.status === 'processed' ? 'Processed' : 'Scanning'}
                                   </div>
                               </div>
                               

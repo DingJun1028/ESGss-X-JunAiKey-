@@ -1,16 +1,20 @@
 
-import React, { useState } from 'react';
-import { Language } from '../types';
-import { Stethoscope, CheckSquare, BarChart, Settings, Activity, ShieldCheck, Zap, ArrowRight, ClipboardCheck, Users, Target } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Language, View } from '../types';
+import { Stethoscope, CheckSquare, BarChart, Settings, Activity, ShieldCheck, Zap, ArrowRight, ClipboardCheck, Users, Target, ArrowRightLeft, Search } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { useCompany } from './providers/CompanyProvider';
 
 interface HealthCheckProps {
   language: Language;
+  onNavigate?: (view: View) => void;
 }
 
-export const HealthCheck: React.FC<HealthCheckProps> = ({ language }) => {
+export const HealthCheck: React.FC<HealthCheckProps> = ({ language, onNavigate }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
+  const { intelligenceBrief, setIntelligenceBrief } = useCompany(); // Get context
+  
   const [activeTab, setActiveTab] = useState<'service' | 'lite_check'>('service');
   const [formData, setFormData] = useState({
       strategy: 3,
@@ -19,6 +23,21 @@ export const HealthCheck: React.FC<HealthCheckProps> = ({ language }) => {
       env: 3
   });
   const [isGenerated, setIsGenerated] = useState(false);
+
+  // Handle incoming intelligence
+  useEffect(() => {
+      if (intelligenceBrief && intelligenceBrief.action === 'compare') {
+          setActiveTab('lite_check');
+          addToast('success', isZh ? `已載入 ${intelligenceBrief.targetCompany} 的數據模型` : `Loaded data model for ${intelligenceBrief.targetCompany}`, 'System Link');
+          // Simulate adjusting initial values based on external intelligence
+          setFormData({
+              strategy: 4, // Assume competitor pressures strategy
+              governance: 2, // Assume finding weakness
+              social: 3,
+              env: 3
+          });
+      }
+  }, [intelligenceBrief]);
 
   const handleGenerate = () => {
       setIsGenerated(true);
@@ -29,8 +48,38 @@ export const HealthCheck: React.FC<HealthCheckProps> = ({ language }) => {
       addToast('success', isZh ? '已發送顧問諮詢請求' : 'Consultation Request Sent', 'ESG Sunshine');
   };
 
+  const handleGoToIntel = () => {
+      if (onNavigate) {
+          setIntelligenceBrief(null); // Clear context
+          onNavigate(View.BUSINESS_INTEL);
+      }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in pb-12">
+        {/* Cross-Module Banner */}
+        {intelligenceBrief && (
+            <div className="p-4 bg-celestial-blue/10 border border-celestial-blue/30 rounded-xl flex items-center justify-between animate-fade-in">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-celestial-blue/20 rounded-lg text-celestial-blue">
+                        <ArrowRightLeft className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-white">{isZh ? '比較模式已啟動' : 'Comparative Mode Active'}</h4>
+                        <p className="text-xs text-gray-400">
+                            {isZh ? `正在針對 ${intelligenceBrief.targetCompany} 進行落差分析。` : `Running gap analysis against ${intelligenceBrief.targetCompany}.`}
+                        </p>
+                    </div>
+                </div>
+                <button 
+                    onClick={() => setIntelligenceBrief(null)} 
+                    className="text-xs text-gray-500 hover:text-white underline"
+                >
+                    {isZh ? '退出比較' : 'Exit Mode'}
+                </button>
+            </div>
+        )}
+
         <div className="flex justify-between items-end">
             <div className="flex items-center gap-4">
                 <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20">
@@ -183,7 +232,7 @@ export const HealthCheck: React.FC<HealthCheckProps> = ({ language }) => {
                     </button>
                 </div>
 
-                {isGenerated && (
+                {isGenerated ? (
                     <div className="glass-panel p-8 rounded-2xl border border-red-500/30 bg-slate-900/80 animate-fade-in flex flex-col justify-center items-center text-center">
                         <div className="w-24 h-24 rounded-full border-8 border-red-500/20 border-t-red-500 flex items-center justify-center mb-6">
                             <span className="text-3xl font-bold text-white">72</span>
@@ -194,9 +243,19 @@ export const HealthCheck: React.FC<HealthCheckProps> = ({ language }) => {
                                 ? '您的戰略清晰，但在數據完整性方面存在風險。建議升級至專業版健檢以獲得詳細改善清單。' 
                                 : 'Strategy is clear, but data integrity poses a risk. Upgrade to Pro Assessment for detailed action items.'}
                         </p>
-                        <button onClick={handleRequestService} className="flex items-center gap-2 text-red-400 font-bold hover:underline">
-                            <BarChart className="w-4 h-4" /> {isZh ? '預約完整健檢' : 'Book Full Check'}
-                        </button>
+                        <div className="flex flex-col gap-3 w-full">
+                            <button onClick={handleRequestService} className="w-full py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg font-bold border border-red-500/50 flex items-center justify-center gap-2 transition-all">
+                                <BarChart className="w-4 h-4" /> {isZh ? '預約完整健檢' : 'Book Full Check'}
+                            </button>
+                            <button onClick={handleGoToIntel} className="w-full py-2 bg-white/5 text-gray-400 hover:text-white rounded-lg text-sm flex items-center justify-center gap-2 transition-all">
+                                <Search className="w-4 h-4" /> {isZh ? '尋找標竿企業 (商情)' : 'Find Benchmarks (Intel)'}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="glass-panel p-8 rounded-2xl border border-white/5 flex flex-col justify-center items-center text-center opacity-50">
+                        <Activity className="w-16 h-16 text-gray-600 mb-4" />
+                        <p className="text-sm text-gray-500">{isZh ? '請填寫左側表單以生成報告' : 'Complete the form to generate report'}</p>
                     </div>
                 )}
             </div>

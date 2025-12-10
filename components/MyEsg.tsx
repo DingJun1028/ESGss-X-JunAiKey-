@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   CheckSquare, Calendar, Newspaper, Star, Crown, Users, ArrowRight, Sparkles, 
   ListTodo, Plus, Clock, ShieldCheck, Upload, Loader2, Image as ImageIcon, Trash2,
-  Bot, TrendingUp, AlertTriangle, Zap, CheckCircle, Target, Radio, Bookmark
+  Bot, TrendingUp, AlertTriangle, Zap, CheckCircle, Target, Radio, Bookmark, FolderOpen, FileText, Download, Eye, Briefcase
 } from 'lucide-react';
 import { Language, Quest, QuestRarity, View } from '../types';
 import { useCompany } from './providers/CompanyProvider';
@@ -146,15 +146,19 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
     quests, updateQuestStatus, completeQuest,
     todos, addTodo, toggleTodo, deleteTodo,
     lastBriefingDate, markBriefingRead,
-    toggleBookmark, bookmarks
+    toggleBookmark, bookmarks,
+    files, addFile, removeFile,
+    myIntelligence // Connect to My Intelligence
   } = useCompany();
   
   const { addToast } = useToast();
   const isZh = language === 'zh-TW';
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const questFileInputRef = useRef<HTMLInputElement>(null);
   const [newTodo, setNewTodo] = useState('');
   const [activeQuestId, setActiveQuestId] = useState<string | null>(null);
   const [showBriefing, setShowBriefing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'files'>('overview');
 
   useEffect(() => {
       const today = new Date().toDateString();
@@ -190,19 +194,23 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
       if (quest.status === 'completed' || quest.status === 'verifying') return;
       if (quest.requirement === 'image_upload') {
           setActiveQuestId(quest.id);
-          fileInputRef.current?.click();
+          questFileInputRef.current?.click();
       } else {
           completeQuest(quest.id, quest.xp);
           addToast('reward', isZh ? `完成任務！+${quest.xp} XP` : `Quest Complete! +${quest.xp} XP`, 'System');
       }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleQuestFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files[0] && activeQuestId) {
           const questId = activeQuestId;
           const quest = quests.find(q => q.id === questId);
           if (!quest) return;
           const file = e.target.files[0];
+          
+          // Add to Universal File System
+          addFile(file, 'MyEsg_Quest');
+
           updateQuestStatus(questId, 'verifying');
           addToast('info', isZh ? 'JunAiKey 視覺引擎正在分析...' : 'JunAiKey Vision analyzing...', 'Verification');
           const verification = await verifyQuestImage(quest.title, quest.desc, file, language);
@@ -215,15 +223,19 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
                addToast('error', verification.reason, 'Verification Failed');
           }
       }
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (questFileInputRef.current) questFileInputRef.current.value = '';
       setActiveQuestId(null);
   };
 
-  const intelligence = [
-      { id: 'intel-1', type: 'podcast', title: isZh ? '楊博的 ESG 創價實驗室 EP.24' : "Yang Bo's ESG Lab EP.24", meta: '15 min' },
-      { id: 'intel-2', type: 'course', title: isZh ? '最新課程：供應鏈碳管理' : 'New Course: Supply Chain Carbon', meta: 'Academy' },
-      { id: 'intel-3', type: 'news', title: isZh ? '歐盟碳邊境稅最新動態' : 'EU CBAM Latest Updates', meta: '2h ago' }
-  ];
+  // General File Upload
+  const handleGeneralFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          addFile(file, 'MyEsg_Upload');
+          addToast('success', isZh ? '檔案已上傳至全域系統' : 'File uploaded to Universal System', 'File Center');
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+  };
   
   const handleBookmark = (item: any) => {
       toggleBookmark({ id: item.id, type: item.type, title: item.title });
@@ -232,9 +244,7 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
   };
 
   const handleStarCourseClick = () => {
-      // Navigate to Academy which defaults to Star Course tab
       onNavigate(View.ACADEMY);
-      // Also open the external link as requested
       window.open('https://www.esgsunshine.com/courses/berkeley-tsisda', '_blank');
   };
 
@@ -249,36 +259,6 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
       { day: 'Thu', date: 26 },
       { day: 'Fri', date: 27 },
   ];
-
-  const DrYangReportCard = () => (
-      <div className="col-span-1 md:col-span-2 glass-panel p-6 rounded-2xl relative overflow-hidden group border-celestial-gold/30">
-          <div className="absolute inset-0 bg-gradient-to-r from-celestial-gold/10 via-transparent to-transparent opacity-50" />
-          <div className="absolute right-0 top-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
-              <Sparkles className="w-12 h-12 text-celestial-gold/20 animate-spin-slow" />
-          </div>
-          <div className="relative z-10 flex flex-col h-full justify-between">
-              <div>
-                  <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-celestial-gold text-black text-xs font-bold rounded flex items-center gap-1">
-                          <Crown className="w-3 h-3" /> Exclusive
-                      </span>
-                      <span className="text-xs text-celestial-gold">{isZh ? '每週更新' : 'Weekly Update'}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2 leading-tight">
-                      {isZh ? '來自楊博的永續觀察報告' : 'Sustainability Insights from Dr. Yang'}
-                  </h3>
-                  <p className="text-sm text-gray-300 line-clamp-2 mb-4">
-                      {isZh 
-                        ? '本週深度解析：CBAM 正式上路後的供應鏈衝擊與應對策略。為何企業需要立即啟動雙重重大性評估？' 
-                        : 'Deep Dive this week: Supply chain impacts of CBAM implementation and strategies. Why double materiality assessment is urgent.'}
-                  </p>
-              </div>
-              <button className="flex items-center gap-2 text-sm text-celestial-gold font-bold hover:underline">
-                  {isZh ? '閱讀完整報告' : 'Read Full Report'} <ArrowRight className="w-4 h-4" />
-              </button>
-          </div>
-      </div>
-  );
 
   return (
     <>
@@ -302,252 +282,376 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
                     </span>
                 </p>
             </div>
-            <div className="flex gap-3">
-                <div className="text-right">
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">Current Title</div>
-                    <div className="text-sm font-bold text-celestial-purple flex items-center justify-end gap-1">
-                        <Crown className="w-3 h-3" />
-                        {isZh ? '永續先鋒 (Sustainability Pioneer)' : 'Sustainability Pioneer'}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {/* Star Course Headline Banner */}
-        <div className="relative w-full h-72 md:h-80 rounded-2xl overflow-hidden group cursor-pointer border border-celestial-gold/30 shadow-2xl shadow-amber-900/20 mb-2" onClick={handleStarCourseClick}>
-            <div className="absolute inset-0">
-                <img src="https://thumbs4.imagebam.com/12/1d/de/ME18KXOE_t.jpg" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Berkeley Course" />
-                {/* Gradient Overlay for Text Readability */}
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
-            </div>
-            <div className="absolute inset-0 p-8 flex flex-col justify-center max-w-2xl relative z-10">
-                <div className="flex gap-2 mb-3">
-                     <span className="px-3 py-1 bg-celestial-gold text-black text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1 animate-pulse">
-                        <Crown className="w-3 h-3" /> Headline
-                    </span>
-                    <span className="px-3 py-1 bg-white/10 text-white text-xs font-bold rounded-full uppercase tracking-wider backdrop-blur-md border border-white/20">
-                        Limited Time
-                    </span>
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight">
-                    Berkeley x TSISDA <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-celestial-gold to-amber-200">International ESG Strategy Program</span>
-                </h2>
-                <p className="text-gray-300 mb-6 text-sm md:text-base line-clamp-2 max-w-xl">
-                    {isZh 
-                        ? '全球唯一整合 Berkeley Haas IBI 八大機構智慧與台灣永續實務。五合一訓練：策略 × 合規 × 創新 × 創價 × 顧問。立即報名雙證班。' 
-                        : 'The only global program integrating Berkeley Haas IBI wisdom with Taiwan\'s practical ESG implementation. 5-in-1 Strategy Training. Register for Dual Certification.'}
-                </p>
-                <button className="w-fit px-6 py-3 bg-celestial-gold hover:bg-amber-400 text-black font-bold rounded-xl transition-all flex items-center gap-2 group/btn shadow-lg">
-                    {isZh ? '立即查看' : 'View Now'}
-                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+            
+            {/* View Switcher */}
+            <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+                <button 
+                    onClick={() => setActiveTab('overview')} 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'overview' ? 'bg-celestial-purple text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <ListTodo className="w-4 h-4" /> {isZh ? '總覽' : 'Overview'}
+                </button>
+                <button 
+                    onClick={() => setActiveTab('files')} 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'files' ? 'bg-celestial-blue text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <FolderOpen className="w-4 h-4" /> {isZh ? '檔案中心' : 'File Center'}
                 </button>
             </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <div className="md:col-span-2 glass-panel p-0 rounded-2xl border-white/10 flex flex-col overflow-hidden relative">
-                <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center relative z-10">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-celestial-gold" />
-                        {isZh ? '我的任務 (My Quests)' : 'My Quests'}
-                    </h3>
-                    <div className="flex gap-2">
-                        <span className="text-[10px] px-2 py-1 bg-white/10 rounded text-gray-300 border border-white/5 flex items-center gap-1">
-                            <Users className="w-3 h-3" /> {isZh ? '系統指派' : 'System Assigned'}
-                        </span>
-                    </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 max-h-[300px] bg-slate-900/40">
-                    {quests.map(quest => (
-                        <div 
-                            key={quest.id} 
-                            onClick={() => handleQuestClick(quest)}
-                            className={`
-                                relative p-3 rounded-xl border transition-all cursor-pointer group flex items-center gap-4 overflow-hidden
-                                ${getRarityStyles(quest.rarity)}
-                                ${quest.status === 'completed' ? 'opacity-50 grayscale' : 'hover:scale-[1.01] hover:shadow-lg'}
-                            `}
+        {/* === FILES VIEW === */}
+        {activeTab === 'files' && (
+            <div className="space-y-6 animate-fade-in">
+                <div className="glass-panel p-6 rounded-2xl border-white/10">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <FolderOpen className="w-6 h-6 text-celestial-blue" />
+                                {isZh ? '全域檔案中心' : 'Universal File Center'}
+                            </h3>
+                            <p className="text-sm text-gray-400 mt-1">
+                                {isZh ? '所有上傳的文件皆彙整於此，並由 AI 自動分析補全。' : 'All uploaded files are aggregated here, automatically analyzed by AI.'}
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-4 py-2 bg-celestial-blue hover:bg-blue-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
                         >
-                            {quest.rarity === 'Legendary' && <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent animate-pulse pointer-events-none" />}
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 ${
-                                quest.status === 'completed' ? 'bg-emerald-500 border-emerald-400' :
-                                quest.status === 'verifying' ? 'bg-blue-500 border-blue-400 animate-pulse' :
-                                'bg-black/30 border-white/20'
-                            }`}>
-                                {quest.status === 'completed' ? <CheckSquare className="w-5 h-5 text-white" /> :
-                                quest.status === 'verifying' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> :
-                                quest.requirement === 'image_upload' ? <ImageIcon className="w-5 h-5 text-gray-300" /> :
-                                <Target className="w-5 h-5 text-gray-300" />
-                                }
+                            <Upload className="w-4 h-4" />
+                            {isZh ? '上傳檔案' : 'Upload File'}
+                        </button>
+                        <input type="file" ref={fileInputRef} className="hidden" onChange={handleGeneralFileUpload} />
+                    </div>
+
+                    <div className="space-y-3">
+                        {files.length === 0 ? (
+                            <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-xl">
+                                <FolderOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                                <p className="text-gray-500">{isZh ? '尚無檔案' : 'No files found'}</p>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    <span className={`text-xs font-bold uppercase tracking-wider px-1.5 rounded-sm border 
-                                        ${quest.rarity === 'Legendary' ? 'text-amber-400 border-amber-500/30' : 
-                                        quest.rarity === 'Epic' ? 'text-purple-400 border-purple-500/30' : 
-                                        quest.rarity === 'Rare' ? 'text-blue-400 border-blue-500/30' : 'text-gray-400 border-gray-600'}
-                                    `}>
-                                        {quest.type}
-                                    </span>
-                                    <h4 className={`text-sm font-bold truncate ${quest.status === 'completed' ? 'text-gray-500 line-through' : 'text-white'}`}>
-                                        {quest.title}
-                                    </h4>
-                                </div>
-                                <p className="text-xs text-gray-400 truncate">{quest.desc}</p>
-                            </div>
-                            <div className="text-right shrink-0">
-                                <div className="text-sm font-mono font-bold text-celestial-gold">+{quest.xp} XP</div>
-                                {quest.requirement === 'image_upload' && quest.status === 'active' && (
-                                    <div className="text-[10px] text-blue-400 flex items-center justify-end gap-1 mt-1">
-                                        <Upload className="w-3 h-3" /> {isZh ? '需上傳' : 'Upload'}
+                        ) : (
+                            files.map(file => (
+                                <div key={file.id} className="p-4 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group hover:border-celestial-blue/30 transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`p-3 rounded-xl ${file.status === 'scanning' ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-gray-300'}`}>
+                                            {file.status === 'scanning' ? <Loader2 className="w-6 h-6 animate-spin" /> : <FileText className="w-6 h-6" />}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-white text-sm mb-1">{file.name}</h4>
+                                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                <span>{file.size}</span>
+                                                <span>•</span>
+                                                <span className="text-celestial-blue">{file.sourceModule}</span>
+                                                <span>•</span>
+                                                <span>{new Date(file.uploadDate).toLocaleDateString()}</span>
+                                            </div>
+                                            {file.aiSummary && (
+                                                <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
+                                                    <Sparkles className="w-3 h-3" />
+                                                    {file.aiSummary}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-            </div>
-
-            <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <Radio className="w-5 h-5 text-red-400 animate-pulse" />
-                        {isZh ? '最新情報' : 'Latest Intel'}
-                    </h3>
-                </div>
-                <div className="flex-1 space-y-3">
-                    {intelligence.map(item => (
-                        <div key={item.id} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:border-celestial-purple/30 transition-all group flex gap-3">
-                            <div className="flex-1">
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
-                                        item.type === 'podcast' ? 'bg-purple-500/20 text-purple-300' :
-                                        item.type === 'course' ? 'bg-blue-500/20 text-blue-300' :
-                                        'bg-gray-500/20 text-gray-300'
-                                    }`}>
-                                        {item.type}
-                                    </span>
-                                    <span className="text-[10px] text-gray-500">{item.meta}</span>
+                                    <div className="flex items-center gap-3">
+                                        {file.tags.map(tag => (
+                                            <span key={tag} className="text-[10px] px-2 py-1 bg-white/10 rounded text-gray-300 hidden sm:block">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                        <button onClick={() => removeFile(file.id)} className="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-red-400 transition-colors">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <h4 className="text-sm font-medium text-white group-hover:text-celestial-purple transition-colors leading-snug">
-                                    {item.title}
-                                </h4>
-                            </div>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleBookmark(item); }}
-                                className={`self-start p-1 rounded hover:bg-white/10 ${bookmarks.some(b => b.id === item.id) ? 'text-celestial-gold' : 'text-gray-600 hover:text-celestial-gold'}`}
-                            >
-                                <Star className={`w-4 h-4 ${bookmarks.some(b => b.id === item.id) ? 'fill-current' : ''}`} />
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <ListTodo className="w-5 h-5 text-emerald-400" />
-                        {isZh ? '我的待辦 (To-Do)' : 'My To-Do'}
-                    </h3>
-                    <div className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">
-                        {todos.filter(t => t.done).length}/{todos.length}
+                            ))
+                        )}
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 max-h-[200px]">
-                    {todos.map(task => (
-                        <div key={task.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 group transition-colors">
-                            <div className="flex items-center gap-3 overflow-hidden cursor-pointer" onClick={() => toggleTodo(task.id)}>
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${task.done ? 'bg-emerald-500 border-emerald-500' : 'border-gray-500 hover:border-emerald-400'}`}>
-                                    {task.done && <CheckSquare className="w-3 h-3 text-white" />}
-                                </div>
-                                <span className={`text-sm truncate ${task.done ? 'text-gray-600 line-through' : 'text-gray-300'}`}>
-                                    {task.text}
+            </div>
+        )}
+
+        {/* === OVERVIEW VIEW === */}
+        {activeTab === 'overview' && (
+            <>
+                {/* Star Course Headline Banner */}
+                <div className="relative w-full h-72 md:h-80 rounded-2xl overflow-hidden group cursor-pointer border border-celestial-gold/30 shadow-2xl shadow-amber-900/20 mb-2" onClick={handleStarCourseClick}>
+                    <div className="absolute inset-0">
+                        <img src="https://thumbs4.imagebam.com/12/1d/de/ME18KXOE_t.jpg" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Berkeley Course" />
+                        {/* Gradient Overlay for Text Readability */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
+                    </div>
+                    <div className="absolute inset-0 p-8 flex flex-col justify-center max-w-2xl relative z-10">
+                        <div className="flex gap-2 mb-3">
+                            <span className="px-3 py-1 bg-celestial-gold text-black text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                                <Crown className="w-3 h-3" /> Headline
+                            </span>
+                            <span className="px-3 py-1 bg-white/10 text-white text-xs font-bold rounded-full uppercase tracking-wider backdrop-blur-md border border-white/20">
+                                Limited Time
+                            </span>
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight">
+                            Berkeley x TSISDA <br/>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-celestial-gold to-amber-200">International ESG Strategy Program</span>
+                        </h2>
+                        <p className="text-gray-300 mb-6 text-sm md:text-base line-clamp-2 max-w-xl">
+                            {isZh 
+                                ? '全球唯一整合 Berkeley Haas IBI 八大機構智慧與台灣永續實務。五合一訓練：策略 × 合規 × 創新 × 創價 × 顧問。立即報名雙證班。' 
+                                : 'The only global program integrating Berkeley Haas IBI wisdom with Taiwan\'s practical ESG implementation. 5-in-1 Strategy Training. Register for Dual Certification.'}
+                        </p>
+                        <button className="w-fit px-6 py-3 bg-celestial-gold hover:bg-amber-400 text-black font-bold rounded-xl transition-all flex items-center gap-2 group/btn shadow-lg">
+                            {isZh ? '立即查看' : 'View Now'}
+                            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="md:col-span-2 glass-panel p-0 rounded-2xl border-white/10 flex flex-col overflow-hidden relative">
+                        <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center relative z-10">
+                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <ShieldCheck className="w-5 h-5 text-celestial-gold" />
+                                {isZh ? '我的任務 (My Quests)' : 'My Quests'}
+                            </h3>
+                            <div className="flex gap-2">
+                                <span className="text-[10px] px-2 py-1 bg-white/10 rounded text-gray-300 border border-white/5 flex items-center gap-1">
+                                    <Users className="w-3 h-3" /> {isZh ? '系統指派' : 'System Assigned'}
                                 </span>
                             </div>
-                            <button onClick={() => deleteTodo(task.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-600 hover:text-red-400 transition-all">
-                                <Trash2 className="w-3 h-3" />
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 max-h-[300px] bg-slate-900/40">
+                            {quests.map(quest => (
+                                <div 
+                                    key={quest.id} 
+                                    onClick={() => handleQuestClick(quest)}
+                                    className={`
+                                        relative p-3 rounded-xl border transition-all cursor-pointer group flex items-center gap-4 overflow-hidden
+                                        ${getRarityStyles(quest.rarity)}
+                                        ${quest.status === 'completed' ? 'opacity-50 grayscale' : 'hover:scale-[1.01] hover:shadow-lg'}
+                                    `}
+                                >
+                                    {quest.rarity === 'Legendary' && <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent animate-pulse pointer-events-none" />}
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 ${
+                                        quest.status === 'completed' ? 'bg-emerald-500 border-emerald-400' :
+                                        quest.status === 'verifying' ? 'bg-blue-500 border-blue-400 animate-pulse' :
+                                        'bg-black/30 border-white/20'
+                                    }`}>
+                                        {quest.status === 'completed' ? <CheckSquare className="w-5 h-5 text-white" /> :
+                                        quest.status === 'verifying' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> :
+                                        quest.requirement === 'image_upload' ? <ImageIcon className="w-5 h-5 text-gray-300" /> :
+                                        <Target className="w-5 h-5 text-gray-300" />
+                                        }
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className={`text-xs font-bold uppercase tracking-wider px-1.5 rounded-sm border 
+                                                ${quest.rarity === 'Legendary' ? 'text-amber-400 border-amber-500/30' : 
+                                                quest.rarity === 'Epic' ? 'text-purple-400 border-purple-500/30' : 
+                                                quest.rarity === 'Rare' ? 'text-blue-400 border-blue-500/30' : 'text-gray-400 border-gray-600'}
+                                            `}>
+                                                {quest.type}
+                                            </span>
+                                            <h4 className={`text-sm font-bold truncate ${quest.status === 'completed' ? 'text-gray-500 line-through' : 'text-white'}`}>
+                                                {quest.title}
+                                            </h4>
+                                        </div>
+                                        <p className="text-xs text-gray-400 truncate">{quest.desc}</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className="text-sm font-mono font-bold text-celestial-gold">+{quest.xp} XP</div>
+                                        {quest.requirement === 'image_upload' && quest.status === 'active' && (
+                                            <div className="text-[10px] text-blue-400 flex items-center justify-end gap-1 mt-1">
+                                                <Upload className="w-3 h-3" /> {isZh ? '需上傳' : 'Upload'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <input type="file" ref={questFileInputRef} className="hidden" accept="image/*" onChange={handleQuestFileUpload} />
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <Radio className="w-5 h-5 text-celestial-purple animate-pulse" />
+                                {isZh ? '我的情報' : 'My Intelligence'}
+                            </h3>
+                            <button 
+                                onClick={() => onNavigate(View.BUSINESS_INTEL)}
+                                className="text-[10px] bg-celestial-purple/20 text-celestial-purple px-2 py-1 rounded hover:bg-celestial-purple/30 transition-colors"
+                            >
+                                {isZh ? '前往商情中心' : 'Go to Intel Center'}
                             </button>
                         </div>
-                    ))}
-                </div>
-                <form onSubmit={handleAddTodo} className="mt-4 pt-3 border-t border-white/10 relative">
-                    <input 
-                        type="text" 
-                        value={newTodo}
-                        onChange={(e) => setNewTodo(e.target.value)}
-                        placeholder={isZh ? "新增個人記事..." : "Add note..."}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-lg pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:border-celestial-emerald/50"
-                    />
-                    <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors">
-                        <Plus className="w-3 h-3" />
-                    </button>
-                </form>
-            </div>
-
-            <DrYangReportCard />
-
-            <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-red-400" />
-                    {isZh ? '我的日曆 (Calendar)' : 'My Calendar'}
-                </h3>
-                <div className="flex justify-between mb-4 pb-2 border-b border-white/5">
-                    {weekDays.map((d, i) => (
-                        <div key={i} className={`flex flex-col items-center p-1.5 rounded-lg ${d.active ? 'bg-red-500/20 text-white border border-red-500/40' : 'text-gray-500 hover:bg-white/5'}`}>
-                            <span className="text-[9px] uppercase tracking-wide">{d.day}</span>
-                            <span className={`text-xs font-bold ${d.active ? 'text-red-400' : ''}`}>{d.date}</span>
-                        </div>
-                    ))}
-                </div>
-                <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar max-h-[150px]">
-                    {calendarItems.map(ev => (
-                        <div key={ev.id} className="flex gap-3 items-center p-2 rounded-lg hover:bg-white/5 cursor-pointer group">
-                            <div className={`w-1 h-full min-h-[2rem] rounded-full ${ev.date === 25 ? 'bg-red-400' : 'bg-gray-600'}`} />
-                            <div className="flex-1">
-                                <div className="text-sm font-medium text-white group-hover:text-red-300 transition-colors">{ev.title}</div>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{ev.time}</span>
-                                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px]">{ev.type}</span>
+                        <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar max-h-[300px]">
+                            {myIntelligence.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500 text-xs">
+                                    {isZh ? '尚無儲存的情報。請前往商情中心生成報告。' : 'No saved intelligence. Go to Business Intel to generate reports.'}
                                 </div>
+                            ) : (
+                                myIntelligence.map(item => (
+                                    <div key={item.id} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:border-celestial-purple/30 transition-all group flex gap-3">
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
+                                                    item.type === 'report' ? 'bg-purple-500/20 text-purple-300' :
+                                                    item.type === 'competitor' ? 'bg-blue-500/20 text-blue-300' :
+                                                    'bg-gray-500/20 text-gray-300'
+                                                }`}>
+                                                    {item.type}
+                                                </span>
+                                                <span className="text-[10px] text-gray-500">{new Date(item.date).toLocaleDateString()}</span>
+                                            </div>
+                                            <h4 className="text-sm font-medium text-white group-hover:text-celestial-purple transition-colors leading-snug mb-1">
+                                                {item.title}
+                                            </h4>
+                                            <p className="text-[10px] text-gray-400 line-clamp-2">{item.summary}</p>
+                                        </div>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleBookmark(item); }}
+                                            className={`self-start p-1 rounded hover:bg-white/10 ${bookmarks.some(b => b.id === item.id) ? 'text-celestial-gold' : 'text-gray-600 hover:text-celestial-gold'}`}
+                                        >
+                                            <Star className={`w-4 h-4 ${bookmarks.some(b => b.id === item.id) ? 'fill-current' : ''}`} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <ListTodo className="w-5 h-5 text-emerald-400" />
+                                {isZh ? '我的待辦 (To-Do)' : 'My To-Do'}
+                            </h3>
+                            <div className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">
+                                {todos.filter(t => t.done).length}/{todos.length}
                             </div>
                         </div>
-                    ))}
-                </div>
-            </div>
-
-            <div className="glass-panel p-6 rounded-2xl border-white/10 bg-gradient-to-b from-slate-800/50 to-transparent">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Bookmark className="w-5 h-5 text-celestial-gold" />
-                    {isZh ? '我的收藏' : 'My Collection'}
-                </h3>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
-                    {bookmarks.length === 0 ? (
-                        <span className="text-xs text-gray-500 block text-center py-4">No bookmarks yet.</span>
-                    ) : (
-                        bookmarks.map((b) => (
-                            <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/5 hover:border-celestial-gold/30 group cursor-pointer">
-                                <Star className="w-3 h-3 text-celestial-gold fill-current" />
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-bold text-white truncate">{b.title}</div>
-                                    <div className="text-[9px] text-gray-500">{b.type.toUpperCase()} • {new Date(b.addedAt).toLocaleDateString()}</div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 max-h-[200px]">
+                            {todos.map(task => (
+                                <div key={task.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 group transition-colors">
+                                    <div className="flex items-center gap-3 overflow-hidden cursor-pointer" onClick={() => toggleTodo(task.id)}>
+                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${task.done ? 'bg-emerald-500 border-emerald-500' : 'border-gray-500 hover:border-emerald-400'}`}>
+                                            {task.done && <CheckSquare className="w-3 h-3 text-white" />}
+                                        </div>
+                                        <span className={`text-sm truncate ${task.done ? 'text-gray-600 line-through' : 'text-gray-300'}`}>
+                                            {task.text}
+                                        </span>
+                                    </div>
+                                    <button onClick={() => deleteTodo(task.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-600 hover:text-red-400 transition-all">
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); toggleBookmark(b); }}
-                                    className="p-1 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
-                                >
-                                    <Trash2 className="w-3 h-3" />
-                                </button>
+                            ))}
+                        </div>
+                        <form onSubmit={handleAddTodo} className="mt-4 pt-3 border-t border-white/10 relative">
+                            <input 
+                                type="text" 
+                                value={newTodo}
+                                onChange={(e) => setNewTodo(e.target.value)}
+                                placeholder={isZh ? "新增個人記事..." : "Add note..."}
+                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:border-celestial-emerald/50"
+                            />
+                            <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors">
+                                <Plus className="w-3 h-3" />
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Dr. Yang Report Card (Original) */}
+                    <div className="col-span-1 md:col-span-2 glass-panel p-6 rounded-2xl relative overflow-hidden group border-celestial-gold/30">
+                        <div className="absolute inset-0 bg-gradient-to-r from-celestial-gold/10 via-transparent to-transparent opacity-50" />
+                        <div className="absolute right-0 top-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <Sparkles className="w-12 h-12 text-celestial-gold/20 animate-spin-slow" />
+                        </div>
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="px-2 py-1 bg-celestial-gold text-black text-xs font-bold rounded flex items-center gap-1">
+                                        <Crown className="w-3 h-3" /> Exclusive
+                                    </span>
+                                    <span className="text-xs text-celestial-gold">{isZh ? '每週更新' : 'Weekly Update'}</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2 leading-tight">
+                                    {isZh ? '來自楊博的永續觀察報告' : 'Sustainability Insights from Dr. Yang'}
+                                </h3>
+                                <p className="text-sm text-gray-300 line-clamp-2 mb-4">
+                                    {isZh 
+                                        ? '本週深度解析：CBAM 正式上路後的供應鏈衝擊與應對策略。為何企業需要立即啟動雙重重大性評估？' 
+                                        : 'Deep Dive this week: Supply chain impacts of CBAM implementation and strategies. Why double materiality assessment is urgent.'}
+                                </p>
                             </div>
-                        ))
-                    )}
+                            <button className="flex items-center gap-2 text-sm text-celestial-gold font-bold hover:underline">
+                                {isZh ? '閱讀完整報告' : 'Read Full Report'} <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-red-400" />
+                            {isZh ? '我的日曆 (Calendar)' : 'My Calendar'}
+                        </h3>
+                        <div className="flex justify-between mb-4 pb-2 border-b border-white/5">
+                            {weekDays.map((d, i) => (
+                                <div key={i} className={`flex flex-col items-center p-1.5 rounded-lg ${d.active ? 'bg-red-500/20 text-white border border-red-500/40' : 'text-gray-500 hover:bg-white/5'}`}>
+                                    <span className="text-[9px] uppercase tracking-wide">{d.day}</span>
+                                    <span className={`text-xs font-bold ${d.active ? 'text-red-400' : ''}`}>{d.date}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar max-h-[150px]">
+                            {calendarItems.map(ev => (
+                                <div key={ev.id} className="flex gap-3 items-center p-2 rounded-lg hover:bg-white/5 cursor-pointer group">
+                                    <div className={`w-1 h-full min-h-[2rem] rounded-full ${ev.date === 25 ? 'bg-red-400' : 'bg-gray-600'}`} />
+                                    <div className="flex-1">
+                                        <div className="text-sm font-medium text-white group-hover:text-red-300 transition-colors">{ev.title}</div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                            <Clock className="w-3 h-3" />
+                                            <span>{ev.time}</span>
+                                            <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px]">{ev.type}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl border-white/10 bg-gradient-to-b from-slate-800/50 to-transparent">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <Bookmark className="w-5 h-5 text-celestial-gold" />
+                            {isZh ? '我的收藏' : 'My Collection'}
+                        </h3>
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                            {bookmarks.length === 0 ? (
+                                <span className="text-xs text-gray-500 block text-center py-4">No bookmarks yet.</span>
+                            ) : (
+                                bookmarks.map((b) => (
+                                    <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/5 hover:border-celestial-gold/30 group cursor-pointer">
+                                        <Star className="w-3 h-3 text-celestial-gold fill-current" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-bold text-white truncate">{b.title}</div>
+                                            <div className="text-[9px] text-gray-500">{b.type.toUpperCase()} • {new Date(b.addedAt).toLocaleDateString()}</div>
+                                        </div>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); toggleBookmark(b); }}
+                                            className="p-1 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </>
+        )}
     </div>
     </>
   );

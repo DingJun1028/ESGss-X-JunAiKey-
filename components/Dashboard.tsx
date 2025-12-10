@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { getMockMetrics, CHART_DATA, TRANSLATIONS } from '../constants';
-import { Wind, Activity, FileText, Zap, BrainCircuit, LayoutTemplate, Plus, Trash2, Grid, X, Globe, Map, ScanLine, FileCheck } from 'lucide-react';
+import { Wind, Activity, FileText, Zap, BrainCircuit, LayoutTemplate, Plus, Trash2, Grid, X, Globe, Map, ScanLine, FileCheck, Triangle, Sparkles, Sun } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
@@ -9,7 +9,7 @@ import { Language, DashboardWidget, WidgetType } from '../types';
 import { OmniEsgCell } from './OmniEsgCell';
 import { ChartSkeleton } from './ChartSkeleton';
 import { useToast } from '../contexts/ToastContext';
-import { analyzeDataAnomaly } from '../services/ai-service';
+import { analyzeDataAnomaly, generateLightInterpretation } from '../services/ai-service';
 import { useCompany } from './providers/CompanyProvider';
 import { GlobalOperations } from './GlobalOperations';
 
@@ -107,6 +107,102 @@ const IdpScannerWidget: React.FC<{ language: Language, isLoading: boolean }> = (
                     <FileCheck className="w-3 h-3 text-emerald-500" />
                     <span>OCR Active</span>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NEW: Light Prism Widget (Optical Data Interpretation) ---
+const LightPrismWidget: React.FC<{ language: Language, metrics: any[] }> = ({ language, metrics }) => {
+    const isZh = language === 'zh-TW';
+    const [interpretation, setInterpretation] = useState<any>(null);
+    const [isRefracting, setIsRefracting] = useState(false);
+    const { addToast } = useToast();
+
+    const handleRefract = async () => {
+        setIsRefracting(true);
+        addToast('info', isZh ? '正在將數據折射為光譜...' : 'Refracting data into light spectrum...', 'Optical Engine');
+        
+        try {
+            const result = await generateLightInterpretation(metrics, language);
+            setInterpretation(result);
+        } catch (e) {
+            addToast('error', 'Refraction Failed', 'Error');
+        } finally {
+            setIsRefracting(false);
+        }
+    };
+
+    return (
+        <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group flex flex-col h-full border-celestial-gold/20">
+            {/* Background Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-celestial-gold/5 via-transparent to-transparent pointer-events-none" />
+            
+            <div className="flex justify-between items-start mb-4 relative z-10">
+                <div className="flex items-center gap-2">
+                    <div className="p-2 bg-celestial-gold/10 rounded-lg">
+                        <Triangle className="w-5 h-5 text-celestial-gold" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-white leading-tight">{isZh ? '光學數據稜鏡' : 'Optical Data Prism'}</h3>
+                        <p className="text-[10px] text-gray-400">{isZh ? '光譜分析' : 'Spectral Analysis'}</p>
+                    </div>
+                </div>
+                <button 
+                    onClick={handleRefract}
+                    disabled={isRefracting}
+                    className="p-2 bg-white/5 hover:bg-celestial-gold/20 rounded-lg text-celestial-gold transition-all disabled:opacity-50"
+                    title="Refract Data"
+                >
+                    {isRefracting ? <Sparkles className="w-4 h-4 animate-spin" /> : <Sun className="w-4 h-4" />}
+                </button>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-center relative z-10">
+                {!interpretation ? (
+                    <div className="text-center space-y-4">
+                        <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
+                            {/* Prism Illustration */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent clip-path-triangle" />
+                            <Triangle className="w-16 h-16 text-white/20 stroke-1" />
+                            {isRefracting && (
+                                <div className="absolute top-1/2 left-0 w-full h-1 bg-white animate-pulse shadow-[0_0_15px_white]" />
+                            )}
+                        </div>
+                        <p className="text-xs text-gray-500 px-4">
+                            {isZh ? '點擊太陽圖示以進行數據折射與解讀' : 'Click the Sun icon to refract and interpret data.'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-4 animate-fade-in">
+                        <div className="text-center mb-2">
+                            <span className="text-xs font-mono text-celestial-gold uppercase tracking-widest">{interpretation.coreFrequency}</span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {interpretation.spectrum?.map((band: any, i: number) => (
+                                <div key={i} className="relative overflow-hidden rounded-lg bg-black/20 border border-white/5 p-2">
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                                        band.color === 'emerald' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 
+                                        band.color === 'amber' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 
+                                        'bg-purple-500 shadow-[0_0_10px_#a855f7]'
+                                    }`} />
+                                    <div className="pl-3">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className={`text-[10px] font-bold uppercase ${
+                                                band.color === 'emerald' ? 'text-emerald-400' : 
+                                                band.color === 'amber' ? 'text-amber-400' : 
+                                                'text-purple-400'
+                                            }`}>{band.wavelength}</span>
+                                            <span className="text-[9px] text-gray-500 font-mono">{band.intensity}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-300 leading-tight">{band.insight}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -220,16 +316,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
           )}
         </div>
 
-        <div className="glass-panel p-6 rounded-2xl relative flex flex-col min-h-[400px] gap-6">
-          {/* Feed Widget */}
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-white mb-4">{t.feedTitle}</h3>
-            {isLoading ? <OmniEsgCell mode="list" loading={true} /> : <FeedWidget handleAiAnalyze={handleAiAnalyze} />}
-          </div>
+        <div className="grid grid-rows-2 gap-6 h-full min-h-[400px]">
+            {/* Feed Widget (Top Half) */}
+            <div className="glass-panel p-6 rounded-2xl relative flex flex-col border-white/5">
+                <h3 className="text-lg font-semibold text-white mb-4">{t.feedTitle}</h3>
+                {isLoading ? <OmniEsgCell mode="list" loading={true} /> : <FeedWidget handleAiAnalyze={handleAiAnalyze} />}
+            </div>
 
-          {/* Enhanced IDP Scanner Widget */}
-          <IdpScannerWidget language={language} isLoading={isLoading} />
+            {/* Light Prism Widget (Bottom Half) - Replaces IDP Scanner in layout hierarchy or sits alongside */}
+            <LightPrismWidget language={language} metrics={liveMetrics} />
         </div>
+      </div>
+      
+      {/* IDP Scanner moved to a full width strip below if needed, or kept separate. 
+          For now, adding it as a secondary row item for completeness */}
+      <div className="mt-8">
+         <IdpScannerWidget language={language} isLoading={isLoading} />
       </div>
     </>
   );

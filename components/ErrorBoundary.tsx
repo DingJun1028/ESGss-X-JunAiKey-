@@ -1,31 +1,38 @@
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
-interface Props {
+interface ErrorBoundaryProps {
   children?: ReactNode;
   fallback?: ReactNode;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = {
     hasError: false
   };
 
-  public static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  public render() {
+  handleRetry = () => {
+    this.setState({ hasError: false, error: undefined });
+  };
+
+  handleReload = () => {
+    window.location.reload();
+  };
+
+  render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -43,14 +50,14 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
           <div className="flex gap-3">
             <button
-              onClick={() => this.setState({ hasError: false, error: undefined })}
+              onClick={this.handleRetry}
               className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all"
             >
               <RefreshCw className="w-4 h-4" />
               Retry Module
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={this.handleReload}
               className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-xl text-red-400 transition-all"
             >
               <Home className="w-4 h-4" />

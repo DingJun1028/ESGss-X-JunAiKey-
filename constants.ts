@@ -1,5 +1,63 @@
 
-import { Metric, Course, SystemHealth, Language, ReportSection, EsgCard } from './types';
+import { Metric, Course, SystemHealth, Language, ReportSection, EsgCard, CardSynergy } from './types';
+
+// --- NEW: Global Knowledge Base for Tooltips ---
+export const GLOBAL_GLOSSARY: Record<string, { definition: string; formula?: string; rationale?: string; tags?: string[] }> = {
+    'Scope 1': {
+        definition: "Direct GHG emissions occurring from sources that are owned or controlled by the company (e.g., combustion in boilers, furnaces, vehicles).",
+        formula: "Σ (Fuel Quantity × Emission Factor × GWP)",
+        rationale: "Crucial for identifying direct decarbonization opportunities (e.g., electrification) and meeting compliance mandates like CBAM.",
+        tags: ['GHG Protocol', 'Direct']
+    },
+    'Scope 2': {
+        definition: "Indirect GHG emissions from the generation of purchased electricity, steam, heat, or cooling consumed by the company.",
+        formula: "Σ (Electricity Consumption × Location/Market-based Factor)",
+        rationale: "Essential for evaluating energy efficiency strategies and RE100 commitments.",
+        tags: ['GHG Protocol', 'Indirect']
+    },
+    'Scope 3': {
+        definition: "All other indirect emissions that occur in a company's value chain (e.g., purchased goods, business travel, waste disposal).",
+        formula: "Σ (Activity Data × Spend-based or Average-data Factor)",
+        rationale: "Often >70% of total footprint. Managing this reduces supply chain risk and meets customer demands.",
+        tags: ['Value Chain', 'Upstream/Downstream']
+    },
+    'ESG Score': {
+        definition: "A composite score evaluating a company's environmental, social, and governance performance relative to industry peers.",
+        formula: "(0.4 × Environmental) + (0.3 × Social) + (0.3 × Governance)",
+        rationale: "High scores lower the cost of capital, attract green investment, and improve brand reputation.",
+        tags: ['Rating', 'KPI']
+    },
+    'Carbon Pricing': {
+        definition: "An internal shadow price applied to carbon emissions to evaluate investment decisions and drive decarbonization.",
+        formula: "Total Emissions (tCO2e) × Shadow Price ($/t)",
+        rationale: "Internalizes environmental costs to prepare for future carbon taxes and drive low-carbon innovation.",
+        tags: ['Finance', 'Risk']
+    },
+    'Supply Chain Coverage': {
+        definition: "The percentage of suppliers (by spend or emissions) who have reported primary carbon data.",
+        formula: "(Suppliers with Primary Data / Total Suppliers) × 100",
+        rationale: "Higher coverage improves Scope 3 accuracy, replacing estimates with real data for better decision making.",
+        tags: ['Engagement', 'Data Quality']
+    },
+    'Energy Anomaly': {
+        definition: "A detected deviation in energy consumption patterns significantly exceeding the baseline variance.",
+        formula: "|Current - Baseline| > (2 × Standard Deviation)",
+        rationale: "Early detection prevents equipment failure, reduces waste, and lowers unexpected operational costs.",
+        tags: ['AI', 'Monitoring']
+    },
+    'SROI': {
+        definition: "Social Return on Investment. A method for measuring values that are not traditionally reflected in financial statements.",
+        formula: "(Net Present Value of Benefits / Net Present Value of Investment)",
+        rationale: "Quantifies the 'invisible' value of social projects, justifying budgets for CSR and community engagement.",
+        tags: ['Impact', 'Social']
+    },
+    'CBAM': {
+        definition: "Carbon Border Adjustment Mechanism. EU regulation putting a fair price on carbon emitted during production of carbon intensive goods entering the EU.",
+        formula: "Imported Quantity × (Embedded Emissions - Free Allowances) × Weekly ETS Price",
+        rationale: "Critical for maintaining EU market access and avoiding heavy carbon tariffs on exports.",
+        tags: ['Regulation', 'EU']
+    }
+};
 
 export const TRANSLATIONS = {
   'en-US': {
@@ -15,7 +73,7 @@ export const TRANSLATIONS = {
       finance: 'ROI Simulator',
       audit: 'Audit Trail',
       goodwill: 'Goodwill Coin',
-      cardGame: 'ESG Sunshine Card Game',
+      cardGame: 'Good Era: Sustainable ESG',
       researchHub: 'Research Hub',
       academy: 'Academy',
       diagnostics: 'Diagnostics',
@@ -39,7 +97,7 @@ export const TRANSLATIONS = {
       finance: { title: 'Financial Simulator', desc: 'ROI analysis for decarbonization investments.' },
       audit: { title: 'Audit Trail', desc: 'SHA-256 data verification and confidence scoring.' },
       goodwill: { title: 'Goodwill Coin', desc: 'Tokenized rewards and redemption center.' },
-      cardGame: { title: 'ESG Sunshine Card Game', desc: 'Global systemization of impact into digital assets.' },
+      cardGame: { title: 'Good Era: Omni-OS v4.0', desc: 'Genesis Monolith: Minting knowledge & impact into eternal digital assets.' },
     },
     dashboard: {
       title: 'Executive Dashboard',
@@ -99,7 +157,7 @@ export const TRANSLATIONS = {
       finance: 'ROI 模擬 (ROI Simulator)',
       audit: '稽核軌跡 (Audit Trail)',
       goodwill: '善向幣 (Goodwill Coin)',
-      cardGame: '善向永續 卡牌遊戲',
+      cardGame: '善向紀元 永續ESG',
       researchHub: '研究中心 (Research Hub)',
       academy: '永續學院 (Academy)',
       diagnostics: '系統診斷 (Diagnostics)',
@@ -118,12 +176,12 @@ export const TRANSLATIONS = {
       talent: { title: '人材護照 (Talent Passport)', desc: '區塊鏈驗證證書與技能追蹤 (Blockchain-verified certificates)。' },
       carbon: { title: '碳資產管理 (Carbon Asset Mgmt)', desc: 'SBTi 路徑與內部碳定價模擬 (SBTi paths & Carbon Pricing)。' },
       report: { title: '報告生成 (Report Generator)', desc: 'JunAiKey 驅動之 GRI/SASB 報告草稿生成。' },
-      integration: { title: '集成中樞 (Integration Hub)', desc: 'IoT/ERP 連接與數據 ETL 流程 (IoT/ERP connections)。' },
+      integration: { title: '集成中樞 (Integration Hub)', desc: 'IoT/ERP連接與數據 ETL 流程 (IoT/ERP connections)。' },
       culture: { title: '文化推廣 (Culture Bot)', desc: '每日微學習與 ESG 文化推廣 (Micro-learning)。' },
       finance: { title: '財務模擬 (Financial Simulator)', desc: '減碳投資 ROI 分析與碳稅衝擊 (ROI analysis)。' },
       audit: { title: '稽核軌跡 (Audit Trail)', desc: 'SHA-256 數據驗證與信心分級 (Data verification)。' },
       goodwill: { title: '善向幣 (Goodwill Coin)', desc: '代幣化獎勵與兌換中心 (Tokenized rewards)。' },
-      cardGame: { title: '善向永續 卡牌遊戲', desc: '全域系統化：將影響力鑄造為數位資產。' },
+      cardGame: { title: '善向紀元：全知作業系統 v4.0', desc: '神聖契約：以代碼承載 ESG 知識，以遊戲驅動真實變革。' },
     },
     dashboard: {
       title: '企業決策儀表板 (Executive Dashboard)',
@@ -325,6 +383,34 @@ export const getEsgCards = (language: Language): EsgCard[] => {
       isPurified: true
     }
   ];
+};
+
+// --- Synergy System Data ---
+export const getCardSynergies = (lang: Language): CardSynergy[] => {
+    const isZh = lang === 'zh-TW';
+    return [
+        {
+            id: 'syn-carbon-master',
+            name: isZh ? '碳管理大師' : 'Carbon Master',
+            description: isZh ? '同時擁有追蹤器與交易卡，解鎖碳數據整合視圖。' : 'Combine Tracker & Trader for integrated carbon view.',
+            requiredCards: ['card-e1-001', 'card-e1-rec'],
+            effect: { type: 'score_boost', target: 'environmental', value: 5 }
+        },
+        {
+            id: 'syn-legend',
+            name: isZh ? '善向創始者' : 'Genesis Founder',
+            description: isZh ? '持有善向永續協議卡，獲得全域治理加成。' : 'Hold the Genesis Protocol for global governance buff.',
+            requiredCards: ['card-legend-001'],
+            effect: { type: 'score_boost', target: 'governance', value: 10 }
+        },
+        {
+            id: 'syn-eco-chain',
+            name: isZh ? '生態系鏈結' : 'Eco-Linkage',
+            description: isZh ? '連結供應鏈與人才，強化社會影響力。' : 'Connect supply chain & talent for social impact.',
+            requiredCards: ['card-g2-001', 'card-s1-001'],
+            effect: { type: 'score_boost', target: 'social', value: 8 }
+        }
+    ];
 };
 
 // Deprecated static export, kept for legacy if any, but modules should use getEsgCards(lang)

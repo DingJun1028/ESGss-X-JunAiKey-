@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   BarChart3, TrendingUp, TrendingDown, Minus, LucideIcon, 
   Activity, Puzzle, Tag, HelpCircle
@@ -8,6 +8,7 @@ import { OmniEsgTrait, OmniEsgDataLink, OmniEsgMode, OmniEsgConfidence, OmniEsgC
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { analyzeDataAnomaly } from '../services/ai-service';
 import { useToast } from '../contexts/ToastContext';
+import { GLOBAL_GLOSSARY } from '../constants';
 
 // Import Minimal Atomic Components
 import { DataLinkIndicator } from './minimal/DataLinkIndicator';
@@ -82,6 +83,25 @@ interface OmniEsgCellBaseProps {
 
 type OmniEsgCellProps = OmniEsgCellBaseProps & InjectedProxyProps;
 
+// Helper to check if string matches glossary key
+const resolveLabel = (label: string | UniversalLabel): UniversalLabel => {
+    if (typeof label === 'object') return label;
+    
+    // Attempt to match against glossary keys
+    const glossaryKey = Object.keys(GLOBAL_GLOSSARY).find(key => label.includes(key));
+    if (glossaryKey) {
+        const entry = GLOBAL_GLOSSARY[glossaryKey];
+        return {
+            text: label,
+            definition: entry.definition,
+            formula: entry.formula,
+            rationale: entry.rationale // Include the Why
+        };
+    }
+    
+    return { text: label };
+};
+
 const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
   const { 
     mode, label, value, subValue, confidence = 'high', verified = false, 
@@ -91,11 +111,13 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
   
   const { addToast } = useToast();
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isRichLabel = typeof label === 'object';
-  const labelText = isRichLabel ? (label as UniversalLabel).text : (label as string);
+  // Smart Label Resolution
+  const resolvedLabel = resolveLabel(label || 'Unknown');
+  const labelText = resolvedLabel.text;
+  const isRichLabel = !!(resolvedLabel.definition || resolvedLabel.formula || resolvedLabel.rationale);
   
-  // Memoize traits set if performance issue arises, but Set creation is cheap enough for now
   const activeTraits = Array.from(new Set([...traits, ...adaptiveTraits]));
 
   const handleInternalAiTrigger = async () => {
@@ -124,8 +146,9 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
     addToast('success', `Value updated. Neural weights adjusted.`, 'Universal Intelligence');
   };
 
+  // --- Interaction Handlers (Mouse & Touch) ---
   const handleMouseEnter = () => {
-      if (isRichLabel && (label as UniversalLabel).definition) {
+      if (isRichLabel) {
           setIsTooltipVisible(true);
           trackInteraction?.('hover');
       }
@@ -133,6 +156,27 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
 
   const handleMouseLeave = () => {
       setIsTooltipVisible(false);
+  };
+
+  const handleTouchStart = () => {
+      if (!isRichLabel) return;
+      touchTimer.current = setTimeout(() => {
+          setIsTooltipVisible(true);
+          trackInteraction?.('hover');
+      }, 600); // Long press duration
+  };
+
+  const handleTouchEnd = () => {
+      if (touchTimer.current) {
+          clearTimeout(touchTimer.current);
+          touchTimer.current = null;
+      }
+      if (isTooltipVisible) {
+          // Keep it visible for a moment then hide, or hide immediately on release?
+          // User requested "appear", implies hold to view or toggle. 
+          // Let's hide after delay to allow reading if finger blocked it.
+          setTimeout(() => setIsTooltipVisible(false), 2500); 
+      }
   };
 
   if (loading) {
@@ -172,16 +216,18 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
   `;
 
   const TooltipWrapper = () => (
-      isRichLabel ? <InsightTooltip label={label as UniversalLabel} isVisible={isTooltipVisible} /> : null
+      isRichLabel ? <InsightTooltip label={resolvedLabel} isVisible={isTooltipVisible} /> : null
   );
 
   const LabelWithIcon = () => (
       <div 
-        className="flex items-center gap-2 relative"
+        className="flex items-center gap-2 relative select-none"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-          <span className="text-gray-400 text-sm font-medium tracking-wide border-b border-transparent hover:border-gray-500 hover:text-gray-200 transition-colors cursor-help">
+          <span className={`text-gray-400 text-sm font-medium tracking-wide transition-colors ${isRichLabel ? 'border-b border-dashed border-gray-600 hover:text-white cursor-help' : ''}`}>
               {labelText}
           </span>
           {isRichLabel && (
@@ -317,9 +363,8 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
         <div className={`${wrapperClasses} p-4 rounded-xl flex flex-col justify-between h-full`} onClick={onClick} {...interactiveProps}>
             <AgentIndicator />
             <div className="flex justify-between items-start">
-               <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-                   <span className="text-xs text-gray-400 cursor-help border-b border-transparent hover:border-gray-500">{labelText}</span>
-                   <TooltipWrapper />
+               <div className="relative">
+                   <LabelWithIcon />
                </div>
                <QuantumAiTrigger onClick={onAiAnalyze} onInternalTrigger={handleInternalAiTrigger} label={labelText} />
             </div>

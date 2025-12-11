@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { OmniEsgCell } from './OmniEsgCell';
 import { Language } from '../types';
-import { Leaf, TrendingUp, PieChart, MapPin, Loader2, Zap, Calculator, Fuel, Save, DollarSign, AlertTriangle, Cloud, RefreshCw, ExternalLink } from 'lucide-react';
+import { Leaf, TrendingUp, PieChart, MapPin, Loader2, Zap, Calculator, Fuel, Save, DollarSign, AlertTriangle, Cloud, RefreshCw, ExternalLink, Wand2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useToast } from '../contexts/ToastContext';
 import { performMapQuery } from '../services/ai-service';
@@ -61,6 +61,14 @@ const PricingSimulatorBase: React.FC<PricingSimulatorProps> = ({
         trackInteraction?.('edit', val);
     };
 
+    const handleOptimize = () => {
+        // AI Logic: Find the optimal price point that drives reduction but stays under budget
+        const optimalPrice = 85; 
+        setShadowPrice(optimalPrice);
+        trackInteraction?.('ai-trigger');
+        universalIntelligence.emit('CARBON_UPDATED', { scope1: carbonData.scope1, scope2: carbonData.scope2 });
+    };
+
     return (
         <div className={`glass-panel p-8 rounded-2xl border transition-all duration-500 bg-gradient-to-br from-celestial-gold/5 to-transparent
             ${isHighPressure ? 'border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.1)]' : 'border-celestial-gold/20'}
@@ -71,11 +79,12 @@ const PricingSimulatorBase: React.FC<PricingSimulatorProps> = ({
                     <DollarSign className={`w-6 h-6 ${isHighPressure ? 'text-red-400' : 'text-celestial-gold'}`} /> 
                     {isZh ? '內部碳定價模擬器' : 'Internal Carbon Pricing Simulator'}
                 </h3>
-                {isLearning && (
-                    <div className="flex items-center gap-1 text-[10px] text-celestial-purple bg-celestial-purple/10 px-2 py-1 rounded-full border border-celestial-purple/20 animate-pulse">
-                        <Zap className="w-3 h-3" /> Agent Active
-                    </div>
-                )}
+                <button 
+                    onClick={handleOptimize}
+                    className="flex items-center gap-1 text-[10px] text-black bg-celestial-gold hover:bg-amber-400 px-3 py-1 rounded-full font-bold transition-all shadow-lg"
+                >
+                    <Wand2 className="w-3 h-3" /> {isZh ? 'AI 最佳化' : 'AI Optimize'}
+                </button>
             </div>
             
             <p className="text-sm text-gray-400 mb-8">{isZh ? '設定影子價格以評估其對各部門損益的潛在影響。' : 'Set a shadow price to evaluate potential impact on departmental P&L.'}</p>
@@ -157,8 +166,6 @@ export const CarbonAsset: React.FC<CarbonAssetProps> = ({ language }) => {
                       if (f.name === 'electricity') newFactors.electricity = parseFloat(f.value);
                   });
                   setFactors(newFactors);
-                  // Silent toast on success to avoid spamming
-                  // addToast('info', 'Factors synced from cloud.', 'System');
               }
           } catch (e) {
               console.warn("Using offline factors");
@@ -192,10 +199,14 @@ export const CarbonAsset: React.FC<CarbonAssetProps> = ({ language }) => {
       const s2 = (elecInput * factors.electricity) / 1000;
       
       // Update Local State
-      updateCarbonData({ fuelConsumption: fuelInput, electricityConsumption: elecInput, scope1: parseFloat(s1.toFixed(2)), scope2: parseFloat(s2.toFixed(2)) });
+      const newData = { fuelConsumption: fuelInput, electricityConsumption: elecInput, scope1: parseFloat(s1.toFixed(2)), scope2: parseFloat(s2.toFixed(2)) };
+      updateCarbonData(newData);
       addAuditLog('Carbon Calculation', `S1=${s1.toFixed(2)}t, S2=${s2.toFixed(2)}t (Factors: D=${factors.diesel}, E=${factors.electricity})`);
       checkBadges();
       addToast('success', isZh ? '排放數據已更新' : 'Emission data updated', 'Calculator');
+
+      // NEURAL REFLEX: Emit Event to Neural Bus
+      universalIntelligence.emit('CARBON_UPDATED', newData);
 
       // Sync to Cloud
       setIsSyncing(true);

@@ -1,5 +1,69 @@
 
-import { Metric, Course, SystemHealth, Language, ReportSection, EsgCard, CardSynergy } from './types';
+import { Metric, Course, SystemHealth, Language, ReportSection, EsgCard, CardSynergy, UniversalCrystal, View } from './types';
+
+// --- Universal Cores (The Crystals) ---
+export const UNIVERSAL_CORES: UniversalCrystal[] = [
+    {
+        id: 'core-perception',
+        name: 'Perception Core (Spectral Eye)',
+        type: 'Perception',
+        description: 'Grants the ability to see and digitize the physical world.',
+        state: 'Fragmented',
+        integrity: 45,
+        fragmentsCollected: 1,
+        fragmentsRequired: 4,
+        linkedModule: View.RESEARCH_HUB,
+        abilities: ['Spectral Scan (OCR)', 'Data Ingestion']
+    },
+    {
+        id: 'core-cognition',
+        name: 'Cognition Core (Deep Mind)',
+        type: 'Cognition',
+        description: 'Unlocks deep reasoning, simulation, and strategic foresight.',
+        state: 'Fragmented',
+        integrity: 60,
+        fragmentsCollected: 2,
+        fragmentsRequired: 5,
+        linkedModule: View.STRATEGY,
+        abilities: ['Multi-Agent Debate', 'Risk Heatmap', 'Carbon Pricing Sim']
+    },
+    {
+        id: 'core-memory',
+        name: 'Memory Core (Quantum Lattice)',
+        type: 'Memory',
+        description: 'Stores knowledge as atomic nodes for infinite recall and context.',
+        state: 'Restored',
+        integrity: 90,
+        fragmentsCollected: 5,
+        fragmentsRequired: 5,
+        linkedModule: View.MY_ESG,
+        abilities: ['Knowledge Graph', 'SDR Archive', 'Skill Embedding']
+    },
+    {
+        id: 'core-expression',
+        name: 'Expression Core (The Scribe)',
+        type: 'Expression',
+        description: 'Manifests insights into reports, visuals, and interfaces.',
+        state: 'Crystallizing',
+        integrity: 75,
+        fragmentsCollected: 3,
+        fragmentsRequired: 4,
+        linkedModule: View.REPORT,
+        abilities: ['Auto-Report Gen', 'Generative UI', 'Visual Refraction']
+    },
+    {
+        id: 'core-nexus',
+        name: 'Nexus Core (The Synapse)',
+        type: 'Nexus',
+        description: 'Orchestrates the entire system and connects to external reality.',
+        state: 'Fragmented',
+        integrity: 30,
+        fragmentsCollected: 1,
+        fragmentsRequired: 3,
+        linkedModule: View.INTEGRATION,
+        abilities: ['API Gateway', 'Role Switching', 'Audit Chain']
+    }
+];
 
 // --- NEW: Global Knowledge Base for Tooltips ---
 export const GLOBAL_GLOSSARY: Record<string, { definition: string; formula?: string; rationale?: string; tags?: string[] }> = {
@@ -73,7 +137,7 @@ export const TRANSLATIONS = {
       finance: 'ROI Simulator',
       audit: 'Audit Trail',
       goodwill: 'Goodwill Coin',
-      cardGame: 'Good Era Sustainable ESG',
+      cardGame: 'Core Restoration', // Renamed
       researchHub: 'Research Hub',
       academy: 'Academy',
       diagnostics: 'Diagnostics',
@@ -99,7 +163,7 @@ export const TRANSLATIONS = {
       finance: { title: 'Financial Simulator', desc: 'ROI analysis for decarbonization investments.' },
       audit: { title: 'Audit Trail', desc: 'SHA-256 data verification and confidence scoring.' },
       goodwill: { title: 'Goodwill Coin', desc: 'Tokenized rewards and redemption center.' },
-      cardGame: { title: 'Good Era: Omni-OS v4.0', desc: 'Genesis Monolith: Minting knowledge & impact into eternal digital assets.' },
+      cardGame: { title: 'Universal Core Restoration', desc: 'Collect Memory Fragment Crystals to restore the system to perfection.' },
     },
     dashboard: {
       title: 'Executive Dashboard',
@@ -159,7 +223,7 @@ export const TRANSLATIONS = {
       finance: 'ROI 模擬 (ROI Simulator)',
       audit: '稽核軌跡 (Audit Trail)',
       goodwill: '善向幣 (Goodwill Coin)',
-      cardGame: '善向紀元 永續ESG',
+      cardGame: '萬能核心修復', // Renamed
       researchHub: '研究中心 (Research Hub)',
       academy: '永續學院 (Academy)',
       diagnostics: '系統診斷 (Diagnostics)',
@@ -185,7 +249,7 @@ export const TRANSLATIONS = {
       finance: { title: '財務模擬 (Financial Simulator)', desc: '減碳投資 ROI 分析與碳稅衝擊 (ROI analysis)。' },
       audit: { title: '稽核軌跡 (Audit Trail)', desc: 'SHA-256 數據驗證與信心分級 (Data verification)。' },
       goodwill: { title: '善向幣 (Goodwill Coin)', desc: '代幣化獎勵與兌換中心 (Tokenized rewards)。' },
-      cardGame: { title: '善向紀元：全知作業系統 v4.0', desc: '神聖契約：以代碼承載 ESG 知識，以遊戲驅動真實變革。' },
+      cardGame: { title: '萬能核心修復計畫', desc: '收集萬能元件記憶碎片結晶，將系統修復至完美型態 (Zero Hallucination)。' },
     },
     dashboard: {
       title: '企業決策儀表板 (Executive Dashboard)',

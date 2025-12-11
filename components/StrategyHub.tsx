@@ -1,16 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { OmniEsgCell } from './OmniEsgCell';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { AlertTriangle, Users, TrendingUp, Globe, ShieldAlert, Target, ArrowRight, Layers, BrainCircuit, Sparkles, X, ChevronRight, FileText, Bot, DollarSign, Scale, MessageSquare, Leaf, CheckCircle } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { useCompany } from './providers/CompanyProvider';
-import { generateRiskMitigationPlan, generateAgentDebate } from '../services/ai-service';
+import { generateAgentDebate } from '../services/ai-service';
 import { marked } from 'marked';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { LockedFeature } from './LockedFeature';
 import { SubscriptionModal } from './SubscriptionModal';
+import { universalIntelligence } from '../services/evolutionEngine';
 
 interface StrategyHubProps {
   language: Language;
@@ -24,11 +25,12 @@ interface RiskNodeProps extends InjectedProxyProps {
     level: string;
     probability: string;
     onClick: () => void;
+    isFlashing?: boolean;
 }
 
 const RiskNodeBase: React.FC<RiskNodeProps> = ({ 
     name, level, probability, onClick, 
-    adaptiveTraits, trackInteraction, isHighFrequency, isAgentActive 
+    adaptiveTraits, trackInteraction, isHighFrequency, isAgentActive, isFlashing 
 }) => {
     const getBaseColor = (lvl: string) => {
         switch (lvl) {
@@ -54,6 +56,7 @@ const RiskNodeBase: React.FC<RiskNodeProps> = ({
                 relative group flex items-center justify-center rounded-xl border backdrop-blur-md cursor-pointer shadow-lg
                 ${getBaseColor(level)}
                 ${dynamicClasses}
+                ${isFlashing ? 'ring-4 ring-red-500/50 animate-[ping_1s_infinite]' : ''}
                 ${probability === 'high' ? 'col-start-3' : probability === 'medium' ? 'col-start-2' : 'col-start-1'}
                 ${level === 'critical' || level === 'high' ? 'row-start-1' : level === 'medium' ? 'row-start-2' : 'row-start-3'}
             `}
@@ -85,14 +88,37 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
   
   const [analyzingRisk, setAnalyzingRisk] = useState<string | null>(null);
   const [showSubModal, setShowSubModal] = useState(false);
+  const [carbonRiskEscalated, setCarbonRiskEscalated] = useState(false);
   
   // Debate State
   const [debateMessages, setDebateMessages] = useState<DebateMessage[]>([]);
   const [isDebating, setIsDebating] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Safe Interval Ref
+  const debateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Neural Reflex: Listen to Global System Events
+  useEffect(() => {
+      const sub = universalIntelligence.neuralBus$.subscribe(event => {
+          if (event.type === 'RISK_ESCALATED' && event.payload.source === 'CarbonAsset') {
+              setCarbonRiskEscalated(true);
+              addToast('warning', isZh ? '接收到碳資產模組的風險升級訊號' : 'Received Risk Escalation from Carbon Asset', 'Neural Reflex');
+              setTimeout(() => setCarbonRiskEscalated(false), 5000); // Stop flashing after 5s
+          }
+      });
+      return () => sub.unsubscribe();
+  }, [isZh, addToast]);
+
+  useEffect(() => {
+      // Cleanup on unmount
+      return () => {
+          if (debateIntervalRef.current) clearInterval(debateIntervalRef.current);
+      };
+  }, []);
 
   const risks = [
-    { id: 'risk-1', name: isZh ? '碳定價衝擊' : 'Carbon Pricing', level: carbonCredits < 1000 ? 'critical' : 'high', probability: 'high' },
+    { id: 'risk-1', name: isZh ? '碳定價衝擊' : 'Carbon Pricing', level: (carbonCredits < 1000 || carbonRiskEscalated) ? 'critical' : 'high', probability: 'high' },
     { id: 'risk-2', name: isZh ? '商譽風險' : 'Reputation', level: esgScores.social < 70 ? 'critical' : 'medium', probability: 'medium' },
     { id: 'risk-3', name: isZh ? '合規風險' : 'Compliance', level: esgScores.governance < 80 ? 'high' : 'low', probability: 'high' },
     { id: 'risk-4', name: isZh ? '極端氣候' : 'Extreme Weather', level: 'high', probability: 'medium' }, 
@@ -120,9 +146,11 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
 
   const runDebate = (script: DebateMessage[]) => {
       let i = 0;
-      const interval = setInterval(() => {
+      if (debateIntervalRef.current) clearInterval(debateIntervalRef.current);
+      
+      debateIntervalRef.current = setInterval(() => {
           if (i >= script.length) {
-              clearInterval(interval);
+              if (debateIntervalRef.current) clearInterval(debateIntervalRef.current);
               setIsDebating(false);
               return;
           }
@@ -158,6 +186,12 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
                     <Globe className="w-5 h-5 text-celestial-blue" />
                     {isZh ? '動態風險熱點圖' : 'Dynamic Risk Heatmap'}
                     </h3>
+                    {carbonRiskEscalated && (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold animate-pulse border border-red-500/50">
+                            <AlertTriangle className="w-3 h-3" />
+                            CRITICAL SIGNAL DETECTED
+                        </div>
+                    )}
                 </div>
                 
                 <div className="relative flex-1 min-h-[350px] w-full bg-slate-900/30 rounded-xl border border-white/5 p-8 flex items-center justify-center overflow-hidden">
@@ -186,6 +220,7 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
                                 name={risk.name}
                                 level={risk.level}
                                 probability={risk.probability}
+                                isFlashing={carbonRiskEscalated && risk.id === 'risk-1'}
                                 onClick={() => handleRiskClick(risk.name)}
                             />
                         ))}
@@ -240,7 +275,13 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
                               <p className="text-xs text-celestial-purple/80">{isZh ? `議題：${analyzingRisk}` : `Topic: ${analyzingRisk}`}</p>
                           </div>
                       </div>
-                      <button onClick={() => setAnalyzingRisk(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                      <button 
+                        onClick={() => {
+                            setAnalyzingRisk(null);
+                            if (debateIntervalRef.current) clearInterval(debateIntervalRef.current);
+                        }} 
+                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                      >
                           <X className="w-6 h-6 text-white" />
                       </button>
                   </div>
@@ -301,11 +342,20 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
                               <CheckCircle className="w-4 h-4 text-emerald-500" />
                               {isZh ? '共識已達成' : 'Consensus Reached'}
                           </div>
-                          <button onClick={() => setAnalyzingRisk(null)} className="px-4 py-2 text-gray-400 hover:text-white transition-colors">{isZh ? '忽略' : 'Ignore'}</button>
+                          <button 
+                            onClick={() => {
+                                setAnalyzingRisk(null);
+                                if (debateIntervalRef.current) clearInterval(debateIntervalRef.current);
+                            }} 
+                            className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                          >
+                              {isZh ? '忽略' : 'Ignore'}
+                          </button>
                           <button 
                             onClick={() => {
                                 addToast('success', isZh ? '決策已執行並寫入合約' : 'Decision Executed & Logged', 'Smart Contract');
                                 setAnalyzingRisk(null);
+                                if (debateIntervalRef.current) clearInterval(debateIntervalRef.current);
                             }} 
                             className="px-6 py-2 bg-celestial-purple text-white font-bold rounded-xl hover:bg-purple-600 transition-colors flex items-center gap-2 shadow-lg shadow-purple-500/20"
                           >

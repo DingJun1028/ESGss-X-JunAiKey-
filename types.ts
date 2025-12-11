@@ -5,7 +5,7 @@
 export enum View {
   MY_ESG = 'MY_ESG', 
   DASHBOARD = 'DASHBOARD',
-  CARD_GAME = 'CARD_GAME', // Renamed/Promoted from GAMIFICATION
+  CARD_GAME = 'CARD_GAME',
   RESEARCH_HUB = 'RESEARCH_HUB', 
   ACADEMY = 'ACADEMY', 
   DIAGNOSTICS = 'DIAGNOSTICS', 
@@ -23,15 +23,68 @@ export enum View {
   BUSINESS_INTEL = 'BUSINESS_INTEL',
   HEALTH_CHECK = 'HEALTH_CHECK',
   UNIVERSAL_TOOLS = 'UNIVERSAL_TOOLS',
-  FUNDRAISING = 'FUNDRAISING', // New
-  ABOUT_US = 'ABOUT_US',        // New
-  API_ZONE = 'API_ZONE',         // New: API Developer Portal
-  UNIVERSAL_BACKEND = 'UNIVERSAL_BACKEND', // New: Universal Management Backend Zone
-  ALUMNI_ZONE = 'ALUMNI_ZONE' // New: Alumni & LMS Zone
+  FUNDRAISING = 'FUNDRAISING',
+  ABOUT_US = 'ABOUT_US',
+  API_ZONE = 'API_ZONE',
+  UNIVERSAL_BACKEND = 'UNIVERSAL_BACKEND',
+  ALUMNI_ZONE = 'ALUMNI_ZONE'
 }
 
 export type Language = 'zh-TW' | 'en-US';
 export type UserTier = 'Free' | 'Pro' | 'Enterprise';
+
+// --- UNIVERSAL CRYSTAL ARCHITECTURE (萬能水晶架構) ---
+
+export type CrystalType = 'Perception' | 'Cognition' | 'Memory' | 'Expression' | 'Nexus';
+export type CrystalState = 'Fragmented' | 'Crystallizing' | 'Restored' | 'Perfected';
+
+export interface UniversalCrystal {
+    id: string;
+    name: string;
+    type: CrystalType;
+    description: string;
+    state: CrystalState;
+    integrity: number; // 0-100% (Zero Hallucination Metric)
+    fragmentsCollected: number;
+    fragmentsRequired: number;
+    linkedModule: View; // The functional module this crystal wraps
+    abilities: string[]; // Unlocked capabilities
+}
+
+// --- MCP (Model Context Protocol) Definitions ---
+
+export interface MCPTool {
+    name: string;
+    description: string;
+    inputSchema: any; // JSON Schema
+    requiresApproval?: boolean; // For HITL
+}
+
+export interface MCPResource {
+    uri: string;
+    name: string;
+    mimeType: string;
+    description?: string;
+}
+
+export interface MCPPrompt {
+    name: string; // e.g., "summarize-pdf"
+    description: string;
+    arguments: {
+        name: string;
+        description: string;
+        required: boolean;
+    }[];
+}
+
+export interface MCPMessage {
+    role: 'user' | 'assistant' | 'system' | 'tool';
+    content: string | { type: 'text' | 'image' | 'resource', data: any }[];
+    toolCallId?: string;
+    name?: string; // For tool outputs
+}
+
+// --- End MCP Definitions ---
 
 export interface UserProfile {
   name: string;
@@ -55,13 +108,13 @@ export interface Toast {
 export interface AppFile {
   id: string;
   name: string;
-  type: string; // pdf, png, jpg, csv
+  type: string;
   size: string;
   uploadDate: number;
-  sourceModule: string; // Where it came from (e.g., 'ResearchHub', 'UniversalTools')
+  sourceModule: string;
   status: 'scanning' | 'processed' | 'error';
   tags: string[];
-  aiSummary?: string; // AI generated insight (Gap Filling)
+  aiSummary?: string;
   confidence: number;
 }
 
@@ -87,6 +140,22 @@ export interface AuditLogEntry {
   verified: boolean;
 }
 
+// --- QUANTUM KNOWLEDGE ENGINE ---
+export interface QuantumNode {
+    id: string;
+    atom: string;
+    vector: string[];
+    weight: number;
+    connections: string[];
+    source: string;
+}
+
+export interface SemanticContext {
+    intent: string;
+    keywords: string[];
+    requiredConfidence: number;
+}
+
 // --- ESG Universal Card Architecture (MECE) ---
 export type ESGAttribute = 'Environmental' | 'Social' | 'Governance';
 export type ESGCategory = 'Green_Ops' | 'Eco_System' | 'Human_Capital' | 'Social_Impact' | 'Foundation' | 'Partnership';
@@ -95,29 +164,23 @@ export type MasteryLevel = 'Novice' | 'Apprentice' | 'Master';
 
 export interface EsgCard {
   id: string;
-  title: string;          // Name
+  title: string;
   description: string;
-  
   attribute: ESGAttribute;
   category: ESGCategory;
   rarity: CardRarity;
-  
-  // The Definition Integration (Museum Label)
-  term: string;           // e.g. "SROI"
-  definition: string;     // e.g. "Social Return on Investment..."
-  
-  imageUrl?: string;      // Optional override image
-  
+  term: string;
+  definition: string;
+  imageUrl?: string;
   stats: {
-    defense: number;      // Compliance Score
-    offense: number;      // Value Creation Score
+    defense: number;
+    offense: number;
   };
-  
-  isPurified?: boolean;   // Has passed the knowledge quiz
+  isPurified?: boolean;
   collectionSet: string;
 }
 
-// --- Synergy System (New) ---
+// --- Synergy System ---
 export interface SynergyEffect {
     type: 'score_boost' | 'resource_gen' | 'discount';
     target: 'environmental' | 'social' | 'governance' | 'credits' | 'budget';
@@ -128,7 +191,7 @@ export interface CardSynergy {
     id: string;
     name: string;
     description: string;
-    requiredCards: string[]; // Card IDs
+    requiredCards: string[];
     effect: SynergyEffect;
 }
 
@@ -213,7 +276,7 @@ export interface UniversalLabel {
   description?: string;
   definition?: string;
   formula?: string;
-  rationale?: string; // New: The "Why" behind the metric
+  rationale?: string;
 }
 
 export interface UniversalKnowledgeNode {
@@ -259,12 +322,21 @@ export interface Course {
   thumbnail: string;
 }
 
+// Updated ChatMessage to support structured tool calls/HITL
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'model' | 'system';
+  role: 'user' | 'model' | 'system' | 'tool';
   text: string;
   timestamp: Date;
   isThinking?: boolean;
+  toolCall?: {
+      id: string;
+      name: string;
+      args: any;
+      requiresApproval?: boolean;
+      status: 'pending' | 'approved' | 'rejected' | 'completed';
+  };
+  uiComponent?: any; // For Generative UI JSON payload
 }
 
 export interface SystemHealth {
@@ -294,7 +366,6 @@ export interface DashboardWidget {
   gridSize?: 'small' | 'medium' | 'large' | 'full';
 }
 
-// --- New AI Secretary Types ---
 export type InsightType = 'next_step' | 'optimization' | 'preparation';
 
 export interface ProactiveInsight {
@@ -304,6 +375,6 @@ export interface ProactiveInsight {
     description: string;
     actionLabel?: string;
     targetView?: View;
-    confidence: number; // 0-100%
+    confidence: number;
     impact: 'high' | 'medium' | 'low';
 }

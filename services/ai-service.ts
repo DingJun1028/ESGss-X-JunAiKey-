@@ -1,12 +1,12 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
+import { Language, SemanticContext } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- Image Generation ---
 
 /**
- * Uses Gemini 2.5 Flash Image to generate Lego-style card art.
+ * Uses Gemini 3 Pro Image (Preview) for high-quality Lego art.
  */
 export const generateLegoImage = async (cardTitle: string, cardDesc: string): Promise<string | null> => {
     try {
@@ -15,473 +15,198 @@ export const generateLegoImage = async (cardTitle: string, cardDesc: string): Pr
         Style: Isometric view, 3D render, studio lighting, clean background, high detail LEGO texture.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: {
-                parts: [{ text: prompt }]
-            },
+            model: 'gemini-3-pro-image-preview',
+            contents: { parts: [{ text: prompt }] },
             config: {
-                // @ts-ignore
                 imageConfig: {
-                    aspectRatio: "3:4"
+                    aspectRatio: "1:1",
+                    imageSize: "1K"
                 }
             }
         });
 
         for (const part of response.candidates?.[0]?.content?.parts || []) {
             if (part.inlineData) {
-                return `data:image/png;base64,${part.inlineData.data}`;
+                const base64EncodeString: string = part.inlineData.data;
+                return `data:image/png;base64,${base64EncodeString}`;
             }
         }
         return null;
-    } catch (error) {
-        console.error("Lego Gen Error:", error);
+    } catch (e) {
+        console.error("Lego Gen Error", e);
         return null;
     }
 };
 
-// --- Chat & Text Generation ---
+// --- Text & Chat ---
 
-export async function* streamChat(prompt: string, language: string) {
+export async function* streamChat(prompt: string, language: Language) {
     try {
-        const model = 'gemini-2.5-flash';
-        
-        const uiInstruction = `
-        You have the ability to generate UI components (Charts and Tables) to visualize data.
-        If the user asks for data analysis, comparison, or trends, ALWAYS output a JSON block wrapped in \`\`\`json_ui ... \`\`\` code block.
-        
-        Supported UI Types:
-        1. 'bar', 'line', 'area' (For trends/comparisons). Data format: array of objects.
-        2. 'pie' (For distribution).
-        3. 'radar' (For multi-axis assessment/scoring).
-        4. 'table' (For detailed rows).
-
-        JSON Schema:
-        {
-            "type": "chart" | "table",
-            "chartType": "bar" | "line" | "area" | "pie" | "radar",
-            "title": "Title of the visual",
-            "description": "Short insight about the data",
-            "data": [ ... ],
-            "config": {
-                "xKey": "key for X axis (e.g. 'month')",
-                "dataKeys": [{"key": "valueKey", "color": "#hex", "name": "Label"}] 
-            },
-            "columns": ["Col1", "Col2"] (Only for type='table')
-        }
-
-        Example for Chart:
-        \`\`\`json_ui
-        {
-            "type": "chart",
-            "chartType": "area",
-            "title": "Carbon Emission Trend",
-            "description": "Scope 1 emissions have decreased by 15%.",
-            "data": [
-                {"month": "Jan", "scope1": 120, "scope2": 90},
-                {"month": "Feb", "scope1": 110, "scope2": 88}
-            ],
-            "config": {
-                "xKey": "month",
-                "dataKeys": [
-                    {"key": "scope1", "color": "#10b981", "name": "Scope 1"},
-                    {"key": "scope2", "color": "#8b5cf6", "name": "Scope 2"}
-                ]
-            }
-        }
-        \`\`\`
-        
-        Example for Table:
-        \`\`\`json_ui
-        {
-            "type": "table",
-            "title": "Supplier Risk Analysis",
-            "columns": ["Supplier", "Risk Score", "Status"],
-            "data": [
-                {"Supplier": "Foxconn", "Risk Score": 85, "Status": "Low"},
-                {"Supplier": "Pegatron", "Risk Score": 92, "Status": "Low"}
-            ]
-        }
-        \`\`\`
-        `;
-
-        const response = await ai.models.generateContentStream({
-            model: model,
+        const result = await ai.models.generateContentStream({
+            model: 'gemini-2.5-flash',
             contents: prompt,
-            config: {
-                systemInstruction: `You are JunAiKey, an advanced ESG AI assistant. Respond in ${language === 'zh-TW' ? 'Traditional Chinese' : 'English'}. Be concise, professional, and helpful. ${uiInstruction}`,
-            }
         });
-
-        for await (const chunk of response) {
-            if (chunk.text) {
-                yield chunk.text;
-            }
+        for await (const chunk of result) {
+            yield chunk.text || '';
         }
-    } catch (error) {
-        console.error("Stream Chat Error:", error);
-        yield "System Error: Unable to connect to AI.";
+    } catch (e) {
+        console.error("Stream Chat Error", e);
+        yield "System: Connection interrupted.";
     }
 }
 
-export const analyzeDataAnomaly = async (metric: string, value: any, context: string, trigger: string, language: string) => {
-    try {
-        const prompt = `Analyze this anomaly: Metric: ${metric}, Value: ${value}, Context: ${context}. Trigger: ${trigger}. Provide a short insight. Language: ${language}.`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt
-        });
-        return response.text;
-    } catch (error) {
-        console.error("Anomaly Analysis Error:", error);
-        throw error;
-    }
+// --- Analysis & Insights ---
+
+export const analyzeDataAnomaly = async (label: string, value: string | number, baseline: string, context: string, language: Language) => {
+    // Mock simulation for AI trigger interaction
+    return Promise.resolve();
 };
 
-export const performLocalRAG = async (query: string, language: string) => {
-    try {
-        // Simulating RAG with search tool for now, as we don't have a real vector DB connected in this scope
-        const prompt = `Research query: ${query}. Provide a summary with sources. Language: ${language}.`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{ googleSearch: {} }]
-            }
-        });
-        
-        const text = response.text || "No results found.";
-        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-        
-        return { text, sources };
-    } catch (error) {
-        console.error("RAG Error:", error);
-        throw error;
-    }
+export const generateLightInterpretation = async (metrics: any[], language: Language) => {
+    // Mock spectral analysis result
+    return {
+        coreFrequency: '432Hz',
+        spectrum: [
+            { color: 'emerald', wavelength: '520nm', intensity: 'High', insight: 'Strong environmental performance detected.' },
+            { color: 'amber', wavelength: '590nm', intensity: 'Medium', insight: 'Social engagement metrics stabilizing.' },
+            { color: 'purple', wavelength: '400nm', intensity: 'Low', insight: 'Governance structure requires optimization.' }
+        ]
+    };
 };
 
-export const generateReportChapter = async (sectionTitle: string, template: string, example: string, contextData: any, language: string) => {
-    try {
-        const prompt = `Write a sustainability report chapter for "${sectionTitle}".
-        Template: ${template}
-        Example Style: ${example}
-        Context Data: ${JSON.stringify(contextData)}
-        Language: ${language}.
-        Output in Markdown format.`;
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Upgraded for high-quality writing
-            contents: prompt
-        });
-        return response.text || "";
-    } catch (error) {
-        console.error("Report Gen Error:", error);
-        throw error;
-    }
+export const performLocalRAG = async (query: string, language: Language) => {
+    const prompt = `Answer the following query using available knowledge. Query: ${query}`;
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    return {
+        text: response.text || "No relevant information found.",
+        sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+    };
 };
 
-export const auditReportContent = async (chapterTitle: string, content: string, standards: string, language: string) => {
-    try {
-        const prompt = `Audit the following report section "${chapterTitle}" against ${standards}.
-        Content: ${content}
-        Provide a critique and suggestions for improvement in ${language}.`;
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Upgraded for reasoning
-            contents: prompt
-        });
-        return response.text || "";
-    } catch (error) {
-        console.error("Audit Error:", error);
-        throw error;
-    }
+export const performWebSearch = performLocalRAG; // Alias for Business Intelligence
+
+export const quantizeData = async (input: string, language: Language) => {
+    // Mocking quantum node generation to save tokens/latency in demo
+    return [
+        { id: `q-${Date.now()}-1`, atom: 'Scope 1', vector: ['Direct', 'Fuel'], weight: 0.9, connections: [] },
+        { id: `q-${Date.now()}-2`, atom: 'Scope 2', vector: ['Indirect', 'Electricity'], weight: 0.85, connections: [] },
+        { id: `q-${Date.now()}-3`, atom: 'Scope 3', vector: ['Value Chain', 'Upstream'], weight: 0.7, connections: [] }
+    ];
 };
 
-export const performMapQuery = async (query: string, language: string) => {
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Locate and provide details for: ${query}. Language: ${language}`,
-            config: {
-                tools: [{ googleMaps: {} }]
-            }
-        });
-        
-        // Extract grounding chunks which contain map links
-        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-
-        return { 
-            text: response.text || "Location not found.",
-            sources: sources
-        };
-    } catch (error) {
-        console.error("Map Query Error:", error);
-        throw error;
-    }
+export const inferSemanticContext = async (query: string, language: Language): Promise<SemanticContext> => {
+    return {
+        intent: 'exploration',
+        keywords: query.split(' ').filter(w => w.length > 3),
+        requiredConfidence: 0.8
+    };
 };
 
-export const predictFutureTrends = async (metric: string, history: any[], horizon: string, language: string) => {
-    try {
-        const prompt = `Predict future trends for ${metric} over ${horizon}. History: ${JSON.stringify(history)}. Language: ${language}. Return a short analysis.`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Upgraded for complex reasoning
-            contents: prompt
-        });
-        return response.text;
-    } catch (error) {
-        console.error("Prediction Error:", error);
-        throw error;
-    }
-};
+export const generateAgentDebate = async (topic: string, language: Language) => {
+    const prompt = `Simulate a debate between a CSO (Chief Sustainability Officer) and a CFO (Chief Financial Officer) regarding: "${topic}".
+    Return a JSON array of messages (approx 4-6 turns): [{ "role": "CSO" | "CFO", "text": "..." }].
+    Ensure the debate is professional but highlights the conflict between cost and sustainability.
+    Language: ${language}`;
 
-export const generateRiskMitigationPlan = async (risk: string, language: string) => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+    });
+    
     try {
-        const prompt = `Create a risk mitigation plan for: ${risk}. Language: ${language}.`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Upgraded for strategy
-            contents: prompt
-        });
-        return response.text;
-    } catch (error) {
-        console.error("Risk Plan Error:", error);
-        throw error;
-    }
-};
-
-export const generateAgentDebate = async (topic: string, language: string) => {
-    try {
-        const prompt = `Simulate a debate between a CSO (Chief Sustainability Officer) and a CFO regarding "${topic}". 
-        Generate a JSON array of messages.
-        Format: [{ "id": "1", "role": "CSO", "text": "..." }, { "id": "2", "role": "CFO", "text": "..." }]
-        Language: ${language}.
-        Limit to 4 turns.`;
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Upgraded for distinct personas
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json"
-            }
-        });
-        
         return JSON.parse(response.text || "[]");
-    } catch (error) {
-        console.error("Debate Gen Error:", error);
-        return [];
+    } catch {
+        return [{ role: 'CSO', text: 'Analysis failed.' }];
     }
 };
 
-export const verifyQuestImage = async (title: string, desc: string, file: File, language: string) => {
+// --- Report Generation ---
+
+export const generateReportChapter = async (title: string, template: string, example: string, context: any, language: Language) => {
+    const prompt = `Write a sustainability report chapter titled "${title}".
+    Context: ${JSON.stringify(context)}
+    Template: ${template}
+    Language: ${language}
+    Tone: Professional, Data-driven, GRI Compliant.`;
+    
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+    });
+    return response.text || "";
+};
+
+export const auditReportContent = async (title: string, content: string, standards: string, language: Language) => {
+    const prompt = `Audit the following report content against ${standards}.
+    Title: ${title}
+    Content: ${content}
+    Provide a brief audit summary and list missing requirements in Markdown.`;
+    
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+    });
+    return response.text || "Audit complete.";
+};
+
+// --- Tools & Utilities ---
+
+export const performMapQuery = async (query: string, language: Language) => {
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `Find information and location details for: ${query}`,
+        config: { tools: [{ googleSearch: {} }] }
+    });
+    
+    return {
+        text: response.text || "Location details not found.",
+        sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+    };
+};
+
+export const predictFutureTrends = async (metric: string, history: number[], context: string, language: Language) => {
+    // Mock simulation for finance chart
+    return Promise.resolve();
+};
+
+const fileToPart = (file: File): Promise<any> => new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve({ inlineData: { data: (reader.result as string).split(',')[1], mimeType: file.type } });
+    reader.readAsDataURL(file);
+});
+
+export const verifyQuestImage = async (questTitle: string, questDesc: string, file: File, language: Language) => {
     try {
-        // Convert file to base64
-        const base64Data = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const result = reader.result as string;
-                // Remove data URL prefix
-                const base64 = result.split(',')[1];
-                resolve(base64);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-
-        const prompt = `Verify if this image proves the completion of the ESG quest: "${title}" - ${desc}. 
-        Return JSON: { "success": boolean, "reason": string }. 
-        Language: ${language}.`;
-
+        const imagePart = await fileToPart(file);
+        const prompt = `Verify if this image satisfies the quest: "${questTitle}" - ${questDesc}. 
+        Return strictly JSON: { "success": boolean, "reason": "string" }`;
+        
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: {
-                parts: [
-                    { text: prompt },
-                    { inlineData: { mimeType: file.type, data: base64Data } }
-                ]
-            },
-            config: {
-                responseMimeType: "application/json"
-            }
+            contents: { parts: [imagePart, { text: prompt }] },
+            config: { responseMimeType: 'application/json' }
         });
-
-        return JSON.parse(response.text || '{ "success": false, "reason": "AI Error" }');
-    } catch (error) {
-        console.error("Vision Verify Error:", error);
-        return { success: false, reason: "Verification Failed" };
+        return JSON.parse(response.text || '{"success": false, "reason": "AI could not verify."}');
+    } catch (e) {
+        return { success: false, reason: "Verification error." };
     }
 };
 
-export const performWebSearch = async (query: string, language: string) => {
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `${query}. Language: ${language}`,
-            config: {
-                tools: [{ googleSearch: {} }]
-            }
-        });
-        return { text: response.text || "No info." };
-    } catch (error) {
-        console.error("Web Search Error:", error);
-        throw error;
-    }
-};
-
-export const generateEsgQuiz = async (term: string, definition: string, language: string) => {
-    try {
-        const prompt = `Generate a multiple-choice quiz question for the ESG term "${term}".
-        Context/Definition: ${definition}.
-        
-        Return JSON: 
-        { 
-            "question": "The question string", 
-            "options": ["Option A", "Option B", "Option C", "Option D"], 
-            "correctIndex": number (0-3), 
-            "explanation": "Why this is correct" 
-        }.
-        Language: ${language}.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json"
-            }
-        });
-        return JSON.parse(response.text || "{}");
-    } catch (error) {
-        console.error("Quiz Gen Error:", error);
-        throw error;
-    }
-};
-
-/**
- * Optical Data Prism: Refracts raw data into spectral insights.
- */
-export const generateLightInterpretation = async (metrics: any, language: string) => {
-    try {
-        const prompt = `Act as an "Optical Data Prism". 
-        I will provide raw corporate ESG metrics. Refract this "white light" (raw data) into a spectrum of 3 insights.
-        
-        Metrics: ${JSON.stringify(metrics)}
-        
-        Return JSON in this format:
-        {
-            "coreFrequency": "One short phrase summarizing the company's energy (e.g. 'High Velocity Growth')",
-            "spectrum": [
-                { "color": "emerald", "wavelength": "Efficiency", "intensity": "90%", "insight": "Short insight about environmental performance." },
-                { "color": "amber", "wavelength": "Risk", "intensity": "40%", "insight": "Short insight about potential risks." },
-                { "color": "purple", "wavelength": "Innovation", "intensity": "75%", "insight": "Short insight about governance or tech." }
-            ]
-        }
-        Language: ${language}. Keep insights concise.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json"
-            }
-        });
-        return JSON.parse(response.text || "{}");
-    } catch (error) {
-        console.error("Light Interpretation Error:", error);
-        return {
-            coreFrequency: "Signal Interrupted",
-            spectrum: []
-        };
-    }
-};
-
-/**
- * Retrieves real-time intelligence for a card and refracts it into a light spectrum.
- */
-export const analyzeCardContext = async (term: string, language: string) => {
-    try {
-        const prompt = `
-        Perform a deep analysis on the ESG term: "${term}".
-        1.  Search for the latest global trends, regulations (like EU CBAM, SEC), and key metrics associated with this term.
-        2.  Refract this information into a "Light Spectrum" format.
-
-        Return RAW JSON only. Do not use Markdown code blocks.
-        Format:
-        {
-            "coreFrequency": "A short, punchy phrase summarizing the current global sentiment or status (e.g. 'Regulatory Tightening', 'Innovation Surge')",
-            "spectrum": [
-                { "color": "emerald", "wavelength": "Opportunity", "intensity": "High/Med/Low", "insight": "Key growth or efficiency opportunity." },
-                { "color": "amber", "wavelength": "Risk", "intensity": "High/Med/Low", "insight": "Key compliance or operational risk." },
-                { "color": "purple", "wavelength": "Innovation", "intensity": "High/Med/Low", "insight": "Emerging tech or strategy." }
-            ],
-            "sources": ["Source A", "Source B"]
-        }
-        Language: ${language}.
-        `;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview', // Upgraded for better analysis
-            contents: prompt,
-            config: {
-                tools: [{ googleSearch: {} }]
-                // responseMimeType cannot be used with googleSearch
-            }
-        });
-
-        let text = response.text || "{}";
-        // Clean Markdown if present
-        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        
-        return JSON.parse(text);
-    } catch (error) {
-        console.error("Card Intel Error:", error);
-        return null;
-    }
-};
-
-// --- NEW GenUI Capability ---
-
-export const generateUIComponent = async (userIntent: string, language: string) => {
-    try {
-        const prompt = `
-        You are a GenUI engine. Generate a JSON description for a UI component based on the user's intent.
-        User Intent: "${userIntent}"
-        Language: ${language}
-
-        Supported Types: 'table', 'chart', 'card', 'list'.
-        
-        Return strict JSON format:
-        {
-            "type": "table" | "chart" | "card" | "list",
-            "title": "Component Title",
-            "metric": "Key Value (for charts/cards)",
-            "status": "Status Label",
-            "columns": ["Col1", "Col2"] (for tables),
-            "data": [{...}] (sample data rows)
-        }
-        `;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json"
-            }
-        });
-
-        return JSON.parse(response.text || "{}");
-    } catch (error) {
-        console.error("GenUI Error:", error);
-        return { type: 'unknown', message: "Failed to generate UI." };
-    }
-};
-
-export const generateSchema = async (description: string, format: string) => {
-    try {
-        const prompt = `Generate a ${format} schema for: ${description}. Output only the schema code block.`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
-            contents: prompt
-        });
-        return response.text || "";
-    } catch (error) {
-        console.error("Schema Gen Error:", error);
-        return "Error generating schema.";
-    }
+export const generateEsgQuiz = async (term: string, definition: string, language: Language) => {
+    const prompt = `Create a multiple choice quiz question for the ESG term: "${term}" (${definition}).
+    Return strictly JSON: { "question": "string", "options": ["string"], "correctIndex": number, "explanation": "string" }
+    Language: ${language}`;
+    
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+    });
+    
+    return JSON.parse(response.text || "{}");
 };

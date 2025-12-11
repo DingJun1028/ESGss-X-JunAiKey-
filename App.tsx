@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { View, Language } from './types';
 import { Layout } from './components/Layout';
 import { LoginScreen } from './components/LoginScreen';
 import { ToastProvider } from './contexts/ToastContext';
 import { CompanyProvider } from './components/providers/CompanyProvider';
+import { UniversalAgentProvider } from './contexts/UniversalAgentContext';
 import { ToastContainer } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -34,7 +34,7 @@ const UniversalTools = lazy(() => import('./components/UniversalTools').then(mod
 const Fundraising = lazy(() => import('./components/Fundraising').then(module => ({ default: module.Fundraising })));
 const AboutUs = lazy(() => import('./components/AboutUs').then(module => ({ default: module.AboutUs })));
 const ApiZone = lazy(() => import('./components/ApiZone').then(module => ({ default: module.ApiZone })));
-const UniversalBackend = lazy(() => import('./components/UniversalBackend').then(module => ({ default: module.UniversalBackend })));
+const UniversalBackend = lazy(() => import('./components/UniversalBackend'));
 const AlumniZone = lazy(() => import('./components/AlumniZone').then(module => ({ default: module.AlumniZone })));
 
 const App: React.FC = () => {
@@ -57,57 +57,59 @@ const App: React.FC = () => {
   
   return (
     <ToastProvider>
-      {!isLoggedIn ? (
-        <ErrorBoundary>
-           <LoginScreen onLogin={() => setIsLoggedIn(true)} language={language} />
-        </ErrorBoundary>
-      ) : (
-        <CompanyProvider>
-          <OnboardingSystem />
-          <Layout 
-            currentView={currentView} 
-            onNavigate={setCurrentView}
-            language={language}
-            onToggleLanguage={handleToggleLanguage}
-          >
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingScreen message="Loading Module Resource..." />}>
-                {(() => {
-                  switch (currentView) {
-                    case View.MY_ESG: return <MyEsg language={language} onNavigate={setCurrentView} />;
-                    case View.DASHBOARD: return <Dashboard language={language} />;
-                    case View.CARD_GAME: return <Gamification language={language} />;
-                    case View.FUNDRAISING: return <Fundraising language={language} />;
-                    case View.ABOUT_US: return <AboutUs language={language} />;
-                    case View.API_ZONE: return <ApiZone language={language} />;
-                    case View.UNIVERSAL_BACKEND: return <UniversalBackend language={language} />;
-                    case View.RESEARCH_HUB: return <ResearchHub language={language} />;
-                    case View.ACADEMY: return <Academy language={language} />;
-                    case View.DIAGNOSTICS: return <Diagnostics language={language} />;
-                    case View.STRATEGY: return <StrategyHub language={language} />;
-                    case View.REPORT: return <ReportGen language={language} />;
-                    case View.CARBON: return <CarbonAsset language={language} />;
-                    case View.TALENT: return <TalentPassport language={language} />;
-                    case View.INTEGRATION: return <IntegrationHub language={language} />;
-                    case View.CULTURE: return <CultureBot language={language} />;
-                    case View.FINANCE: return <FinanceSim language={language} />;
-                    case View.AUDIT: return <AuditTrail language={language} />;
-                    case View.GOODWILL: return <GoodwillCoin language={language} />;
-                    case View.SETTINGS: return <Settings language={language} />;
-                    case View.YANG_BO: return <YangBoZone language={language} />;
-                    case View.BUSINESS_INTEL: return <BusinessIntel language={language} onNavigate={setCurrentView} />;
-                    case View.HEALTH_CHECK: return <HealthCheck language={language} onNavigate={setCurrentView} />;
-                    case View.UNIVERSAL_TOOLS: return <UniversalTools language={language} />;
-                    case View.ALUMNI_ZONE: return <AlumniZone language={language} />;
-                    default: return <MyEsg language={language} onNavigate={setCurrentView} />;
-                  }
-                })()}
-              </Suspense>
-            </ErrorBoundary>
-          </Layout>
-        </CompanyProvider>
-      )}
-      <ToastContainer />
+      <UniversalAgentProvider>
+        {!isLoggedIn ? (
+          <ErrorBoundary>
+             <LoginScreen onLogin={() => setIsLoggedIn(true)} language={language} />
+          </ErrorBoundary>
+        ) : (
+          <CompanyProvider>
+            <OnboardingSystem />
+            <Layout 
+              currentView={currentView} 
+              onNavigate={setCurrentView}
+              language={language}
+              onToggleLanguage={handleToggleLanguage}
+            >
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingScreen message="Loading Module Resource..." />}>
+                  {(() => {
+                    switch (currentView) {
+                      case View.MY_ESG: return <MyEsg language={language} onNavigate={setCurrentView} />;
+                      case View.DASHBOARD: return <Dashboard language={language} />;
+                      case View.CARD_GAME: return <Gamification language={language} />;
+                      case View.FUNDRAISING: return <Fundraising language={language} />;
+                      case View.ABOUT_US: return <AboutUs language={language} />;
+                      case View.API_ZONE: return <ApiZone language={language} />;
+                      case View.UNIVERSAL_BACKEND: return <UniversalBackend />;
+                      case View.RESEARCH_HUB: return <ResearchHub language={language} />;
+                      case View.ACADEMY: return <Academy language={language} />;
+                      case View.DIAGNOSTICS: return <Diagnostics language={language} />;
+                      case View.STRATEGY: return <StrategyHub language={language} />;
+                      case View.REPORT: return <ReportGen language={language} />;
+                      case View.CARBON: return <CarbonAsset language={language} />;
+                      case View.TALENT: return <TalentPassport language={language} />;
+                      case View.INTEGRATION: return <IntegrationHub language={language} />;
+                      case View.CULTURE: return <CultureBot language={language} />;
+                      case View.FINANCE: return <FinanceSim language={language} />;
+                      case View.AUDIT: return <AuditTrail language={language} />;
+                      case View.GOODWILL: return <GoodwillCoin language={language} />;
+                      case View.SETTINGS: return <Settings language={language} />;
+                      case View.YANG_BO: return <YangBoZone language={language} />;
+                      case View.BUSINESS_INTEL: return <BusinessIntel language={language} onNavigate={setCurrentView} />;
+                      case View.HEALTH_CHECK: return <HealthCheck language={language} onNavigate={setCurrentView} />;
+                      case View.UNIVERSAL_TOOLS: return <UniversalTools language={language} />;
+                      case View.ALUMNI_ZONE: return <AlumniZone language={language} />;
+                      default: return <MyEsg language={language} onNavigate={setCurrentView} />;
+                    }
+                  })()}
+                </Suspense>
+              </ErrorBoundary>
+            </Layout>
+          </CompanyProvider>
+        )}
+        <ToastContainer />
+      </UniversalAgentProvider>
     </ToastProvider>
   );
 };

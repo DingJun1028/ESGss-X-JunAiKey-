@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Database, BookOpen, Filter, Network, Share2, FileText, Globe, Loader2, ExternalLink, ScanLine, Upload, CheckCircle, Tag, Eye, Download, Check, RefreshCw, Briefcase, ArrowUpRight } from 'lucide-react';
-import { Language } from '../types';
+import { Search, Database, BookOpen, Filter, Network, Share2, FileText, Globe, Loader2, ExternalLink, ScanLine, Upload, CheckCircle, Tag, Eye, Download, Check, RefreshCw, Briefcase, ArrowUpRight, BrainCircuit, Zap } from 'lucide-react';
+import { Language, QuantumNode } from '../types';
 import { TRANSLATIONS, GLOBAL_SDR_MODULES } from '../constants';
 import { OmniEsgCell } from './OmniEsgCell';
 import { useToast } from '../contexts/ToastContext';
-import { performLocalRAG } from '../services/ai-service';
+import { performLocalRAG, quantizeData, inferSemanticContext } from '../services/ai-service';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { universalIntelligence } from '../services/evolutionEngine';
 import { useCompany } from './providers/CompanyProvider';
@@ -77,7 +77,7 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
   const { addFile, files } = useCompany(); // Hook into Global File System
-  const [activeTab, setActiveTab] = useState<'explorer' | 'scanner' | 'sdr' | 'cases'>('cases'); 
+  const [activeTab, setActiveTab] = useState<'explorer' | 'scanner' | 'sdr' | 'cases' | 'quantum'>('quantum'); 
   
   // Explorer State
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -94,8 +94,15 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
   const [installingSdr, setInstallingSdr] = useState<string | null>(null);
   const [isSyncingGlobal, setIsSyncingGlobal] = useState(false);
 
+  // Quantum Graph State
+  const [quantumNodes, setQuantumNodes] = useState<QuantumNode[]>([]);
+  const [isQuantizing, setIsQuantizing] = useState(false);
+  const [quantumInput, setQuantumInput] = useState('Scope 3 includes 15 categories such as purchased goods, capital goods, and business travel. It is often 70% of total emissions.');
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
+    // Load initial quantum nodes from memory if any
+    setQuantumNodes(universalIntelligence.getAllQuantumNodes());
     return () => clearTimeout(timer);
   }, []);
 
@@ -155,6 +162,40 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
       }, 2500);
   };
 
+  const handleQuantize = async () => {
+      if(!quantumInput.trim()) return;
+      setIsQuantizing(true);
+      addToast('info', isZh ? '正在進行知識量子化...' : 'Quantizing knowledge into atomic nodes...', 'Quantum Engine');
+      
+      try {
+          // 1. Deconstruct
+          const nodes = await quantizeData(quantumInput, language);
+          
+          // 2. Inject to Brain (Lattice Rebuild)
+          universalIntelligence.injectQuantumNodes(nodes, 'manual-input');
+          
+          // 3. Retrieve (Show all for visual effect)
+          setQuantumNodes(universalIntelligence.getAllQuantumNodes());
+          
+          addToast('success', isZh ? `生成了 ${nodes.length} 個知識原子` : `Generated ${nodes.length} Knowledge Atoms`, 'Lattice Updated');
+      } catch (e) {
+          addToast('error', 'Quantization Failed', 'Error');
+      } finally {
+          setIsQuantizing(false);
+      }
+  };
+
+  const handleSemanticSearch = async (query: string) => {
+      if(!query.trim()) return;
+      addToast('info', isZh ? '正在推斷語意上下文...' : 'Inferring semantic context...', 'Context Engine');
+      
+      const context = await inferSemanticContext(query, language);
+      addToast('info', isZh ? `上下文鎖定：${context.intent}` : `Context Locked: ${context.intent}`, 'Lattice Search');
+      
+      const results = universalIntelligence.retrieveContextualNodes(context);
+      setQuantumNodes(results); // Filter view to results
+  };
+
   const cases = [
       { 
           id: 1, 
@@ -191,7 +232,6 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
   ];
 
   // Filter files relevant to ResearchHub for display here (optional, or show all)
-  // For this view, we might just show recently scanned files
   const scannedFiles = files.filter(f => f.sourceModule === 'ResearchHub');
 
   return (
@@ -201,6 +241,13 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
         <div>
           <h2 className="text-3xl font-bold text-white mb-2">{t.title}</h2>
           <div className="flex gap-4 border-b border-white/10 overflow-x-auto no-scrollbar">
+              <button 
+                onClick={() => setActiveTab('quantum')}
+                className={`pb-2 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'quantum' ? 'text-celestial-gold border-b-2 border-celestial-gold' : 'text-gray-400 hover:text-white'}`}
+              >
+                  <BrainCircuit className="w-4 h-4" />
+                  {isZh ? '量子知識圖譜 (Quantum)' : 'Quantum Graph'}
+              </button>
               <button 
                 onClick={() => setActiveTab('cases')}
                 className={`pb-2 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'cases' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}`}
@@ -223,7 +270,7 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
               </button>
               <button 
                 onClick={() => setActiveTab('sdr')}
-                className={`pb-2 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'sdr' ? 'text-celestial-gold border-b-2 border-celestial-gold' : 'text-gray-400 hover:text-white'}`}
+                className={`pb-2 text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'sdr' ? 'text-gray-200 border-b-2 border-gray-200' : 'text-gray-400 hover:text-white'}`}
               >
                   <Database className="w-4 h-4" />
                   {language === 'zh-TW' ? 'SDR 全球數據庫' : 'SDR Global DB'}
@@ -255,6 +302,91 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
             </div>
         )}
       </div>
+
+      {activeTab === 'quantum' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+              <div className="glass-panel p-6 rounded-2xl border border-celestial-gold/30 flex flex-col h-full">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-celestial-gold" />
+                      {isZh ? '知識量子化引擎' : 'Knowledge Quantizer'}
+                  </h3>
+                  <textarea 
+                      value={quantumInput}
+                      onChange={(e) => setQuantumInput(e.target.value)}
+                      className="w-full h-32 bg-black/30 border border-white/10 rounded-xl p-3 text-xs text-gray-300 mb-4 focus:border-celestial-gold/50 outline-none"
+                      placeholder={isZh ? "輸入任意文本..." : "Input raw text..."}
+                  />
+                  <button 
+                      onClick={handleQuantize}
+                      disabled={isQuantizing}
+                      className="w-full py-3 bg-celestial-gold hover:bg-amber-400 text-black font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                      {isQuantizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
+                      {isZh ? '量子化 (Deconstruct)' : 'Quantize'}
+                  </button>
+                  
+                  <div className="mt-8 pt-6 border-t border-white/10">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{isZh ? '語意檢索 (One-Shot)' : 'Semantic Retrieval'}</h4>
+                      <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                          <input 
+                              type="text" 
+                              placeholder={isZh ? "輸入問題 (例如: 碳盤查範圍)" : "Ask query (e.g. Carbon Scope)"}
+                              onKeyDown={(e) => e.key === 'Enter' && handleSemanticSearch(e.currentTarget.value)}
+                              className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:border-celestial-gold/50 outline-none"
+                          />
+                      </div>
+                  </div>
+              </div>
+
+              <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/10 relative overflow-hidden bg-slate-900 min-h-[500px]">
+                  <div className="absolute top-4 right-4 z-10 flex gap-2">
+                      <div className="px-2 py-1 bg-celestial-gold/10 border border-celestial-gold/30 rounded text-[10px] text-celestial-gold font-mono">
+                          NODES: {quantumNodes.length}
+                      </div>
+                  </div>
+                  
+                  {/* Visualization Area */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-full h-full p-8 flex flex-wrap content-center justify-center gap-4 overflow-y-auto custom-scrollbar">
+                          {quantumNodes.length === 0 ? (
+                              <div className="text-center opacity-30">
+                                  <Network className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                                  <p>{isZh ? '等待輸入...' : 'Waiting for input...'}</p>
+                              </div>
+                          ) : (
+                              quantumNodes.map((node, i) => (
+                                  <div 
+                                      key={node.id} 
+                                      className="relative group cursor-pointer animate-fade-in hover:z-20"
+                                      style={{ animationDelay: `${i * 50}ms` }}
+                                  >
+                                      <div className={`
+                                          px-4 py-3 rounded-xl border backdrop-blur-md transition-all duration-300 hover:scale-110 shadow-lg
+                                          ${node.weight > 0.8 ? 'bg-celestial-gold/20 border-celestial-gold/50' : 
+                                            node.weight > 0.5 ? 'bg-celestial-purple/20 border-celestial-purple/50' : 
+                                            'bg-white/5 border-white/10'}
+                                      `}>
+                                          <div className="text-xs font-bold text-white max-w-[150px] leading-snug">{node.atom}</div>
+                                          <div className="flex gap-1 mt-2">
+                                              {node.vector.slice(0,2).map(v => (
+                                                  <span key={v} className="text-[9px] px-1.5 py-0.5 rounded bg-black/30 text-gray-300">{v}</span>
+                                              ))}
+                                          </div>
+                                      </div>
+                                      
+                                      {/* Connection Lines (Simulated visually) */}
+                                      {node.connections.length > 0 && (
+                                          <div className="absolute top-1/2 left-full w-4 h-px bg-white/10 group-hover:bg-white/50 transition-colors" />
+                                      )}
+                                  </div>
+                              ))
+                          )}
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {activeTab === 'cases' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">

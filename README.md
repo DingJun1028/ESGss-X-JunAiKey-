@@ -1,89 +1,88 @@
 
-# ESGss x JunAiKey 技術完全手冊 (Technical Whitepaper)
+# ESGss x JunAiKey: The Universal Core Architecture
 
-**版本:** v13.2.0 (Card Zone Expansion)  
-**類型:** Enterprise Sustainability Decision Support System (ES-DSS)  
-**核心引擎:** React 19 + Google Gemini 3 Pro + Universal Intelligence Engine + NoCodeBackend
-**系統狀態:** ✅ SYSTEM ONLINE | ☁️ CLOUD SYNC ACTIVE
+**Version:** v15.0.0 (The AIOS Awakening)
+**System Status:** ✅ SYSTEM ONLINE | 🧠 NEURAL SYNC ACTIVE
+**Core Philosophy:** **"Component as Agent" (元件即代理)**
 
 ---
 
 ## 1. 執行摘要 (Executive Summary)
 
-**ESGss (Esg Sunshine)** 是一個 AI 原生的企業永續轉型平台，旨在解決企業 ESG 數據孤島與「漂綠」風險。
-本版本升級了 **「善向永續 卡牌專區」** (ESG Sunshine Card Zone)，將無形的 ESG 知識與影響力具象化為可收藏、可交易的數位資產。同時，新增 **API 開發者專區**，開放第三方整合能力，並強化了企業儀表板的 **智能文檔處理 (IDP)** 可視化功能。
+ESGss 不僅是一個 SaaS 平台，它是一個運行於 **AIOS (AI Agent Operating System)** 之上的智慧有機體。我們採用 **MCP (Model Context Protocol)** 作為神經連結標準，將系統解構為 **「萬能元件核心 (Universal Component Cores)」**。
+
+每一個核心 (Core) 都是一個獨立的 AI 智能體，透過 **JunAiKey Kernel** 的統一排程與資源虛擬化，在前端即時動態組裝，形成了一個符合 **MECE (Mutually Exclusive, Collectively Exhaustive)** 原則的決策支援系統。
 
 ---
 
-## 2. 核心架構與哲學 (System Architecture)
+## 2. 萬能元件核心矩陣 (Universal Component Cores Matrix)
 
-### 2.1 奇點架構 (Singularity Architecture)
-我們堅持 **「萬能元件 (Universal Component) 即 萬能代理 (Universal Agent)」** 的設計哲學。
-*   **顯性 (UI):** 用戶看到的儀表板卡片、圖表、NFT 卡牌。
-*   **隱性 (AI):** 後端對應的 Gemini 3 Pro 推理線程，具備記憶、學習與演化能力。
+我們將系統能力解構為五大核心類別，涵蓋 AI 生命週期的每一個環節：
 
-### 2.2 雙核驅動 (Dual Core)
-1.  **JunAiKey Deep Reasoning Engine:** 負責非結構化數據分析、策略模擬與風險預測。
-2.  **Universal Intelligence Library:** 前端神經網絡狀態機，實現組件間的「心電感應」與即時狀態同步。
+### 👁️ I. 感知核心 (Perception Core)
+**職責：** 數據攝取、視覺辨識、訊號監聽 (MCP Resources)。
+**關鍵能力：** Vision, OCR, IoT Stream, Web Crawling.
 
----
+| 萬能元件 (Component) | 對應模組 (Module) | AI/MCP 功能描述 |
+| :--- | :--- | :--- |
+| **Spectral Scanner** | `ResearchHub` (Scanner) | **[Vision]** 將 PDF/圖片光學折射為結構化數據 (IDP)。 |
+| **Neural Ear** | `VoiceControl` | **[Audio]** 接收自然語言指令並導航系統。 |
+| **Data Lake Sensor** | `IntegrationHub` | **[Stream]** 透過 MCP 監聽 ERP/IoT 訊號，偵測數據異常 (Anomaly Detection)。 |
+| **Global Crawler** | `BusinessIntel` | **[Retrieval]** 全網掃描競爭對手動態與負面新聞。 |
 
-## 3. 功能模組詳解 (Modules)
+### 🧠 II. 認知核心 (Cognition Core)
+**職責：** 深度推理、策略模擬、多代理辯論 (AIOS Scheduler)。
+**關鍵能力：** Reasoning, Simulation, Game Theory.
 
-### 3.1 善向永續 卡牌專區 (Card Zone)
-*   **概念:** 將 ESG 知識點（如範疇三、CBAM）轉化為數位卡牌。
-*   **機制:**
-    *   **未獲得狀態:** 深灰色卡槽，中央浮雕「ESG Sunshine」Logo，呈現挖洞效果，象徵待填充的知識缺口。
-    *   **獲得狀態:** 全彩光學卡面，具備動態光影與 3D 翻轉效果。
-    *   **AI 賦能:** 點擊卡背「AI Deep Dive」可觸發 Gemini 3 進行深度知識解析。
+| 萬能元件 (Component) | 對應模組 (Module) | AI/MCP 功能描述 |
+| :--- | :--- | :--- |
+| **Strategy Oracle** | `StrategyHub` | **[Multi-Agent]** 模擬 CFO 與 CSO 辯論，產出風險熱點圖。 |
+| **Carbon Calculator** | `CarbonAsset` | **[Computation]** 依據 GHG Protocol 進行排放量精算與係數匹配。 |
+| **ROI Simulator** | `FinanceSim` | **[Prediction]** 執行蒙地卡羅模擬，預測碳稅對財務的衝擊。 |
+| **Health Diagnostician**| `HealthCheck` | **[Evaluation]** 針對企業體質進行雙軌 (合規/創價) 深度診斷。 |
 
-### 3.2 企業決策儀表板 (Dashboard)
-*   **智能文檔處理 (IDP) 視覺化:** 新增 PDF 光學解讀小工具，模擬 AI 掃描企業報告並即時提取數據的過程。
-*   **動態戰情室:** 整合全球據點監控與 AI 異常偵測。
+### 🧬 III. 記憶核心 (Memory Core)
+**職責：** 知識圖譜、資產沉澱、經驗學習 (Context Manager)。
+**關鍵能力：** RAG, Vector DB, Asset Minting.
 
-### 3.3 API 開發者專區 (API Zone)
-*   **目的:** 賦能企業 IT 團隊將 ESGss 引擎整合至現有 ERP/CRM 系統。
-*   **功能:** API Key 管理、配額監控、Webhook 配置、互動式文檔。
+| 萬能元件 (Component) | 對應模組 (Module) | AI/MCP 功能描述 |
+| :--- | :--- | :--- |
+| **Quantum Lattice** | `ResearchHub` (Quantum) | **[Knowledge Graph]** 將非結構化文本「量子化」為原子知識節點。 |
+| **Asset Vault** | `Gamification` (Card) | **[Minting]** 將知識點鑄造為 NFT 卡牌，記錄學習歷程。 |
+| **Skill Galaxy** | `TalentPassport` | **[Embedding]** 視覺化呈現技能向量與職涯路徑的匹配度。 |
+| **SDR Archive** | `ResearchHub` (SDR) | **[Vector DB]** 連接全球開源數據庫 (CDP/GRI)，建立本地知識庫。 |
 
----
+### 🗣️ IV. 表達核心 (Expression Core)
+**職責：** 內容生成、介面渲染、互動對話 (Generative UI)。
+**關鍵能力：** GenAI, GenUI, Visualization.
 
-## 4. 技術路線圖 (Roadmap)
+| 萬能元件 (Component) | 對應模組 (Module) | AI/MCP 功能描述 |
+| :--- | :--- | :--- |
+| **The Scribe** | `ReportGen` | **[Generation]** 自動撰寫符合 GRI/SASB 標準的永續報告書章節。 |
+| **GenUI Canvas** | `UniversalBackend` | **[Rendering]** 依據意圖 (Intent) 即時生成前端 UI 組件 (Charts/Tables)。 |
+| **Omni-Cell** | `Dashboard` | **[Micro-Interaction]** 具備自我解釋能力的最小數據單元 (Self-Explaining Data)。 |
+| **Intel Prism** | `UniversalCard` | **[Refraction]** 將單一關鍵字折射為多維度的光譜分析報告。 |
 
-### ✅ 已完成 (Deployed)
-*   [x] **Cloud Genesis:** 整合 NoCodeBackend 實現活動數據雲端同步。
-*   [x] **Card Zone 2.0:** 卡冊介面翻新，實裝「挖洞」未解鎖視覺效果。
-*   [x] **AI CoT:** 導入 Gemini 3 Pro 思維鏈 (Chain of Thought) 模式。
-*   [x] **Voice Control:** 全局語音指令導航。
+### 🔗 V. 連結核心 (Nexus Core)
+**職責：** 系統控制、外部串接、權限管理 (MCP Host)。
+**關鍵能力：** API Gateway, HITL, Orchestration.
 
-### 🚧 開發中 (In Progress)
-*   [ ] **Real-time IDP:** 將儀表板的 PDF 掃描動畫對接真實的後端 OCR 服務 (目前為模擬)。
-*   [ ] **Multi-Agent Debate:** 在策略中樞引入多個 AI 角色（如財務長 vs 永續長）進行辯論模擬。
-*   [ ] **Mobile Native App:** React Native 版本移植。
-
-### 🛠️ 除錯與優化 (Debugging & Optimization)
-*   **[Fixing]** 偶發性的 `useContext` 在模組切換時的狀態丟失問題。
-*   **[Improving]** 3D 卡牌在低階移動設備上的渲染幀率優化。
-*   **[Pending]** Safari 瀏覽器對 `backdrop-filter` 的支援度相容性調整。
-
----
-
-## 5. API 規格摘要 (API Specifications)
-
-### Activity Data Schema
-```typescript
-interface ActivityRecord {
-  date: string;   // ISO 8601
-  amount: number; // Consumption value
-  source: string; // e.g., 'iOS_App_Input'
-  memo?: string;  // Description
-}
-```
-
-### AI Model Config
-*   **Reasoning:** `gemini-3-pro-preview` (Thinking Budget: 2048 tokens)
-*   **Vision:** `gemini-2.5-flash` (For Document & Quest Verification)
+| 萬能元件 (Component) | 對應模組 (Module) | AI/MCP 功能描述 |
+| :--- | :--- | :--- |
+| **Universal Synapse** | `UniversalAgentContext` | **[Orchestration]** AIOS Kernel，協調上述所有核心的雙向同步。 |
+| **API Gateway** | `ApiZone` | **[Interface]** 管理外部系統對內部 AI 引擎的呼叫權限與配額。 |
+| **Audit Chain** | `AuditTrail` | **[HITL]** 關鍵決策的人在迴路 (Human-in-the-Loop) 審批與上鏈驗證。 |
+| **Role Switcher** | `AlumniZone` | **[Context Switch]** 動態切換系統視角 (學生/顧問/管理員)。 |
 
 ---
 
-*This document is auto-generated by the ESGss System Architect.*
-*System Status: ONLINE | Integrity: 100%*
+## 3. 技術架構升級 (AIOS + MCP)
+
+*   **AIOS Kernel:** 負責排程代理請求 (Scheduler)、管理上下文視窗 (Context Manager) 與記憶體置換。
+*   **MCP Protocol:** 透過 `tools/call` 與 `resources/read` 標準化所有外部連接。
+*   **Generative UI:** 聊天介面不再只是文字，而是根據 MCP 輸出動態渲染 React 組件 (Charts, Approval Cards)。
+*   **Zero Hallucination:** L3 驗證層強制所有輸出需經過 Grounding 與 HITL 審批。
+
+---
+
+*本文件由 JunAiKey 系統架構師自動生成，嚴格遵循 MECE 原則。*

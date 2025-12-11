@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getMockMetrics, CHART_DATA, TRANSLATIONS } from '../constants';
+import { getMockMetrics, TRANSLATIONS } from '../constants';
 import { Wind, Activity, FileText, Zap, BrainCircuit, LayoutTemplate, Plus, Trash2, Grid, X, Globe, Map as MapIcon, ScanLine, FileCheck, Triangle, Sparkles, Sun, Loader2 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -17,11 +17,11 @@ interface DashboardProps {
   language: Language;
 }
 
-// Reusable Render Components for Widgets (Memoized outside component)
-const MainChartWidget: React.FC = React.memo(() => (
+// Reusable Render Components for Widgets
+const MainChartWidget: React.FC<{ data: any[] }> = React.memo(({ data }) => (
   <div style={{ width: '100%', height: 300 }}>
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={CHART_DATA}>
+      <AreaChart data={data}>
         <defs>
           <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -39,8 +39,8 @@ const MainChartWidget: React.FC = React.memo(() => (
           contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
           itemStyle={{ color: '#e2e8f0' }}
         />
-        <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
-        <Area type="monotone" dataKey="baseline" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorBase)" />
+        <Area type="monotone" dataKey="value" name="Current Emissions" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
+        <Area type="monotone" dataKey="baseline" name="SBTi Target" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorBase)" />
       </AreaChart>
     </ResponsiveContainer>
   </div>
@@ -203,7 +203,7 @@ const LightPrismWidget: React.FC<{ language: Language, metrics: any[] }> = ({ la
                                                 band.color === 'amber' ? 'text-amber-400' : 
                                                 'text-purple-400'
                                             }`}>{band.wavelength}</span>
-                                            <span className="text-[9px] text-gray-500 font-mono">{band.intensity}</span>
+                                            <span className="text-xs text-gray-500 font-mono">{band.intensity}</span>
                                         </div>
                                         <p className="text-xs text-gray-300 leading-tight line-clamp-2">{band.insight}</p>
                                     </div>
@@ -221,7 +221,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
   const t = TRANSLATIONS[language].dashboard;
   const metrics = useMemo(() => getMockMetrics(language), [language]);
   const { addToast } = useToast();
-  const { customWidgets, addCustomWidget, removeCustomWidget, esgScores, totalScore } = useCompany();
+  const { customWidgets, addCustomWidget, removeCustomWidget, esgScores, totalScore, carbonData } = useCompany();
   const [isLoading, setIsLoading] = useState(true);
   
   const [viewMode, setViewMode] = useState<'executive' | 'global' | 'custom'>('executive');
@@ -271,14 +271,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
       if (labelText.includes('Governance') || labelText.includes('治理')) {
           return { ...m, value: esgScores.governance.toString() };
       }
-      if (labelText.includes('Social') || labelText.includes('社會')) {
-          return { ...m, value: esgScores.social > 80 ? 'High' : esgScores.social > 60 ? 'Medium' : 'Low' };
+      if (labelText.includes('Scope 1')) {
+          return { ...m, value: carbonData.scope1.toString() };
       }
       return m;
-  }), [metrics, totalScore, esgScores]); // Only recalculate when scores change
+  }), [metrics, totalScore, esgScores, carbonData]);
 
-  // ... rest of the render functions (renderExecutiveView, etc.)
-  
+  // Dynamic Chart Data based on current Carbon Data (Simulated Trend)
+  const dynamicChartData = useMemo(() => {
+      const base = carbonData.scope1 + carbonData.scope2;
+      return [
+          { name: 'Jan', value: base * 1.1, baseline: 450 },
+          { name: 'Feb', value: base * 1.05, baseline: 440 },
+          { name: 'Mar', value: base * 1.15, baseline: 460 },
+          { name: 'Apr', value: base * 0.95, baseline: 430 },
+          { name: 'May', value: base * 0.9, baseline: 420 },
+          { name: 'Jun', value: base * 0.85, baseline: 410 },
+          { name: 'Jul', value: base * 0.8, baseline: 400 }, // Current simulated
+      ];
+  }, [carbonData]);
+
   const renderExecutiveView = () => (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -319,7 +331,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
                   {t.chartTitle}
               </h3>
               <div className="flex-1 w-full min-h-[300px]">
-                 <MainChartWidget />
+                 <MainChartWidget data={dynamicChartData} />
               </div>
             </>
           )}
@@ -332,13 +344,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
                 {isLoading ? <OmniEsgCell mode="list" loading={true} /> : <FeedWidget handleAiAnalyze={handleAiAnalyze} />}
             </div>
 
-            {/* Light Prism Widget (Bottom Half) - Replaces IDP Scanner in layout hierarchy or sits alongside */}
+            {/* Light Prism Widget (Bottom Half) */}
             <LightPrismWidget language={language} metrics={liveMetrics} />
         </div>
       </div>
       
-      {/* IDP Scanner moved to a full width strip below if needed, or kept separate. 
-          For now, adding it as a secondary row item for completeness */}
       <div className="mt-8 h-48">
          <IdpScannerWidget language={language} isLoading={isLoading} />
       </div>
@@ -440,7 +450,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
                                 <div className="glass-panel p-6 rounded-2xl h-full border-white/5 flex flex-col">
                                     <h3 className="text-lg font-semibold text-white mb-4">{widget.title}</h3>
                                     <div className="flex-1 w-full min-h-[250px]">
-                                        <MainChartWidget />
+                                        <MainChartWidget data={dynamicChartData} />
                                     </div>
                                 </div>
                             );
@@ -484,7 +494,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
         </div>
       )}
 
-      {/* Widget Catalog Modal (Same as before) */}
+      {/* Widget Catalog Modal */}
       {isCatalogOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
               <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { 
   BarChart3, TrendingUp, TrendingDown, Minus, LucideIcon, 
   Activity, Puzzle, Tag, HelpCircle
@@ -17,7 +17,7 @@ import { QuantumAiTrigger } from './minimal/QuantumAiTrigger';
 import { QuantumValueEditor } from './minimal/QuantumValueEditor';
 import { InsightTooltip } from './minimal/InsightTooltip';
 
-// Static Theme Configuration (Optimization: Defined once)
+// Static Theme Configuration (Optimization: Defined once outside component)
 const THEMES = {
   emerald: { 
     border: 'group-hover:border-emerald-500/40', 
@@ -83,11 +83,22 @@ interface OmniEsgCellBaseProps {
 
 type OmniEsgCellProps = OmniEsgCellBaseProps & InjectedProxyProps;
 
-// Helper to check if string matches glossary key
+// Helper to check if string matches glossary key (Memoized inside useMemo usually, or kept static if data is static)
 const resolveLabel = (label: string | UniversalLabel): UniversalLabel => {
     if (typeof label === 'object') return label;
-    
     // Attempt to match against glossary keys
+    // Optimization: Quick check if string exists in glossary keys to avoid Object.keys overhead every time
+    if (GLOBAL_GLOSSARY[label]) {
+         const entry = GLOBAL_GLOSSARY[label];
+         return {
+            text: label,
+            definition: entry.definition,
+            formula: entry.formula,
+            rationale: entry.rationale
+        };
+    }
+    
+    // Fallback: substring match (slower, use sparingly or optimize glossary structure)
     const glossaryKey = Object.keys(GLOBAL_GLOSSARY).find(key => label.includes(key));
     if (glossaryKey) {
         const entry = GLOBAL_GLOSSARY[glossaryKey];
@@ -95,7 +106,7 @@ const resolveLabel = (label: string | UniversalLabel): UniversalLabel => {
             text: label,
             definition: entry.definition,
             formula: entry.formula,
-            rationale: entry.rationale // Include the Why
+            rationale: entry.rationale
         };
     }
     
@@ -113,78 +124,15 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const touchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Smart Label Resolution
-  const resolvedLabel = resolveLabel(label || 'Unknown');
+  // Optimization: Memoize label resolution
+  const resolvedLabel = useMemo(() => resolveLabel(label || 'Unknown'), [label]);
   const labelText = resolvedLabel.text;
   const isRichLabel = !!(resolvedLabel.definition || resolvedLabel.formula || resolvedLabel.rationale);
   
-  const activeTraits = Array.from(new Set([...traits, ...adaptiveTraits]));
+  // Optimization: Memoize active traits combination
+  const activeTraits = useMemo(() => Array.from(new Set([...traits, ...adaptiveTraits])), [traits, adaptiveTraits]);
 
-  const handleInternalAiTrigger = async () => {
-    trackInteraction?.('ai-trigger');
-    addToast('info', `Universal Agent analyzing node: ${labelText}...`, 'JunAiKey');
-    try {
-      await analyzeDataAnomaly(
-        labelText || 'Unknown Metric',
-        value || 'N/A',
-        "Historical Avg",
-        "Agent invoked via Neural Link.",
-        'en-US'
-      );
-      addToast('success', 'Agent memory updated. Traits evolved.', 'JunAiKey');
-    } catch (e) {
-      addToast('error', 'Agent disconnected.', 'System Error');
-    }
-  };
-
-  const handleEditStart = () => {
-    trackInteraction?.('edit');
-  };
-
-  const handleEditUpdate = (newValue: string | number) => {
-    trackInteraction?.('edit', newValue);
-    addToast('success', `Value updated. Neural weights adjusted.`, 'Universal Intelligence');
-  };
-
-  // --- Interaction Handlers (Mouse & Touch) ---
-  const handleMouseEnter = () => {
-      if (isRichLabel) {
-          setIsTooltipVisible(true);
-          trackInteraction?.('hover');
-      }
-  };
-
-  const handleMouseLeave = () => {
-      setIsTooltipVisible(false);
-  };
-
-  const handleTouchStart = () => {
-      if (!isRichLabel) return;
-      touchTimer.current = setTimeout(() => {
-          setIsTooltipVisible(true);
-          trackInteraction?.('hover');
-      }, 600); // Long press duration
-  };
-
-  const handleTouchEnd = () => {
-      if (touchTimer.current) {
-          clearTimeout(touchTimer.current);
-          touchTimer.current = null;
-      }
-      if (isTooltipVisible) {
-          // Keep it visible for a moment then hide, or hide immediately on release?
-          // User requested "appear", implies hold to view or toggle. 
-          // Let's hide after delay to allow reading if finger blocked it.
-          setTimeout(() => setIsTooltipVisible(false), 2500); 
-      }
-  };
-
-  if (loading) {
-    return <div className={`h-24 w-full bg-white/5 animate-pulse rounded-xl ${className}`} />;
-  }
-
-  const theme = getTheme(color);
-  
+  // Derived state (Booleans) - Fast enough to compute, no memo needed unless expensive
   const isGapFilling = activeTraits.includes('gap-filling');
   const isTagging = activeTraits.includes('tagging');
   const isPerformance = activeTraits.includes('performance');
@@ -193,17 +141,43 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
   const isBridging = activeTraits.includes('bridging');
   const isSeamless = activeTraits.includes('seamless');
 
-  const interactiveProps = onClick ? {
-      role: 'button',
-      tabIndex: 0,
-      onKeyDown: (e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onClick();
-          }
-      },
-      'aria-label': `${labelText}, value ${value}`
-  } : {};
+  const theme = getTheme(color);
+
+  const handleInternalAiTrigger = () => {
+    trackInteraction?.('ai-trigger');
+    addToast('info', `Universal Agent analyzing node: ${labelText}...`, 'JunAiKey');
+    // ... async logic kept separate from render
+    analyzeDataAnomaly(
+        labelText || 'Unknown Metric',
+        value || 'N/A',
+        "Historical Avg",
+        "Agent invoked via Neural Link.",
+        'en-US'
+    ).then(() => {
+        addToast('success', 'Agent memory updated. Traits evolved.', 'JunAiKey');
+    }).catch(() => {
+        addToast('error', 'Agent disconnected.', 'System Error');
+    });
+  };
+
+  const handleEditStart = () => trackInteraction?.('edit');
+  const handleEditUpdate = (newValue: string | number) => {
+    trackInteraction?.('edit', newValue);
+    addToast('success', `Value updated. Neural weights adjusted.`, 'Universal Intelligence');
+  };
+
+  const handleMouseEnter = () => { if (isRichLabel) { setIsTooltipVisible(true); trackInteraction?.('hover'); } };
+  const handleMouseLeave = () => setIsTooltipVisible(false);
+  const handleTouchStart = () => {
+      if (!isRichLabel) return;
+      touchTimer.current = setTimeout(() => { setIsTooltipVisible(true); trackInteraction?.('hover'); }, 600);
+  };
+  const handleTouchEnd = () => {
+      if (touchTimer.current) { clearTimeout(touchTimer.current); touchTimer.current = null; }
+      if (isTooltipVisible) setTimeout(() => setIsTooltipVisible(false), 2500);
+  };
+
+  if (loading) return <div className={`h-24 w-full bg-white/5 animate-pulse rounded-xl ${className}`} />;
 
   const wrapperClasses = `
     group relative overflow-visible transition-all duration-500 ease-out focus:outline-none focus:ring-2 focus:ring-celestial-purple/50
@@ -215,11 +189,8 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
     ${className}
   `;
 
-  const TooltipWrapper = () => (
-      isRichLabel ? <InsightTooltip label={resolvedLabel} isVisible={isTooltipVisible} /> : null
-  );
-
-  const LabelWithIcon = () => (
+  // Sub-components memoized to prevent re-creation
+  const LabelWithIcon = (
       <div 
         className="flex items-center gap-2 relative select-none"
         onMouseEnter={handleMouseEnter}
@@ -233,26 +204,23 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
           {isRichLabel && (
               <HelpCircle className="w-3 h-3 text-gray-600 group-hover:text-celestial-gold transition-colors opacity-50 group-hover:opacity-100" />
           )}
-          <TooltipWrapper />
+          {isRichLabel && <InsightTooltip label={resolvedLabel} isVisible={isTooltipVisible} />}
       </div>
   );
 
-  // Agent State Indicator (The "Soul" visualization)
-  const AgentIndicator = () => (
-      isLearning ? (
+  const AgentIndicator = isLearning ? (
         <div className="absolute top-0 right-0 p-1">
             <div className="relative">
                 <div className="absolute inset-0 bg-celestial-purple rounded-full animate-ping opacity-75" />
                 <div className="relative w-2 h-2 bg-celestial-purple rounded-full border border-white" title="Universal Agent Active" />
             </div>
         </div>
-      ) : null
-  );
+  ) : null;
 
   if (mode === 'card') {
     return (
-      <div className={wrapperClasses} onClick={onClick} {...interactiveProps}>
-        <AgentIndicator />
+      <div className={wrapperClasses} onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}>
+        {AgentIndicator}
         {!isSeamless && (
           <>
             <div className={`absolute -right-12 -top-12 w-48 h-48 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-700 blur-3xl pointer-events-none ${theme.glow}`} />
@@ -270,7 +238,7 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
           <div className="flex justify-between items-start">
             <div className="space-y-1.5">
                <div className="flex items-center gap-2">
-                  <LabelWithIcon />
+                  {LabelWithIcon}
                   <QuantumAiTrigger onClick={onAiAnalyze} onInternalTrigger={handleInternalAiTrigger} label={labelText} />
                </div>
                
@@ -331,15 +299,15 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
 
   if (mode === 'list') {
     return (
-      <div className={`${wrapperClasses} p-3 rounded-xl flex items-center justify-between`} onClick={onClick} {...interactiveProps}>
-          <AgentIndicator />
+      <div className={`${wrapperClasses} p-3 rounded-xl flex items-center justify-between`} onClick={onClick} role={onClick ? "button" : undefined}>
+          {AgentIndicator}
           <div className="flex items-center gap-4">
               <div className={`p-2 rounded-lg border border-white/5 ${theme.iconBg} ${theme.text} relative`}>
                   {Icon ? <Icon className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
               </div>
               <div>
                   <div className="flex items-center gap-2">
-                    <LabelWithIcon />
+                    {LabelWithIcon}
                     <QuantumAiTrigger onClick={onAiAnalyze} onInternalTrigger={handleInternalAiTrigger} label={labelText} />
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs">
@@ -360,11 +328,11 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
 
   if (mode === 'cell') {
       return (
-        <div className={`${wrapperClasses} p-4 rounded-xl flex flex-col justify-between h-full`} onClick={onClick} {...interactiveProps}>
-            <AgentIndicator />
+        <div className={`${wrapperClasses} p-4 rounded-xl flex flex-col justify-between h-full`} onClick={onClick} role={onClick ? "button" : undefined}>
+            {AgentIndicator}
             <div className="flex justify-between items-start">
                <div className="relative">
-                   <LabelWithIcon />
+                   {LabelWithIcon}
                </div>
                <QuantumAiTrigger onClick={onAiAnalyze} onInternalTrigger={handleInternalAiTrigger} label={labelText} />
             </div>
@@ -379,14 +347,12 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = (props) => {
       );
   }
   
-  // Badge Mode (Smallest Volume)
   if (mode === 'badge') {
      return (
         <div className="flex items-center gap-2 group/badge" aria-label={`Badge: ${value}`}>
            <div className="w-20 h-1.5 bg-gray-800 rounded-full overflow-hidden relative border border-white/5">
                <div className={`h-full absolute left-0 top-0 rounded-full transition-all duration-1000 ${theme.glow} ${confidence === 'high' ? 'w-full' : 'w-1/2'}`} />
            </div>
-           {/* Quantum Trigger included for agent access */}
            <QuantumAiTrigger onClick={onAiAnalyze} onInternalTrigger={handleInternalAiTrigger} />
         </div>
      );

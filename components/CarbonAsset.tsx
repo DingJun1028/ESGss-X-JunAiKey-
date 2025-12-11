@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { OmniEsgCell } from './OmniEsgCell';
 import { Language } from '../types';
-import { Leaf, TrendingUp, PieChart, MapPin, Loader2, Zap, Calculator, Fuel, Save, DollarSign, AlertTriangle, Cloud, RefreshCw } from 'lucide-react';
+import { Leaf, TrendingUp, PieChart, MapPin, Loader2, Zap, Calculator, Fuel, Save, DollarSign, AlertTriangle, Cloud, RefreshCw, ExternalLink } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useToast } from '../contexts/ToastContext';
 import { performMapQuery } from '../services/ai-service';
@@ -130,7 +130,7 @@ export const CarbonAsset: React.FC<CarbonAssetProps> = ({ language }) => {
   
   const [mapQuery, setMapQuery] = useState('');
   const [isMapping, setIsMapping] = useState(false);
-  const [mapResult, setMapResult] = useState<string | null>(null);
+  const [mapResult, setMapResult] = useState<{text: string, sources?: any[]} | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calculator' | 'pricing'>('dashboard');
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -179,7 +179,7 @@ export const CarbonAsset: React.FC<CarbonAssetProps> = ({ language }) => {
       addToast('info', 'Locating facility via Google Maps Grounding...', 'Maps Agent');
       try {
           const result = await performMapQuery(mapQuery, language);
-          setMapResult(result.text);
+          setMapResult(result);
       } catch (e) {
           addToast('error', 'Map query failed.', 'Error');
       } finally {
@@ -275,7 +275,37 @@ export const CarbonAsset: React.FC<CarbonAssetProps> = ({ language }) => {
                         </h3>
                         <div className="space-y-3">
                             <input type="text" value={mapQuery} onChange={(e) => setMapQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLocateSupplier()} placeholder={isZh ? "輸入工廠名稱..." : "Enter facility name..."} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-celestial-gold outline-none" />
-                            {mapResult && <div className="p-3 bg-slate-900/50 rounded-lg border border-white/10 text-xs text-gray-300 leading-relaxed animate-fade-in">{mapResult}</div>}
+                            {mapResult && (
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-white/10 animate-fade-in space-y-3">
+                                    <div className="text-xs text-gray-300 leading-relaxed">
+                                        {mapResult.text}
+                                    </div>
+                                    
+                                    {/* Render Map Sources */}
+                                    {mapResult.sources && mapResult.sources.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                                            {mapResult.sources.map((source: any, idx: number) => {
+                                                if (source.web?.uri || source.web?.title) {
+                                                     return (
+                                                        <a 
+                                                            key={idx}
+                                                            href={source.web.uri}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1.5 px-2 py-1 bg-celestial-blue/10 hover:bg-celestial-blue/20 text-celestial-blue rounded text-[10px] transition-colors border border-celestial-blue/20 font-medium"
+                                                        >
+                                                            <MapPin className="w-3 h-3" />
+                                                            {source.web.title || "View on Map"}
+                                                            <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+                                                        </a>
+                                                    );
+                                                }
+                                                return null;
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

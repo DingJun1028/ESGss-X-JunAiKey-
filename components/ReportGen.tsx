@@ -4,7 +4,7 @@ import { useCompany } from './providers/CompanyProvider';
 import { generateReportChapter, auditReportContent } from '../services/ai-service';
 import { Language, ReportSection } from '../types';
 import { REPORT_STRUCTURE } from '../constants';
-import { FileText, Sparkles, Download, Loader2, Save, ChevronRight, BookOpen, ShieldCheck, CheckCircle, Info } from 'lucide-react';
+import { FileText, Sparkles, Download, Loader2, Save, ChevronRight, BookOpen, ShieldCheck, CheckCircle, Info, Crown, X, FileBarChart } from 'lucide-react';
 import { marked } from 'marked';
 import { useToast } from '../contexts/ToastContext';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
@@ -71,7 +71,7 @@ const ChapterAgent = withUniversalProxy(ChapterNodeBase);
 // ----------------------------------------------------------------------
 
 export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
-  const { companyName, esgScores, totalScore, carbonCredits, budget, tier } = useCompany();
+  const { companyName, esgScores, totalScore, carbonCredits, budget, tier, carbonData } = useCompany();
   const { addToast } = useToast();
   
   const [activeSectionId, setActiveSectionId] = useState<string>('1.01');
@@ -82,7 +82,13 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
   
+  // Master Report State
+  const [showMasterReport, setShowMasterReport] = useState(false);
+  const [masterReportContent, setMasterReportContent] = useState('');
+  const [isGeneratingMaster, setIsGeneratingMaster] = useState(false);
+  
   const reportRef = useRef<HTMLDivElement>(null);
+  const masterReportRef = useRef<HTMLDivElement>(null);
   const isZh = language === 'zh-TW';
 
   const getActiveSectionData = (): ReportSection | undefined => {
@@ -144,15 +150,64 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
       }
   };
 
-  const handleExportPDF = () => {
-      if (!reportRef.current) return;
+  const handleGenerateMasterReport = async () => {
+      if (tier === 'Free') {
+          setShowSubModal(true);
+          return;
+      }
+      setIsGeneratingMaster(true);
+      addToast('info', isZh ? '正在彙整全模組數據生成總報告...' : 'Aggregating cross-module data for Master Report...', 'JunAiKey');
+
+      try {
+          // Aggregate all system data for the prompt
+          const masterContext = {
+              company: companyName,
+              scores: esgScores,
+              carbon: {
+                  s1: carbonData.scope1,
+                  s2: carbonData.scope2,
+                  s3: carbonData.scope3,
+                  total: carbonData.scope1 + carbonData.scope2 + carbonData.scope3
+              },
+              finance: {
+                  budget: budget,
+                  credits: carbonCredits
+              },
+              year: new Date().getFullYear()
+          };
+
+          const prompt = `Generate an "ESGss x JunAiKey Enterprise Master Report" (Executive Summary).
+          Format: Markdown. 
+          Sections: 
+          1. Executive Summary (Overall Score & Status)
+          2. Environmental Performance (Carbon Data Analysis)
+          3. Strategic Outlook (Based on scores)
+          4. CEO Key Message.
+          Tone: Professional, Visionary, High-Level.
+          Data: ${JSON.stringify(masterContext)}`;
+
+          // Reusing generateReportChapter logic but with master context
+          const content = await generateReportChapter("Master Executive Report", "Full Report", "Professional", masterContext, language);
+          
+          setMasterReportContent(content);
+          setShowMasterReport(true);
+          addToast('success', isZh ? '企業總報告生成完畢' : 'Master Report Generated', 'System');
+      } catch (e) {
+          addToast('error', 'Generation Failed', 'Error');
+      } finally {
+          setIsGeneratingMaster(false);
+      }
+  };
+
+  const handleExportPDF = (elementRef: React.RefObject<HTMLDivElement>, filename: string) => {
+      if (!elementRef.current) return;
       setIsExporting(true);
-      const element = reportRef.current;
+      const element = elementRef.current;
       const opt = { 
           margin: 10, 
-          filename: `Report_${new Date().getFullYear()}.pdf`, 
+          filename: filename, 
           image: { type: 'jpeg' as const, quality: 0.98 }, 
-          html2canvas: { scale: 2 }, 
+          html2canvas: { scale: 2, useCORS: true }, 
           jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const } 
       };
       html2pdf().set(opt).from(element).save().then(() => { setIsExporting(false); addToast('success', 'PDF Downloaded.', 'System'); });
@@ -162,6 +217,54 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
     <div className="h-[calc(100vh-140px)] flex flex-col animate-fade-in gap-4">
         <SubscriptionModal isOpen={showSubModal} onClose={() => setShowSubModal(false)} language={language} />
         
+        {/* Master Report Modal */}
+        {showMasterReport && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-xl animate-fade-in">
+                <div className="w-full max-w-4xl bg-slate-950 border border-celestial-gold/30 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+                    <div className="p-6 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-celestial-gold/10 to-transparent rounded-t-2xl">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-celestial-gold/20 rounded-xl border border-celestial-gold/30">
+                                <Crown className="w-6 h-6 text-celestial-gold" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white">{isZh ? 'ESGss x JunAiKey 企業總報告' : 'ESGss x JunAiKey Enterprise Master Report'}</h3>
+                                <p className="text-xs text-celestial-gold font-mono uppercase tracking-wider">{companyName} • {new Date().getFullYear()}</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowMasterReport(false)} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-white text-black" ref={masterReportRef}>
+                        {/* Simulated Print Header inside the scroll view */}
+                        <div className="flex justify-between items-end border-b-2 border-black pb-4 mb-8">
+                            <h1 className="text-3xl font-bold font-serif text-black">Executive Summary</h1>
+                            <div className="text-right">
+                                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Generated by</div>
+                                <div className="text-sm font-bold text-black">JunAiKey Intelligence Engine</div>
+                            </div>
+                        </div>
+                        <div className="prose prose-slate max-w-none text-black">
+                            <div dangerouslySetInnerHTML={{ __html: marked.parse(masterReportContent) as string }} />
+                        </div>
+                    </div>
+
+                    <div className="p-6 border-t border-white/10 bg-slate-900 rounded-b-2xl flex justify-end gap-3">
+                        <button onClick={() => setShowMasterReport(false)} className="px-4 py-2 text-gray-400 hover:text-white transition-colors">{isZh ? '關閉' : 'Close'}</button>
+                        <button 
+                            onClick={() => handleExportPDF(masterReportRef, `MasterReport_${companyName}.pdf`)} 
+                            disabled={isExporting}
+                            className="px-6 py-2 bg-celestial-gold hover:bg-amber-400 text-black font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                        >
+                            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            {isZh ? '下載 PDF' : 'Download PDF'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div className="flex justify-between items-center shrink-0">
             <div className="flex items-center gap-4">
                 <div className="p-3 bg-celestial-purple/10 rounded-xl border border-celestial-purple/20">
@@ -172,9 +275,25 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
                     <p className="text-gray-400 text-sm">{isZh ? 'GRI Standards 2021 合規指引' : 'GRI Standards 2021 Compliance'}</p>
                 </div>
             </div>
-            <button onClick={handleExportPDF} disabled={isExporting} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg border border-white/10 transition-all disabled:opacity-50">
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} <span>Export PDF</span>
-            </button>
+            
+            <div className="flex gap-3">
+                <button 
+                    onClick={handleGenerateMasterReport}
+                    disabled={isGeneratingMaster}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-celestial-gold to-amber-600 text-black font-bold rounded-lg shadow-lg hover:shadow-amber-500/30 transition-all disabled:opacity-50"
+                >
+                    {isGeneratingMaster ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                    <span>{isZh ? '生成企業總報告' : 'Generate Master Report'}</span>
+                </button>
+                <button 
+                    onClick={() => handleExportPDF(reportRef, `Report_${new Date().getFullYear()}.pdf`)} 
+                    disabled={isExporting} 
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg border border-white/10 transition-all disabled:opacity-50"
+                >
+                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} 
+                    <span>Export PDF</span>
+                </button>
+            </div>
         </div>
 
         <div className="flex-1 grid grid-cols-12 gap-6 min-h-0">

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Language } from '../types';
-import { Info, Globe, ArrowRight, ShieldCheck, Zap, Users, Target, DollarSign, Server, Map, List, Layers, Cpu, Lock, FileText, Download, Share2 } from 'lucide-react';
+import { Info, Globe, ArrowRight, ShieldCheck, Zap, Users, Target, DollarSign, Server, Map as MapIcon, List, Layers, Cpu, Lock, FileText, Download, Share2 } from 'lucide-react';
 import { LogoIcon } from './Layout';
 import { useToast } from '../contexts/ToastContext';
 
@@ -32,7 +32,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ language }) => {
       { id: 'vision', label: isZh ? '產品願景' : 'Vision', icon: Target },
       { id: 'monetization', label: isZh ? '變現策略' : 'Monetization', icon: DollarSign },
       { id: 'tech', label: isZh ? '技術架構' : 'Tech Stack', icon: Server },
-      { id: 'roadmap', label: isZh ? '發展路線' : 'Roadmap', icon: Map },
+      { id: 'roadmap', label: isZh ? '發展路線' : 'Roadmap', icon: MapIcon },
       { id: 'action', label: isZh ? '行動建議' : 'Action Plan', icon: List },
   ];
 

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, GraduationCap, Search, Settings, Activity, Sun, Bell, Languages,
-  Target, UserCheck, Leaf, FileText, Network, Bot, Calculator, ShieldCheck, Coins, Trophy, X, Zap, Star, Home, Radio, Command, Briefcase, Stethoscope, Wrench, Crown, BookOpen, Layers, Heart, Info, Megaphone, Calendar, Lock, Code, Database
+  Target, UserCheck, Leaf, FileText, Network, Bot, Calculator, ShieldCheck, Coins, Trophy, X, Zap, Star, Home, Radio, Command, Briefcase, Stethoscope, Wrench, Crown, BookOpen, Layers, Heart, Info, Megaphone, Calendar, Lock, Code, Database, UserPlus
 } from 'lucide-react';
 import { View, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -209,6 +209,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
       {
           title: language === 'zh-TW' ? '社群與使命 (Community)' : 'Community & Mission',
           items: [
+              { id: View.ALUMNI_ZONE, icon: UserPlus, label: t.nav.alumniZone }, // New
               { id: View.FUNDRAISING, icon: Heart, label: t.nav.fundraising }, // New
               { id: View.ACADEMY, icon: GraduationCap, label: t.nav.academy },
               { id: View.GOODWILL, icon: Coins, label: t.nav.goodwill },

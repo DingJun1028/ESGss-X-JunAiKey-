@@ -26,7 +26,8 @@ export enum View {
   FUNDRAISING = 'FUNDRAISING', // New
   ABOUT_US = 'ABOUT_US',        // New
   API_ZONE = 'API_ZONE',         // New: API Developer Portal
-  UNIVERSAL_BACKEND = 'UNIVERSAL_BACKEND' // New: Universal Management Backend Zone
+  UNIVERSAL_BACKEND = 'UNIVERSAL_BACKEND', // New: Universal Management Backend Zone
+  ALUMNI_ZONE = 'ALUMNI_ZONE' // New: Alumni & LMS Zone
 }
 
 export type Language = 'zh-TW' | 'en-US';

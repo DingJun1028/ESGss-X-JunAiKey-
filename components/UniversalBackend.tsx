@@ -13,6 +13,7 @@ import {
     ZeroOneInfinityEngine,
     LifecycleStage
 } from '../services/quantum-canon';
+import { generateUIComponent, generateSchema } from '../services/ai-service';
 
 interface UniversalBackendProps {
   language: Language;
@@ -45,33 +46,6 @@ const CoreNodeBase: React.FC<CoreNodeProps> = ({ isActive, adaptiveTraits, isAge
 const CoreNode = withUniversalProxy(CoreNodeBase);
 
 // ----------------------------------------------------------------------
-// Mock Data Generators for GenUI
-// ----------------------------------------------------------------------
-const generateMockUI = (command: string): any => {
-    if (command.includes("table") || command.includes("users")) {
-        return {
-            type: "table",
-            title: "Active Agents Registry",
-            columns: ["ID", "Agent Name", "Status", "Last Active", "Tasks"],
-            data: [
-                { id: "ag-01", name: "Finance Bot", status: "Active", last: "2m ago", tasks: 12 },
-                { id: "ag-02", name: "Compliance Guard", status: "Active", last: "1m ago", tasks: 45 },
-                { id: "ag-03", name: "Report Writer", status: "Idle", last: "1h ago", tasks: 0 },
-            ]
-        };
-    }
-    if (command.includes("chart") || command.includes("carbon")) {
-        return {
-            type: "chart",
-            title: "System Load vs Token Usage",
-            metric: "78%",
-            status: "Normal"
-        };
-    }
-    return { type: "unknown", message: "Interface not defined in latent space." };
-};
-
-// ----------------------------------------------------------------------
 // Main Component
 // ----------------------------------------------------------------------
 
@@ -84,6 +58,22 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
   const [generatedUI, setGeneratedUI] = useState<any>(null);
   const [guardrailsEnabled, setGuardrailsEnabled] = useState(true);
   const [activeSchema, setActiveSchema] = useState('agent_manifest_v2.json');
+  const [schemaContent, setSchemaContent] = useState<string>(`{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AgentManifest",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "securityLevel": {
+      "enum": ["low", "medium", "critical"]
+    }
+  },
+  "required": ["id", "securityLevel"]
+}`);
   
   // Quantum Canon State
   const [lifecycleStage, setLifecycleStage] = useState<LifecycleStage>('One (MVP)');
@@ -110,7 +100,7 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
       return () => clearInterval(interval);
   }, []);
 
-  const handleCommandSubmit = (e: React.FormEvent) => {
+  const handleCommandSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!command.trim()) return;
       
@@ -119,14 +109,32 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
       
       // Principle 5: Self Definition
       const parsed = SelfDefinitionField.parseIntent(command);
-      addToast('info', `Intent Parsed: ${parsed.intent} (${parsed.confidence * 100}%)`, 'Quantum Canon');
+      addToast('info', `Intent Parsed: ${parsed.intent} (${(parsed.confidence * 100).toFixed(0)}%)`, 'Quantum Canon');
 
-      // Simulate Chain of Thought
-      setTimeout(() => {
-          setIsProcessing(false);
-          setGeneratedUI(generateMockUI(command.toLowerCase()));
+      try {
+          // Real AI Call for GenUI
+          const uiConfig = await generateUIComponent(command, language);
+          setGeneratedUI(uiConfig);
           addToast('success', isZh ? '介面生成完畢' : 'Interface Generated', 'GenUI Engine');
-      }, 1500);
+      } catch (e) {
+          addToast('error', 'GenUI Failed', 'Error');
+      } finally {
+          setIsProcessing(false);
+      }
+  };
+
+  const handleGenerateSchema = async () => {
+      setIsProcessing(true);
+      addToast('info', 'Generating Schema with Gemini 3 Pro...', 'Schema Agent');
+      try {
+          const result = await generateSchema(command || "Agent configuration", "JSON");
+          setSchemaContent(result);
+          addToast('success', 'Schema Generated', 'System');
+      } catch (e) {
+          addToast('error', 'Schema Generation Failed', 'Error');
+      } finally {
+          setIsProcessing(false);
+      }
   };
 
   const handleCircuitBreaker = (id: string) => {
@@ -238,27 +246,21 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                         </select>
                     </div>
 
-                    <div className="flex-1 bg-slate-950 rounded-xl p-4 overflow-y-auto custom-scrollbar border border-white/5 font-mono text-[10px] text-green-400 leading-relaxed">
-                        {`{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AgentManifest",
-  "type": "object",
-  "properties": {
-    "id": { "type": "string" },
-    "capabilities": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "securityLevel": {
-      "enum": ["low", "medium", "critical"]
-    }
-  },
-  "required": ["id", "securityLevel"]
-}`}
+                    <div className="flex-1 bg-slate-950 rounded-xl p-4 overflow-y-auto custom-scrollbar border border-white/5 font-mono text-[10px] text-green-400 leading-relaxed whitespace-pre-wrap">
+                        {schemaContent}
                     </div>
-                    <div className="mt-2 text-[10px] text-gray-500 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3 text-emerald-500" />
-                        Valid Contract (Consistent)
+                    <div className="mt-2 flex justify-between items-center">
+                        <div className="text-[10px] text-gray-500 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-emerald-500" />
+                            Valid Contract
+                        </div>
+                        <button 
+                            onClick={handleGenerateSchema}
+                            disabled={isProcessing}
+                            className="text-[10px] text-celestial-blue hover:text-white"
+                        >
+                            AI Generate
+                        </button>
                     </div>
                 </div>
             </div>
@@ -361,11 +363,10 @@ export const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) 
                                         <tbody className="text-gray-300">
                                             {generatedUI.data.map((row: any, i: number) => (
                                                 <tr key={i} className="border-b border-white/5 hover:bg-white/5">
-                                                    <td className="p-2 font-mono">{row.id}</td>
-                                                    <td className="p-2">{row.name}</td>
-                                                    <td className="p-2"><span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">{row.status}</span></td>
-                                                    <td className="p-2 text-gray-500">{row.last}</td>
-                                                    <td className="p-2">{row.tasks}</td>
+                                                    {/* Dynamic Row Rendering based on columns is complex, defaulting to mapped keys or raw dump for this demo if structure varies */}
+                                                    {Object.values(row).map((val: any, idx) => (
+                                                        <td key={idx} className="p-2">{val}</td>
+                                                    ))}
                                                 </tr>
                                             ))}
                                         </tbody>

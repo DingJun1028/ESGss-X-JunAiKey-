@@ -73,7 +73,7 @@ export const TRANSLATIONS = {
       finance: 'ROI Simulator',
       audit: 'Audit Trail',
       goodwill: 'Goodwill Coin',
-      cardGame: 'Good Era: Sustainable ESG',
+      cardGame: 'Good Era Sustainable ESG',
       researchHub: 'Research Hub',
       academy: 'Academy',
       diagnostics: 'Diagnostics',
@@ -84,7 +84,9 @@ export const TRANSLATIONS = {
       universalTools: 'Universal Tools',
       fundraising: 'Fundraising',
       aboutUs: 'About Us',
-      universalBackend: 'Universal Backend'
+      universalBackend: 'Universal Backend',
+      apiZone: 'API Zone',
+      alumniZone: 'Alumni & LMS'
     },
     modules: {
       myEsg: { title: 'My ESG Cockpit', desc: 'Your personalized sustainability command center.' },
@@ -168,7 +170,9 @@ export const TRANSLATIONS = {
       universalTools: '萬能工具 (Universal Tools)',
       fundraising: '善向募資 (Fundraising)',
       aboutUs: '關於我們 (About Us)',
-      universalBackend: '萬能管理後臺 (Backend Zone)'
+      universalBackend: '萬能管理後臺 (Backend Zone)',
+      apiZone: 'API 專區',
+      alumniZone: '校友專區 (Alumni LMS)'
     },
     modules: {
       myEsg: { title: '我的 ESG (My ESG)', desc: '您的個人化永續戰情室與成長中心。' },

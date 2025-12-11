@@ -35,6 +35,7 @@ const Fundraising = lazy(() => import('./components/Fundraising').then(module =>
 const AboutUs = lazy(() => import('./components/AboutUs').then(module => ({ default: module.AboutUs })));
 const ApiZone = lazy(() => import('./components/ApiZone').then(module => ({ default: module.ApiZone })));
 const UniversalBackend = lazy(() => import('./components/UniversalBackend').then(module => ({ default: module.UniversalBackend })));
+const AlumniZone = lazy(() => import('./components/AlumniZone').then(module => ({ default: module.AlumniZone })));
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -97,6 +98,7 @@ const App: React.FC = () => {
                     case View.BUSINESS_INTEL: return <BusinessIntel language={language} onNavigate={setCurrentView} />;
                     case View.HEALTH_CHECK: return <HealthCheck language={language} onNavigate={setCurrentView} />;
                     case View.UNIVERSAL_TOOLS: return <UniversalTools language={language} />;
+                    case View.ALUMNI_ZONE: return <AlumniZone language={language} />;
                     default: return <MyEsg language={language} onNavigate={setCurrentView} />;
                   }
                 })()}

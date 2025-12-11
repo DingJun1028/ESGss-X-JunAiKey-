@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Lock, Box, Loader2, Maximize2, Shield, Zap, Triangle } from 'lucide-react';
 import { EsgCard, MasteryLevel } from '../types';
@@ -28,13 +29,14 @@ export const UniversalCard: React.FC<UniversalCardProps> = ({
   const { addToast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [savedImages, setSavedImages] = useState<string[]>([]);
+  const [rotate, setRotate] = useState({ x: 0, y: 0 });
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'Legendary': return 'border-amber-500 shadow-amber-500/20 from-amber-500/10 to-amber-900/20';
-      case 'Epic': return 'border-purple-500 shadow-purple-500/20 from-purple-500/10 to-purple-900/20';
-      case 'Rare': return 'border-blue-500 shadow-blue-500/20 from-blue-500/10 to-blue-900/20';
-      default: return 'border-emerald-500 shadow-emerald-500/20 from-emerald-500/10 to-emerald-900/20';
+      case 'Legendary': return 'border-amber-500 shadow-amber-500/30 from-amber-500/10 to-amber-900/20';
+      case 'Epic': return 'border-purple-500 shadow-purple-500/30 from-purple-500/10 to-purple-900/20';
+      case 'Rare': return 'border-blue-500 shadow-blue-500/30 from-blue-500/10 to-blue-900/20';
+      default: return 'border-emerald-500 shadow-emerald-500/30 from-emerald-500/10 to-emerald-900/20';
     }
   };
 
@@ -45,6 +47,24 @@ export const UniversalCard: React.FC<UniversalCardProps> = ({
       case 'Rare': return 'text-blue-400';
       default: return 'text-emerald-400';
     }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isLocked) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const rotateX = ((y - centerY) / centerY) * -10; // Max 10 deg
+      const rotateY = ((x - centerX) / centerX) * 10;
+
+      setRotate({ x: rotateX, y: rotateY });
+  };
+
+  const handleMouseLeave = () => {
+      setRotate({ x: 0, y: 0 });
   };
 
   const handleLegoize = async (e: React.MouseEvent) => {
@@ -68,68 +88,88 @@ export const UniversalCard: React.FC<UniversalCardProps> = ({
     }
   };
 
-  // --- RENDER LOCKED STATE (The "Hole" in the Album) ---
+  // --- RENDER LOCKED STATE (The Album Hole) ---
   if (isLocked) {
       return (
         <div 
             onClick={onClick}
-            className="relative w-64 h-96 rounded-2xl border-2 border-dashed border-white/10 bg-slate-950 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center p-6 group cursor-not-allowed transition-all duration-300 hover:border-white/20"
+            className="relative w-64 h-96 rounded-2xl bg-slate-800 shadow-[inset_0_6px_20px_rgba(0,0,0,0.9),0_2px_4px_rgba(255,255,255,0.05)] flex flex-col items-center justify-center p-6 border-b border-b-white/10 opacity-100 group cursor-not-allowed transition-all duration-300"
         >
-            {/* Inner Recessed Shadow Overlay */}
-            <div className="absolute inset-0 bg-black/40 pointer-events-none rounded-2xl" />
-            
-            {/* Phantom Icon */}
-            <div className="z-10 opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform group-hover:scale-110">
-                <Box className="w-24 h-24 text-gray-500" />
-            </div>
+            {/* Inner "Card Slot" Feel */}
+            <div className="absolute inset-2 rounded-xl border border-dashed border-white/5 pointer-events-none" />
 
-            {/* Lock Indicator */}
-            <div className="z-10 mt-6 flex flex-col items-center gap-2">
-                <div className="p-3 bg-black/50 rounded-full border border-white/10 shadow-lg">
-                    <Lock className="w-5 h-5 text-gray-600 group-hover:text-gray-400 transition-colors" />
-                </div>
-                <span className="text-xs font-mono text-gray-600 uppercase tracking-[0.2em] group-hover:text-gray-500 transition-colors">
-                    Missing Memory
+            {/* Embossed Logo Effect */}
+            <div 
+                className="text-4xl font-bold text-slate-700/80 text-center tracking-widest font-mono select-none pointer-events-none group-hover:text-slate-600 transition-colors"
+                style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8), -1px -1px 2px rgba(255,255,255,0.05)' }}
+            >
+                ESG<br/>SUNSHINE
+            </div>
+            
+            <div className="mt-6 flex flex-col items-center gap-2 opacity-50 group-hover:opacity-80 transition-opacity">
+                <Lock className="w-4 h-4 text-slate-500" />
+                <span className="text-[10px] text-slate-500 font-mono tracking-[0.2em] uppercase">
+                    Slot Empty
                 </span>
             </div>
 
-            {/* Hint at bottom */}
-            <div className="absolute bottom-6 text-[10px] text-gray-700 font-bold uppercase tracking-wider">
-                {card.collectionSet} Collection
+            {/* Collection Hint */}
+            <div className="absolute bottom-6 text-[9px] text-slate-600 font-bold uppercase tracking-wider">
+                {card.collectionSet}
             </div>
         </div>
       );
   }
 
-  // --- RENDER UNLOCKED CARD ---
+  // --- RENDER UNLOCKED CARD (Holographic) ---
   return (
     <div 
-        className={`relative w-64 h-96 rounded-2xl border-2 transition-all duration-500 cursor-pointer group hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col
-            ${getRarityColor(card.rarity)} bg-gradient-to-br
+        className={`relative w-64 h-96 rounded-2xl transition-all duration-200 cursor-pointer group hover:z-50
+            ${getRarityColor(card.rarity)} bg-slate-900 border-2
         `}
+        style={{
+            transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg) scale3d(1.02, 1.02, 1.02)`,
+            transition: 'transform 0.1s ease-out'
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
         onClick={onClick}
     >
-      {/* Background Texture */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
+      {/* Holographic Sheen Overlay */}
+      <div 
+        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-40 pointer-events-none z-20 transition-opacity duration-300"
+        style={{
+            background: `linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%)`,
+            backgroundSize: '200% 200%',
+            backgroundPosition: `${50 + rotate.y}% ${50 + rotate.x}%`,
+            mixBlendMode: 'overlay'
+        }}
+      />
       
+      {/* Prismatic Border Glow */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 pointer-events-none" />
+
+      {/* Content Container with Background Gradient */}
+      <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${getThemeGradient(card.rarity)} opacity-20 pointer-events-none`} />
+
       {/* Header - Fixed Height Area */}
       <div className="relative z-10 p-4 flex justify-between items-start shrink-0">
-          <div className={`text-xs font-bold uppercase tracking-wider ${getRarityTextColor(card.rarity)}`}>
+          <div className={`text-xs font-bold uppercase tracking-wider ${getRarityTextColor(card.rarity)} drop-shadow-md`}>
               {card.rarity}
           </div>
           {masteryLevel !== 'Novice' && (
-              <div className="px-2 py-0.5 rounded-full bg-white/10 text-[9px] font-bold text-white border border-white/20">
+              <div className="px-2 py-0.5 rounded-full bg-white/10 text-[9px] font-bold text-white border border-white/20 backdrop-blur-sm">
                   {masteryLevel}
               </div>
           )}
       </div>
 
       {/* Card Image Area - Fixed Height */}
-      <div className="relative h-40 mx-4 rounded-xl bg-black/30 border border-white/10 overflow-hidden flex items-center justify-center group/img shrink-0">
+      <div className="relative h-40 mx-4 rounded-xl bg-black/40 border border-white/10 overflow-hidden flex items-center justify-center group/img shrink-0 shadow-inner">
           {savedImages.length > 0 ? (
               <img src={savedImages[savedImages.length - 1]} alt="Lego Art" className="w-full h-full object-cover" />
           ) : card.imageUrl ? (
-              <img src={card.imageUrl} alt={card.title} className="w-full h-full object-cover opacity-80 group-hover/img:scale-110 transition-transform duration-700" />
+              <img src={card.imageUrl} alt={card.title} className="w-full h-full object-cover opacity-90 group-hover/img:scale-110 transition-transform duration-700" />
           ) : (
               <Box className={`w-16 h-16 ${getRarityTextColor(card.rarity)} opacity-50`} />
           )}
@@ -147,28 +187,28 @@ export const UniversalCard: React.FC<UniversalCardProps> = ({
       <div className="relative z-10 p-4 pt-3 flex flex-col flex-1 min-h-0">
           {/* Title - Line Clamped */}
           <div className="min-h-[2.5rem] mb-1 flex items-center">
-            <h3 className={`text-lg font-bold text-white leading-tight line-clamp-2 ${isSealed ? 'blur-sm' : ''}`}>
+            <h3 className={`text-lg font-bold text-white leading-tight line-clamp-2 drop-shadow-sm ${isSealed ? 'blur-sm' : ''}`}>
                 {card.title}
             </h3>
           </div>
           
           {/* Description - Takes available space but clamped */}
-          <p className={`text-xs text-gray-300 line-clamp-3 mb-2 ${isSealed ? 'blur-sm' : ''}`}>
+          <p className={`text-xs text-gray-300 line-clamp-3 mb-2 leading-relaxed ${isSealed ? 'blur-sm' : ''}`}>
               {card.description}
           </p>
 
           {/* Stats Bar - Pushed to Bottom */}
           <div className="mt-auto flex justify-between items-center text-[10px] font-mono text-gray-400 border-t border-white/10 pt-2">
-              <div className="flex gap-2">
-                  <span>DEF: {card.stats.defense}</span>
-                  <span>OFF: {card.stats.offense}</span>
+              <div className="flex gap-3">
+                  <span className="flex items-center gap-1"><Shield className="w-3 h-3"/> {card.stats.defense}</span>
+                  <span className="flex items-center gap-1"><Zap className="w-3 h-3"/> {card.stats.offense}</span>
               </div>
-              <div>{card.attribute.substring(0,3).toUpperCase()}</div>
+              <div className="opacity-70">{card.attribute.substring(0,3).toUpperCase()}</div>
           </div>
       </div>
 
       {/* Actions (Hover) - Absolute Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-center z-20">
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/95 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-center z-20 rounded-b-2xl">
           {!isSealed && (
               <div className="flex items-center gap-1">
                   <button 
@@ -218,7 +258,7 @@ export const UniversalCard: React.FC<UniversalCardProps> = ({
           {isSealed && (
               <button 
                   onClick={(e) => { e.stopPropagation(); onPurifyRequest(); }}
-                  className="w-full py-2 bg-celestial-purple text-white font-bold rounded-lg text-xs flex items-center justify-center gap-2 hover:bg-purple-600 transition-colors animate-pulse"
+                  className="w-full py-2 bg-celestial-purple text-white font-bold rounded-lg text-xs flex items-center justify-center gap-2 hover:bg-purple-600 transition-colors animate-pulse shadow-lg shadow-purple-500/20"
               >
                   <Zap className="w-3 h-3" /> Purify
               </button>
@@ -227,3 +267,12 @@ export const UniversalCard: React.FC<UniversalCardProps> = ({
     </div>
   );
 };
+
+const getThemeGradient = (rarity: string) => {
+    switch (rarity) {
+        case 'Legendary': return 'from-amber-500/20 to-transparent';
+        case 'Epic': return 'from-purple-500/20 to-transparent';
+        case 'Rare': return 'from-blue-500/20 to-transparent';
+        default: return 'from-emerald-500/20 to-transparent';
+    }
+}

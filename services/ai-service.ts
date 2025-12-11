@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -43,11 +44,71 @@ export const generateLegoImage = async (cardTitle: string, cardDesc: string): Pr
 export async function* streamChat(prompt: string, language: string) {
     try {
         const model = 'gemini-2.5-flash';
+        
+        const uiInstruction = `
+        You have the ability to generate UI components (Charts and Tables) to visualize data.
+        If the user asks for data analysis, comparison, or trends, ALWAYS output a JSON block wrapped in \`\`\`json_ui ... \`\`\` code block.
+        
+        Supported UI Types:
+        1. 'bar', 'line', 'area' (For trends/comparisons). Data format: array of objects.
+        2. 'pie' (For distribution).
+        3. 'radar' (For multi-axis assessment/scoring).
+        4. 'table' (For detailed rows).
+
+        JSON Schema:
+        {
+            "type": "chart" | "table",
+            "chartType": "bar" | "line" | "area" | "pie" | "radar",
+            "title": "Title of the visual",
+            "description": "Short insight about the data",
+            "data": [ ... ],
+            "config": {
+                "xKey": "key for X axis (e.g. 'month')",
+                "dataKeys": [{"key": "valueKey", "color": "#hex", "name": "Label"}] 
+            },
+            "columns": ["Col1", "Col2"] (Only for type='table')
+        }
+
+        Example for Chart:
+        \`\`\`json_ui
+        {
+            "type": "chart",
+            "chartType": "area",
+            "title": "Carbon Emission Trend",
+            "description": "Scope 1 emissions have decreased by 15%.",
+            "data": [
+                {"month": "Jan", "scope1": 120, "scope2": 90},
+                {"month": "Feb", "scope1": 110, "scope2": 88}
+            ],
+            "config": {
+                "xKey": "month",
+                "dataKeys": [
+                    {"key": "scope1", "color": "#10b981", "name": "Scope 1"},
+                    {"key": "scope2", "color": "#8b5cf6", "name": "Scope 2"}
+                ]
+            }
+        }
+        \`\`\`
+        
+        Example for Table:
+        \`\`\`json_ui
+        {
+            "type": "table",
+            "title": "Supplier Risk Analysis",
+            "columns": ["Supplier", "Risk Score", "Status"],
+            "data": [
+                {"Supplier": "Foxconn", "Risk Score": 85, "Status": "Low"},
+                {"Supplier": "Pegatron", "Risk Score": 92, "Status": "Low"}
+            ]
+        }
+        \`\`\`
+        `;
+
         const response = await ai.models.generateContentStream({
             model: model,
             contents: prompt,
             config: {
-                systemInstruction: `You are JunAiKey, an advanced ESG AI assistant. Respond in ${language === 'zh-TW' ? 'Traditional Chinese' : 'English'}. Be concise, professional, and helpful.`,
+                systemInstruction: `You are JunAiKey, an advanced ESG AI assistant. Respond in ${language === 'zh-TW' ? 'Traditional Chinese' : 'English'}. Be concise, professional, and helpful. ${uiInstruction}`,
             }
         });
 
@@ -108,7 +169,7 @@ export const generateReportChapter = async (sectionTitle: string, template: stri
         Output in Markdown format.`;
         
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Upgraded for high-quality writing
             contents: prompt
         });
         return response.text || "";
@@ -125,7 +186,7 @@ export const auditReportContent = async (chapterTitle: string, content: string, 
         Provide a critique and suggestions for improvement in ${language}.`;
         
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Upgraded for reasoning
             contents: prompt
         });
         return response.text || "";
@@ -144,7 +205,14 @@ export const performMapQuery = async (query: string, language: string) => {
                 tools: [{ googleMaps: {} }]
             }
         });
-        return { text: response.text || "Location not found." };
+        
+        // Extract grounding chunks which contain map links
+        const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+        return { 
+            text: response.text || "Location not found.",
+            sources: sources
+        };
     } catch (error) {
         console.error("Map Query Error:", error);
         throw error;
@@ -155,7 +223,7 @@ export const predictFutureTrends = async (metric: string, history: any[], horizo
     try {
         const prompt = `Predict future trends for ${metric} over ${horizon}. History: ${JSON.stringify(history)}. Language: ${language}. Return a short analysis.`;
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash', // Using flash for speed, 3-pro for complex reasoning
+            model: 'gemini-3-pro-preview', // Upgraded for complex reasoning
             contents: prompt
         });
         return response.text;
@@ -169,7 +237,7 @@ export const generateRiskMitigationPlan = async (risk: string, language: string)
     try {
         const prompt = `Create a risk mitigation plan for: ${risk}. Language: ${language}.`;
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Upgraded for strategy
             contents: prompt
         });
         return response.text;
@@ -188,7 +256,7 @@ export const generateAgentDebate = async (topic: string, language: string) => {
         Limit to 4 turns.`;
         
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Upgraded for distinct personas
             contents: prompt,
             config: {
                 responseMimeType: "application/json"
@@ -259,8 +327,16 @@ export const performWebSearch = async (query: string, language: string) => {
 
 export const generateEsgQuiz = async (term: string, definition: string, language: string) => {
     try {
-        const prompt = `Generate a quiz question for the ESG term "${term}" (Definition: ${definition}).
-        Return JSON: { "question": string, "options": string[], "correctIndex": number, "explanation": string }.
+        const prompt = `Generate a multiple-choice quiz question for the ESG term "${term}".
+        Context/Definition: ${definition}.
+        
+        Return JSON: 
+        { 
+            "question": "The question string", 
+            "options": ["Option A", "Option B", "Option C", "Option D"], 
+            "correctIndex": number (0-3), 
+            "explanation": "Why this is correct" 
+        }.
         Language: ${language}.`;
 
         const response = await ai.models.generateContent({
@@ -340,7 +416,7 @@ export const analyzeCardContext = async (term: string, language: string) => {
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-pro-preview', // Upgraded for better analysis
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }]
@@ -356,5 +432,56 @@ export const analyzeCardContext = async (term: string, language: string) => {
     } catch (error) {
         console.error("Card Intel Error:", error);
         return null;
+    }
+};
+
+// --- NEW GenUI Capability ---
+
+export const generateUIComponent = async (userIntent: string, language: string) => {
+    try {
+        const prompt = `
+        You are a GenUI engine. Generate a JSON description for a UI component based on the user's intent.
+        User Intent: "${userIntent}"
+        Language: ${language}
+
+        Supported Types: 'table', 'chart', 'card', 'list'.
+        
+        Return strict JSON format:
+        {
+            "type": "table" | "chart" | "card" | "list",
+            "title": "Component Title",
+            "metric": "Key Value (for charts/cards)",
+            "status": "Status Label",
+            "columns": ["Col1", "Col2"] (for tables),
+            "data": [{...}] (sample data rows)
+        }
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+
+        return JSON.parse(response.text || "{}");
+    } catch (error) {
+        console.error("GenUI Error:", error);
+        return { type: 'unknown', message: "Failed to generate UI." };
+    }
+};
+
+export const generateSchema = async (description: string, format: string) => {
+    try {
+        const prompt = `Generate a ${format} schema for: ${description}. Output only the schema code block.`;
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt
+        });
+        return response.text || "";
+    } catch (error) {
+        console.error("Schema Gen Error:", error);
+        return "Error generating schema.";
     }
 };

@@ -1,10 +1,11 @@
+
 import React, { useState, useMemo } from 'react';
 import { Language, EsgCard } from '../types';
 import { useCompany } from './providers/CompanyProvider';
 import { useToast } from '../contexts/ToastContext';
 import { UniversalCard } from './UniversalCard';
 import { getEsgCards } from '../constants';
-import { Search, Trophy, Zap, X, Shield, FileText, CheckCircle, Activity, Globe, Leaf, ArrowUp, ArrowDown, Triangle, Loader2, Link } from 'lucide-react';
+import { Search, Trophy, Zap, X, Shield, FileText, CheckCircle, Activity, Globe, Leaf, ArrowUp, ArrowDown, Triangle, Loader2, Link, Book } from 'lucide-react';
 import { useCardPurification } from '../hooks/useCardPurification';
 import { universalIntelligence } from '../services/evolutionEngine';
 import { analyzeCardContext } from '../services/ai-service';
@@ -415,7 +416,7 @@ export const Gamification: React.FC<GamificationProps> = ({ language }) => {
         <div className="flex flex-col md:flex-row justify-between items-end gap-6">
             <div>
                 <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
-                    {isZh ? '善向卡冊 (Card Album)' : 'ESG Card Album'}
+                    {isZh ? '善向紀元 永續ESG (Card Album)' : 'Good Era Sustainable ESG (Album)'}
                     <span className="text-xs bg-celestial-gold text-black px-2 py-0.5 rounded font-mono font-bold tracking-tight">Omni-OS v4.0</span>
                 </h2>
                 <div className="flex items-center gap-4 text-gray-400 mt-2">
@@ -528,52 +529,58 @@ export const Gamification: React.FC<GamificationProps> = ({ language }) => {
             </div>
         </div>
 
-        {/* Card Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
-            {sortedCards.map((card) => {
-                const isUnlocked = collectedCards.includes(card.id);
-                const isPurified = purifiedCards.includes(card.id);
-                const isSealed = isUnlocked && !isPurified;
-                const mastery = cardMastery[card.id] || 'Novice';
-                
-                const handleCardClick = () => {
-                    if (isSealed) {
-                        setCardToPurify(card);
-                    } else if (!isUnlocked) {
-                        addToast('error', isZh ? '卡片槽位未解鎖。請前往任務中心。' : 'Slot Locked. Visit Quest Center.', 'Empty Slot');
-                    }
-                };
+        {/* Card Album Grid - Immersive Wrapper */}
+        <div className="p-8 bg-black/40 rounded-3xl border-4 border-slate-800 shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+            {/* Album Spine Effect */}
+            <div className="absolute top-0 bottom-0 left-8 w-px bg-white/5 z-0" />
+            <div className="absolute top-0 bottom-0 left-9 w-px bg-white/5 z-0" />
+            
+            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center">
+                {sortedCards.map((card) => {
+                    const isUnlocked = collectedCards.includes(card.id);
+                    const isPurified = purifiedCards.includes(card.id);
+                    const isSealed = isUnlocked && !isPurified;
+                    const mastery = cardMastery[card.id] || 'Novice';
+                    
+                    const handleCardClick = () => {
+                        if (isSealed) {
+                            setCardToPurify(card);
+                        } else if (!isUnlocked) {
+                            addToast('error', isZh ? '卡片槽位未解鎖。請前往任務中心。' : 'Slot Locked. Visit Quest Center.', 'Empty Slot');
+                        }
+                    };
 
-                const handleKnowledgeInteraction = () => {
-                    if (mastery === 'Novice') {
-                        updateCardMastery(card.id, 'Apprentice');
-                        awardXp(50);
-                        addToast('reward', isZh ? '知識吸收：熟練度提升至學徒' : 'Knowledge Absorbed: Mastery Upgraded to Apprentice', 'Card Evolved');
-                    }
-                    else if (mastery === 'Apprentice') {
-                        updateCardMastery(card.id, 'Master');
-                        awardXp(150);
-                        addToast('reward', isZh ? '深度理解：熟練度提升至大師' : 'Deep Understanding: Mastery Upgraded to Master', 'Card Evolved');
-                    } else {
-                        addToast('info', isZh ? '已完全掌握此知識節點。' : 'Knowledge node re-accessed. Reviewing insights.', 'Mastery Maxed');
-                    }
-                };
+                    const handleKnowledgeInteraction = () => {
+                        if (mastery === 'Novice') {
+                            updateCardMastery(card.id, 'Apprentice');
+                            awardXp(50);
+                            addToast('reward', isZh ? '知識吸收：熟練度提升至學徒' : 'Knowledge Absorbed: Mastery Upgraded to Apprentice', 'Card Evolved');
+                        }
+                        else if (mastery === 'Apprentice') {
+                            updateCardMastery(card.id, 'Master');
+                            awardXp(150);
+                            addToast('reward', isZh ? '深度理解：熟練度提升至大師' : 'Deep Understanding: Mastery Upgraded to Master', 'Card Evolved');
+                        } else {
+                            addToast('info', isZh ? '已完全掌握此知識節點。' : 'Knowledge node re-accessed. Reviewing insights.', 'Mastery Maxed');
+                        }
+                    };
 
-                return (
-                    <div key={card.id} className="animate-fade-in">
-                        <UniversalCard 
-                            card={card} 
-                            isLocked={!isUnlocked}
-                            isSealed={isSealed} 
-                            masteryLevel={mastery}
-                            onKnowledgeInteraction={handleKnowledgeInteraction}
-                            onPurifyRequest={() => setCardToPurify(card)} 
-                            onClick={handleCardClick}
-                            onPrismRequest={() => handlePrismRequest(card)}
-                        />
-                    </div>
-                );
-            })}
+                    return (
+                        <div key={card.id} className="animate-fade-in perspective-1000">
+                            <UniversalCard 
+                                card={card} 
+                                isLocked={!isUnlocked}
+                                isSealed={isSealed} 
+                                masteryLevel={mastery}
+                                onKnowledgeInteraction={handleKnowledgeInteraction}
+                                onPurifyRequest={() => setCardToPurify(card)} 
+                                onClick={handleCardClick}
+                                onPrismRequest={() => handlePrismRequest(card)}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     </div>
   );

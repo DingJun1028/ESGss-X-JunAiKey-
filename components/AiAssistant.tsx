@@ -11,6 +11,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useCompany } from './providers/CompanyProvider';
 import { marked } from 'marked';
 import { universalIntelligence } from '../services/evolutionEngine';
+import { ChatVisualizer } from './minimal/ChatVisualizer'; // Import Visualizer
 
 interface AiAssistantProps {
   language: Language;
@@ -333,7 +334,7 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
         User is currently viewing: ${currentView}
         Company State: ${JSON.stringify(systemState)}
         
-        Instruction: Provide a concise, helpful response based on the current view. If on a specific module (e.g., Carbon), offer specific insights related to that module's data.
+        Instruction: Provide a concise, helpful response. You can generate charts or tables if the user asks for comparisons or analysis. Use JSON_UI format for visuals.
         `;
 
         const fullPrompt = `${contextHeader}\n\nUser Query: ${input}`;
@@ -535,7 +536,12 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                         {messages.map(m => (
                             <div key={m.id} className={`p-3 rounded-xl text-sm ${m.role==='user'?'bg-celestial-purple/20 ml-auto max-w-[85%]':'bg-white/5 mr-auto max-w-[90%]'}`}>
-                                <div dangerouslySetInnerHTML={{__html: marked.parse(m.text) as string}} className="markdown-content text-gray-200" />
+                                {/* Use ChatVisualizer instead of simple Markdown renderer */}
+                                {m.role === 'model' ? (
+                                    <ChatVisualizer content={m.text} />
+                                ) : (
+                                    <div dangerouslySetInnerHTML={{__html: marked.parse(m.text) as string}} className="markdown-content text-gray-200" />
+                                )}
                             </div>
                         ))}
                         {currentStep && (

@@ -411,4 +411,3 @@ export const useCompany = () => {
   }
   return context;
 };
-    

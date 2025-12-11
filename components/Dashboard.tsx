@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { getMockMetrics, CHART_DATA, TRANSLATIONS } from '../constants';
-import { Wind, Activity, FileText, Zap, BrainCircuit, LayoutTemplate, Plus, Trash2, Grid, X, Globe, Map, ScanLine, FileCheck, Triangle, Sparkles, Sun } from 'lucide-react';
+import { Wind, Activity, FileText, Zap, BrainCircuit, LayoutTemplate, Plus, Trash2, Grid, X, Globe, Map as MapIcon, ScanLine, FileCheck, Triangle, Sparkles, Sun, Loader2 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
@@ -64,8 +64,10 @@ const IdpScannerWidget: React.FC<{ language: Language, isLoading: boolean }> = (
         
         const phases = [
             "SCANNING_DOC...",
+            "SPECTRAL_REFRACTION...", // New phase
             "DETECTING_TABLES...",
             "EXTRACTING_ENTITIES...",
+            "LIGHT_INTERPRETATION: OK", // New phase
             "Scope 1: 420.5 tCO2e", // Final result
         ];
         
@@ -79,33 +81,42 @@ const IdpScannerWidget: React.FC<{ language: Language, isLoading: boolean }> = (
     }, [isLoading]);
 
     return (
-        <div className="p-4 bg-slate-800/50 rounded-xl border border-white/5 relative overflow-hidden group/scan">
-            <div className="flex justify-between items-start mb-2">
+        <div className="p-6 bg-slate-900/80 rounded-2xl border border-white/10 relative overflow-hidden group/scan h-full flex flex-col justify-between shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+            <div className="flex justify-between items-start mb-4 relative z-10">
                 <div className="flex items-center gap-2">
-                    <ScanLine className="w-4 h-4 text-celestial-emerald" />
-                    <span className="text-xs font-bold text-gray-300">{language === 'zh-TW' ? '智能文檔解析 (IDP)' : 'Intelligent Doc Processing'}</span>
+                    <div className="p-2 bg-celestial-emerald/10 rounded-lg">
+                        <ScanLine className="w-5 h-5 text-celestial-emerald" />
+                    </div>
+                    <div>
+                        <span className="text-sm font-bold text-white block leading-tight">{language === 'zh-TW' ? '智能文檔光譜解讀' : 'Spectral IDP Scanner'}</span>
+                        <span className="text-[10px] text-emerald-400 font-mono">JunAiKey Vision v2.5</span>
+                    </div>
                 </div>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 animate-pulse">LIVE</span>
+                <span className="text-[9px] px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 animate-pulse border border-emerald-500/20">LIVE</span>
             </div>
             
-            <div className="relative h-24 bg-black/40 rounded-lg border border-dashed border-white/10 flex items-center justify-center mt-2 overflow-hidden">
+            <div className="relative flex-1 bg-black/40 rounded-xl border border-dashed border-white/10 flex items-center justify-center overflow-hidden mb-3 group-hover/scan:border-emerald-500/30 transition-colors">
                 {/* Document Icon Background */}
-                <FileText className="w-12 h-12 text-gray-700 absolute opacity-30" />
+                <FileText className="w-16 h-16 text-gray-800 absolute opacity-50" />
                 
                 {/* The Scanning Laser Beam */}
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-celestial-emerald shadow-[0_0_15px_rgba(16,185,129,1)] animate-[scan_2s_linear_infinite]" />
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-celestial-emerald shadow-[0_0_20px_rgba(16,185,129,1)] animate-[scan_2s_linear_infinite]" />
                 
+                {/* Prism Refraction Effect Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent mix-blend-screen animate-pulse pointer-events-none" />
+
                 {/* Decoding Text Effect (Optical Interpretation) */}
-                <div className="relative z-10 font-mono text-sm text-emerald-400 font-bold bg-black/60 px-2 py-1 rounded backdrop-blur-sm border border-emerald-500/30 shadow-lg">
-                    {isLoading ? <span className="animate-pulse">LOADING...</span> : scanText}
+                <div className="relative z-10 font-mono text-sm text-emerald-400 font-bold bg-black/80 px-3 py-1.5 rounded-lg backdrop-blur-md border border-emerald-500/30 shadow-lg flex items-center gap-2">
+                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : <Sparkles className="w-3 h-3 text-celestial-gold animate-pulse"/>}
+                    {isLoading ? 'CALIBRATING...' : scanText}
                 </div>
             </div>
             
-            <div className="mt-2 flex justify-between items-center text-[10px] text-gray-500">
-                <span>File: invoice_2024_Q3.pdf</span>
-                <div className="flex items-center gap-1">
-                    <FileCheck className="w-3 h-3 text-emerald-500" />
-                    <span>OCR Active</span>
+            <div className="flex justify-between items-center text-[10px] text-gray-500 font-mono">
+                <span>FILE: invoice_2024_Q3.pdf</span>
+                <div className="flex items-center gap-1 text-celestial-gold">
+                    <Sun className="w-3 h-3" />
+                    <span>LIGHT_INTERPRETATION: ACTIVE</span>
                 </div>
             </div>
         </div>
@@ -134,9 +145,7 @@ const LightPrismWidget: React.FC<{ language: Language, metrics: any[] }> = ({ la
     };
 
     return (
-        <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group flex flex-col h-full border-celestial-gold/20">
-            {/* Background Effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-celestial-gold/5 via-transparent to-transparent pointer-events-none" />
+        <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group flex flex-col h-full border border-celestial-gold/30 bg-gradient-to-br from-celestial-gold/5 via-slate-900 to-transparent">
             
             <div className="flex justify-between items-start mb-4 relative z-10">
                 <div className="flex items-center gap-2">
@@ -176,12 +185,12 @@ const LightPrismWidget: React.FC<{ language: Language, metrics: any[] }> = ({ la
                 ) : (
                     <div className="space-y-4 animate-fade-in">
                         <div className="text-center mb-2">
-                            <span className="text-xs font-mono text-celestial-gold uppercase tracking-widest">{interpretation.coreFrequency}</span>
+                            <span className="text-xs font-mono text-celestial-gold uppercase tracking-widest bg-celestial-gold/10 px-2 py-1 rounded">{interpretation.coreFrequency}</span>
                         </div>
                         
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {interpretation.spectrum?.map((band: any, i: number) => (
-                                <div key={i} className="relative overflow-hidden rounded-lg bg-black/20 border border-white/5 p-2">
+                                <div key={i} className="relative overflow-hidden rounded-lg bg-black/40 border border-white/5 p-2 backdrop-blur-md">
                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${
                                         band.color === 'emerald' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 
                                         band.color === 'amber' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 
@@ -196,7 +205,7 @@ const LightPrismWidget: React.FC<{ language: Language, metrics: any[] }> = ({ la
                                             }`}>{band.wavelength}</span>
                                             <span className="text-[9px] text-gray-500 font-mono">{band.intensity}</span>
                                         </div>
-                                        <p className="text-xs text-gray-300 leading-tight">{band.insight}</p>
+                                        <p className="text-xs text-gray-300 leading-tight line-clamp-2">{band.insight}</p>
                                     </div>
                                 </div>
                             ))}
@@ -330,7 +339,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
       
       {/* IDP Scanner moved to a full width strip below if needed, or kept separate. 
           For now, adding it as a secondary row item for completeness */}
-      <div className="mt-8">
+      <div className="mt-8 h-48">
          <IdpScannerWidget language={language} isLoading={isLoading} />
       </div>
     </>
@@ -379,7 +388,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
           <div className="animate-fade-in">
               <GlobalOperations />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-                  <OmniEsgCell mode="card" label="Total Facilities" value="12" subValue="Across 3 Regions" icon={Map} color="blue" />
+                  <OmniEsgCell mode="card" label="Total Facilities" value="12" subValue="Across 3 Regions" icon={MapIcon} color="blue" />
                   <OmniEsgCell mode="card" label="Global Efficiency" value="94.2%" trend={{value: 2.1, direction: 'up'}} icon={Zap} color="emerald" traits={['optimization']} />
                   <div className="glass-panel p-6 rounded-2xl border-white/5 flex flex-col justify-center items-center text-center">
                       <div className="text-sm text-gray-400 mb-2">Next Audit</div>

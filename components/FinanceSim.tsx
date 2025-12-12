@@ -9,6 +9,7 @@ import { predictFutureTrends } from '../services/ai-service';
 import { useToast } from '../contexts/ToastContext';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { useCompany } from './providers/CompanyProvider';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface FinanceSimProps {
   language: Language;
@@ -109,6 +110,12 @@ export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
 
   const [data, setData] = useState<any[]>([]);
 
+  const pageData = {
+      title: { zh: '財務模擬器', en: 'ROI Simulator' },
+      desc: { zh: '去碳化投資回報與碳稅衝擊預測', en: 'Decarbonization Investment Analysis' },
+      tag: { zh: '認知核心', en: 'Cognition Core' }
+  };
+
   // Calculate Projection (Updated with Carbon Link)
   useEffect(() => {
     const newData = [];
@@ -152,16 +159,14 @@ export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-             {isZh ? '財務模擬器' : 'ROI Simulator'}
-             <Calculator className="w-6 h-6 text-celestial-gold" />
-          </h2>
-          <p className="text-gray-400">{isZh ? '去碳化投資回報預測' : 'Decarbonization Investment Analysis'}</p>
-        </div>
-      </div>
+    <div className="space-y-8 animate-fade-in pb-12">
+      <UniversalPageHeader 
+          icon={Calculator}
+          title={pageData.title}
+          description={pageData.desc}
+          language={language}
+          tag={pageData.tag}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Controls */}

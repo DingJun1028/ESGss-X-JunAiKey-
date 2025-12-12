@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Language, AuditLogEntry } from '../types';
 import { ShieldCheck, Clock, Hash, Link as LinkIcon, AlertCircle, X, FileCheck, Calendar, User, Code, Search, Filter } from 'lucide-react';
 import { useCompany } from './providers/CompanyProvider';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface AuditTrailProps {
   language: Language;
@@ -12,6 +13,12 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { auditLogs } = useCompany();
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
+
+  const pageData = {
+      title: { zh: '稽核軌跡', en: 'Audit Trail' },
+      desc: { zh: '區塊鏈驗證之不可篡改紀錄 (Linked to System Actions)', en: 'Blockchain Verified Immutable Logs' },
+      tag: { zh: '信任核心', en: 'Trust Core' }
+  };
 
   // Filter States
   const [filterAction, setFilterAction] = useState('');
@@ -41,16 +48,14 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ language }) => {
   const hasLogs = auditLogs.length > 0;
 
   return (
-    <div className="space-y-8 animate-fade-in relative">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-celestial-emerald/10 rounded-xl border border-celestial-emerald/20">
-                 <ShieldCheck className="w-8 h-8 text-celestial-emerald" />
-            </div>
-            <div>
-                <h2 className="text-3xl font-bold text-white">{isZh ? '稽核軌跡' : 'Audit Trail'}</h2>
-                <p className="text-gray-400">{isZh ? '區塊鏈驗證之不可篡改紀錄 (Linked to System Actions)' : 'Blockchain Verified Immutable Logs (Linked to System Actions)'}</p>
-            </div>
-        </div>
+    <div className="space-y-8 animate-fade-in relative pb-12">
+        <UniversalPageHeader 
+            icon={ShieldCheck}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
 
         {/* Filter Bar */}
         {hasLogs && (

@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { Language, View, IntelligenceItem } from '../types';
-import { Briefcase, Search, Globe, FileText, Loader2, Database, TrendingUp, AlertCircle, CheckCircle, ArrowRightLeft, Activity, Save } from 'lucide-react';
+import { Briefcase, Search, Globe, FileText, Loader2, Database, TrendingUp, AlertCircle, CheckCircle, ArrowRightLeft, Activity, Save, BarChart } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { performWebSearch } from '../services/ai-service';
 import { marked } from 'marked';
 import { useCompany } from './providers/CompanyProvider';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface BusinessIntelProps {
   language: Language;
@@ -23,6 +24,12 @@ export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language, onNaviga
   const [scanStep, setScanStep] = useState(0); // 0: Idle, 1: Crawling, 2: Analyzing, 3: Done
   const [report, setReport] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+
+  const pageData = {
+      title: { zh: '商情分析', en: 'Market Analysis' },
+      desc: { zh: 'AI 驅動的企業全方位偵測與競爭者分析', en: 'AI-driven Enterprise Surveillance & Competitor Analysis' },
+      tag: { zh: '智慧偵測', en: 'Intel Scout' }
+  };
 
   const handleScan = async () => {
       if (!companyName) {
@@ -99,15 +106,13 @@ export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language, onNaviga
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-celestial-blue/10 rounded-xl border border-celestial-blue/20">
-                <Briefcase className="w-8 h-8 text-celestial-blue" />
-            </div>
-            <div>
-                <h2 className="text-3xl font-bold text-white">{isZh ? '商情中心' : 'Business Intelligence Center'}</h2>
-                <p className="text-gray-400">{isZh ? 'AI 驅動的企業全方位偵測與競爭者分析' : 'AI-driven Enterprise Surveillance & Competitor Analysis'}</p>
-            </div>
-        </div>
+        <UniversalPageHeader 
+            icon={BarChart}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
 
         {/* Input Section */}
         <div className="glass-panel p-8 rounded-2xl border border-white/10">

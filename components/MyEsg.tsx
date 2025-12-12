@@ -1,184 +1,172 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  CheckSquare, Calendar, Newspaper, Star, Crown, Users, ArrowRight, Sparkles, 
-  ListTodo, Plus, Clock, ShieldCheck, Upload, Loader2, Image as ImageIcon, Trash2,
-  Bot, TrendingUp, AlertTriangle, Zap, CheckCircle, Target, Radio, Bookmark, FolderOpen, FileText, Download, Eye, Briefcase
+  CheckSquare, Crown, Users, ArrowRight, Sparkles, 
+  ListTodo, Plus, ShieldCheck, Upload, Loader2, Image as ImageIcon, Trash2,
+  Radio, FolderOpen, FileText, Hexagon, PenTool, StickyNote, Target, Grid, X, Layout, Maximize2, Minimize2, Edit3, Save, Link2, Share2, Search, FileCheck
 } from 'lucide-react';
-import { Language, Quest, QuestRarity, View } from '../types';
+import { Language, Quest, QuestRarity, View, NoteItem, WidgetType, AppFile } from '../types';
 import { useCompany } from './providers/CompanyProvider';
 import { OmniEsgCell } from './OmniEsgCell';
 import { useToast } from '../contexts/ToastContext';
 import { verifyQuestImage } from '../services/ai-service';
-import { DAILY_BRIEFING_TEMPLATES } from '../constants';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface MyEsgProps {
   language: Language;
   onNavigate: (view: View) => void;
 }
 
-// Daily Briefing Modal Component
-const DailyBriefingModal: React.FC<{ 
-    isOpen: boolean; 
-    onClose: () => void; 
-    language: Language; 
-    userName: string;
-}> = ({ isOpen, onClose, language, userName }) => {
-    const isZh = language === 'zh-TW';
-    const template = DAILY_BRIEFING_TEMPLATES[language];
-    const [displayedText, setDisplayedText] = useState('');
-    const [showInsights, setShowInsights] = useState(false);
+// ... (NoteEditor component unchanged, keep existing code) ...
+// Re-adding NoteEditor for context
+const NoteEditor: React.FC<{
+    note: NoteItem;
+    onUpdate: (id: string, content: string, title?: string, tags?: string[]) => void;
+    onDelete: (id: string) => void;
+    onClose: () => void;
+    isZh: boolean;
+}> = ({ note, onUpdate, onDelete, onClose, isZh }) => {
+    const [content, setContent] = useState(note.content);
+    const [title, setTitle] = useState(note.title);
+    const [isAiProcessing, setIsAiProcessing] = useState(false);
+    const { saveIntelligence } = useCompany();
+    const { addToast } = useToast();
 
-    // Typewriter Effect
-    useEffect(() => {
-        if (isOpen) {
-            let i = 0;
-            const fullText = template.intro;
-            setDisplayedText('');
-            setShowInsights(false);
+    const handleSave = () => {
+        onUpdate(note.id, content, title);
+        onClose();
+    };
+
+    const handleAiAction = (action: 'expand' | 'shorten' | 'refine' | 'format') => {
+        setIsAiProcessing(true);
+        setTimeout(() => {
+            let newContent = content;
+            if (action === 'expand') newContent += "\n\n[AI Expanded]: Additional context provided based on your input...";
+            if (action === 'shorten') newContent = "[Summary]: " + content.substring(0, 50) + "...";
+            if (action === 'refine') newContent = content.replace(/\s+/g, ' ').trim();
+            if (action === 'format') newContent = `## ${title}\n\n* ${content.replace(/\n/g, '\n* ')}`;
             
-            const timer = setInterval(() => {
-                if (i < fullText.length) {
-                    setDisplayedText(prev => prev + fullText.charAt(i));
-                    i++;
-                } else {
-                    clearInterval(timer);
-                    setTimeout(() => setShowInsights(true), 500);
-                }
-            }, 30); // Speed of typing
+            setContent(newContent);
+            setIsAiProcessing(false);
+            addToast('success', isZh ? 'AI 處理完成' : 'AI Processing Complete', 'Universal Agent');
+        }, 1500);
+    };
 
-            return () => clearInterval(timer);
-        }
-    }, [isOpen, template.intro]);
-
-    if (!isOpen) return null;
+    const handleSaveToIntel = () => {
+        saveIntelligence({
+            id: `intel-${Date.now()}`,
+            type: 'note',
+            title: title,
+            source: 'Universal Notes',
+            date: new Date().toISOString(),
+            summary: content.substring(0, 100),
+            tags: ['User Note', 'Saved'],
+            isRead: true
+        });
+        addToast('success', isZh ? '已儲存至萬能智庫' : 'Saved to Universal Intelligence', 'System');
+    };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-            <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden relative group">
-                {/* AI Glow Background */}
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-celestial-purple/10 via-transparent to-celestial-emerald/10 pointer-events-none" />
-                <div className="absolute -top-20 -right-20 w-64 h-64 bg-celestial-gold/10 rounded-full blur-3xl animate-pulse" />
-
-                <div className="relative z-10 p-8">
-                    {/* Header */}
-                    <div className="flex items-start gap-4 mb-6">
-                        <div className="p-3 bg-white/5 rounded-2xl border border-white/10 shadow-lg shadow-purple-500/20">
-                            <Bot className="w-8 h-8 text-celestial-purple" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-                                {template.greeting}, {userName}
-                            </h2>
-                            <div className="text-sm text-gray-400 font-mono flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                JunAiKey Intelligence Feed
-                            </div>
-                        </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5 rounded-t-2xl">
+                    <input 
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="bg-transparent border-none outline-none text-lg font-bold text-white w-full"
+                        placeholder="Note Title"
+                    />
+                    <div className="flex gap-2">
+                        <button onClick={handleSaveToIntel} className="p-2 hover:bg-white/10 rounded-lg text-celestial-purple" title="Save to Intelligence">
+                            <BrainCircuitIcon className="w-5 h-5" />
+                        </button>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-gray-400">
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
+                </div>
+                
+                <div className="p-2 border-b border-white/5 flex gap-2 overflow-x-auto no-scrollbar bg-black/20">
+                    <button onClick={() => handleAiAction('expand')} disabled={isAiProcessing} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-celestial-blue transition-colors whitespace-nowrap">
+                        <Maximize2 className="w-3 h-3" /> {isZh ? '擴寫' : 'Expand'}
+                    </button>
+                    <button onClick={() => handleAiAction('shorten')} disabled={isAiProcessing} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-amber-400 transition-colors whitespace-nowrap">
+                        <Minimize2 className="w-3 h-3" /> {isZh ? '精簡' : 'Shorten'}
+                    </button>
+                    <button onClick={() => handleAiAction('refine')} disabled={isAiProcessing} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-emerald-400 transition-colors whitespace-nowrap">
+                        <Sparkles className="w-3 h-3" /> {isZh ? '潤飾' : 'Refine'}
+                    </button>
+                    <button onClick={() => handleAiAction('format')} disabled={isAiProcessing} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-bold text-purple-400 transition-colors whitespace-nowrap">
+                        <Layout className="w-3 h-3" /> {isZh ? '自動排版' : 'Auto-Format'}
+                    </button>
+                    {isAiProcessing && <Loader2 className="w-4 h-4 text-white animate-spin ml-2" />}
+                </div>
 
-                    {/* AI Message Area - STRICT SINGLE LINE */}
-                    <div className="min-h-[40px] text-gray-300 text-lg leading-relaxed mb-8 font-light flex items-center">
-                        <div className="whitespace-nowrap overflow-hidden text-ellipsis w-full">
-                            {displayedText}
-                        </div>
-                        <span className="inline-block w-1.5 h-5 ml-1 bg-celestial-purple animate-pulse align-middle flex-shrink-0" />
-                    </div>
+                <textarea 
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="flex-1 bg-slate-900 p-6 text-gray-300 resize-none outline-none leading-relaxed custom-scrollbar font-mono text-sm"
+                    placeholder="Start typing..."
+                />
 
-                    {/* Insights Grid */}
-                    {showInsights && (
-                        <div className="space-y-4 animate-fade-in">
-                            {template.insights.map((insight, idx) => (
-                                <div 
-                                    key={idx} 
-                                    className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/20 hover:bg-white/10 transition-all cursor-default group/item"
-                                    style={{ animationDelay: `${idx * 150}ms` }}
-                                >
-                                    <div className={`mt-1 p-1.5 rounded-lg ${
-                                        insight.type === 'risk' ? 'bg-red-500/10 text-red-400' : 
-                                        insight.type === 'opportunity' ? 'bg-emerald-500/10 text-emerald-400' : 
-                                        'bg-amber-500/10 text-amber-400'
-                                    }`}>
-                                        {insight.type === 'risk' ? <AlertTriangle className="w-4 h-4" /> : 
-                                         insight.type === 'opportunity' ? <TrendingUp className="w-4 h-4" /> : 
-                                         <Zap className="w-4 h-4" />}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="text-xs font-bold uppercase tracking-wider mb-1 opacity-70 flex justify-between">
-                                            <span className={
-                                                insight.type === 'risk' ? 'text-red-400' : 
-                                                insight.type === 'opportunity' ? 'text-emerald-400' : 
-                                                'text-amber-400'
-                                            }>
-                                                {isZh ? (insight.type === 'risk' ? '風險警示' : insight.type === 'opportunity' ? '機會訊號' : '異常偵測') : insight.type.toUpperCase()}
-                                            </span>
-                                            <span className="text-gray-500 font-mono">0{idx + 1}</span>
-                                        </div>
-                                        <p className="text-sm text-gray-200 group-hover/item:text-white transition-colors">{insight.text}</p>
-                                    </div>
-                                </div>
-                            ))}
-
-                            <div className="pt-6 mt-6 border-t border-white/10 flex justify-between items-center">
-                                <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                                    <Clock className="w-3 h-3" />
-                                    {isZh ? '最後更新: 3 分鐘前' : 'Last updated: 3m ago'}
-                                </div>
-                                <button 
-                                    onClick={onClose}
-                                    className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                                >
-                                    <CheckCircle className="w-4 h-4" />
-                                    {template.button}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                <div className="p-4 border-t border-white/10 flex justify-between items-center bg-white/5 rounded-b-2xl">
+                    <button onClick={() => onDelete(note.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center gap-2">
+                        <Trash2 className="w-4 h-4" /> {isZh ? '刪除' : 'Delete'}
+                    </button>
+                    <button onClick={handleSave} className="px-6 py-2 bg-celestial-gold text-black font-bold rounded-lg hover:bg-amber-400 transition-colors flex items-center gap-2">
+                        <Save className="w-4 h-4" /> {isZh ? '儲存' : 'Save'}
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
 
+const BrainCircuitIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/><path d="M17.599 6.5a3 3 0 0 0 .399-1.375"/><path d="M6.003 5.125A3 3 0 0 0 6.401 6.5"/><path d="M3.477 10.896a4 4 0 0 1 .585-.396"/><path d="M19.938 10.5a4 4 0 0 1 .585.396"/><path d="M6 18a4 4 0 0 1-1.97-1.364"/><path d="M17.97 16.636A4 4 0 0 1 16 18"/></svg>
+);
+
 export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
   const { 
-    userName, collectedCards, 
     quests, updateQuestStatus, completeQuest,
-    todos, addTodo, toggleTodo, deleteTodo,
-    lastBriefingDate, markBriefingRead,
-    toggleBookmark, bookmarks,
+    myIntelligence, universalNotes, addNote, updateNote, deleteNote,
     files, addFile, removeFile,
-    myIntelligence // Connect to My Intelligence
+    palaceWidgets, addPalaceWidget, removePalaceWidget
   } = useCompany();
   
   const { addToast } = useToast();
   const isZh = language === 'zh-TW';
+  
+  // Refs & Local State
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const complianceFileInputRef = useRef<HTMLInputElement>(null);
   const questFileInputRef = useRef<HTMLInputElement>(null);
-  const [newTodo, setNewTodo] = useState('');
+  const [newNoteInput, setNewNoteInput] = useState('');
   const [activeQuestId, setActiveQuestId] = useState<string | null>(null);
-  const [showBriefing, setShowBriefing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'files'>('overview');
+  const [activeTab, setActiveTab] = useState<'palace' | 'library' | 'notes'>('palace');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isWidgetCatalogOpen, setIsWidgetCatalogOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<NoteItem | null>(null);
 
-  useEffect(() => {
-      const today = new Date().toDateString();
-      if (lastBriefingDate !== today) {
-          const timer = setTimeout(() => setShowBriefing(true), 1000);
-          return () => clearTimeout(timer);
-      }
-  }, [lastBriefingDate]);
+  // Compliance Form State
+  const [complianceForm, setComplianceForm] = useState({
+      standard: 'ISO 14064-1',
+      certId: '',
+      issuer: ''
+  });
 
-  const handleCloseBriefing = () => {
-      setShowBriefing(false);
-      markBriefingRead();
-      addToast('success', isZh ? '情報已同步至策略中樞' : 'Insights synced to Strategy Hub', 'JunAiKey');
+  // Universal Tag Data
+  const pageData = {
+      title: { zh: 'ESG 永恆宮殿', en: 'ESG Eternal Palace' },
+      desc: { zh: '您專屬的永續資產、收藏與成長軌跡', en: 'Your personal sustainability assets, collections, and growth trajectory.' },
+      tag: { zh: '使用者中樞', en: 'User Nexus' }
   };
 
-  const handleAddTodo = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!newTodo.trim()) return;
-      addTodo(newTodo);
-      setNewTodo('');
+  const handleQuickNote = () => {
+      if(!newNoteInput.trim()) return;
+      addNote(newNoteInput, ['Quick Note']);
+      setNewNoteInput('');
+      addToast('success', isZh ? '筆記已寫入萬能筆記本' : 'Note added to Universal Notebook', 'System');
   };
 
   const getRarityStyles = (rarity: QuestRarity) => {
@@ -207,10 +195,7 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
           const quest = quests.find(q => q.id === questId);
           if (!quest) return;
           const file = e.target.files[0];
-          
-          // Add to Universal File System
           addFile(file, 'MyEsg_Quest');
-
           updateQuestStatus(questId, 'verifying');
           addToast('info', isZh ? 'JunAiKey 視覺引擎正在分析...' : 'JunAiKey Vision analyzing...', 'Verification');
           const verification = await verifyQuestImage(quest.title, quest.desc, file, language);
@@ -227,7 +212,6 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
       setActiveQuestId(null);
   };
 
-  // General File Upload
   const handleGeneralFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files[0]) {
           const file = e.target.files[0];
@@ -236,423 +220,400 @@ export const MyEsg: React.FC<MyEsgProps> = ({ language, onNavigate }) => {
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
-  
-  const handleBookmark = (item: any) => {
-      toggleBookmark({ id: item.id, type: item.type, title: item.title });
-      const isAdded = !bookmarks.some(b => b.id === item.id);
-      addToast(isAdded ? 'success' : 'info', isAdded ? 'Added to My Collection' : 'Removed from My Collection', 'Bookmark');
+
+  const handleComplianceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          // In a real app, this would attach metadata to the file entry in Context
+          addFile(file, 'Compliance_Filling'); 
+          addToast('success', isZh ? '合規文件已上傳並建立關聯' : 'Compliance document uploaded and linked', 'Compliance Bot');
+          // Reset form visualization (simulated)
+          setComplianceForm({ standard: 'ISO 14064-1', certId: '', issuer: '' });
+      }
+      if (complianceFileInputRef.current) complianceFileInputRef.current.value = '';
   };
 
-  const handleStarCourseClick = () => {
-      onNavigate(View.ACADEMY);
-      window.open('https://www.esgsunshine.com/courses/berkeley-tsisda', '_blank');
+  const handleAddWidget = (type: WidgetType, title: string, gridSize: any = 'medium') => {
+      addPalaceWidget({ type, title, gridSize });
+      setIsWidgetCatalogOpen(false);
   };
 
-  const calendarItems = [
-    { id: 1, title: 'Net Zero Summit', time: '09:00 AM', type: 'Event', date: 25 },
-    { id: 2, title: 'ESG Committee Mtg', time: '02:00 PM', type: 'Meeting', date: 25 },
-  ];
-  const weekDays = [
-      { day: 'Mon', date: 23 },
-      { day: 'Tue', date: 24 },
-      { day: 'Wed', date: 25, active: true },
-      { day: 'Thu', date: 26 },
-      { day: 'Fri', date: 27 },
-  ];
+  // ... (Renderers for widgets remain same, removed for brevity) ...
+  const renderQuestWidget = () => (
+      <div className="glass-panel p-6 rounded-2xl border-white/10 h-full flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-celestial-gold" />
+                  {isZh ? '每日修煉' : 'Daily Quests'}
+              </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+              {quests.map(quest => (
+                  <div key={quest.id} onClick={() => handleQuestClick(quest)} className={`relative p-3 rounded-xl border transition-all cursor-pointer group flex items-center gap-3 overflow-hidden ${getRarityStyles(quest.rarity)} ${quest.status === 'completed' ? 'opacity-50 grayscale' : 'hover:scale-[1.01]'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 ${quest.status === 'completed' ? 'bg-emerald-500 border-emerald-400' : 'bg-black/30 border-white/20'}`}>
+                          {quest.status === 'completed' ? <CheckSquare className="w-4 h-4 text-white" /> : <Target className="w-4 h-4 text-gray-300" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                          <h4 className={`text-xs font-bold truncate ${quest.status === 'completed' ? 'text-gray-500 line-through' : 'text-white'}`}>{quest.title}</h4>
+                      </div>
+                      <div className="text-xs font-mono font-bold text-celestial-gold">+{quest.xp}</div>
+                  </div>
+              ))}
+          </div>
+          <input type="file" ref={questFileInputRef} className="hidden" accept="image/*" onChange={handleQuestFileUpload} />
+      </div>
+  );
+
+  const renderIntelWidget = () => (
+      <div className="glass-panel p-6 rounded-2xl border-white/10 h-full flex flex-col">
+          <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Radio className="w-4 h-4 text-celestial-purple animate-pulse" />
+                  {isZh ? '我的情報' : 'My Intelligence'}
+              </h3>
+          </div>
+          <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar">
+              {myIntelligence.length === 0 ? <div className="text-center py-8 text-gray-500 text-[10px]">No Intel.</div> : 
+                  myIntelligence.slice(0,5).map(item => (
+                      <div key={item.id} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:border-celestial-purple/30 transition-all group">
+                          <h4 className="text-xs font-bold text-white mb-1 truncate">{item.title}</h4>
+                          <div className="flex justify-between items-center mt-1">
+                              <span className="text-[9px] text-celestial-purple bg-celestial-purple/10 px-1.5 py-0.5 rounded">{item.type}</span>
+                              <span className="text-[9px] text-gray-600">{new Date(item.date).toLocaleDateString()}</span>
+                          </div>
+                      </div>
+                  ))
+              }
+          </div>
+      </div>
+  );
+
+  const renderQuickNoteWidget = () => (
+      <div className="glass-panel p-6 rounded-2xl border-white/10 h-full flex flex-col">
+          <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <PenTool className="w-4 h-4 text-emerald-400" />
+                  {isZh ? '快速筆記' : 'Quick Note'}
+              </h3>
+          </div>
+          <div className="flex-1 bg-white/5 rounded-xl p-2 mb-2">
+              <textarea 
+                  value={newNoteInput}
+                  onChange={(e) => setNewNoteInput(e.target.value)}
+                  placeholder={isZh ? "記錄靈感..." : "Capture idea..."}
+                  className="w-full h-full bg-transparent border-none outline-none text-xs text-white resize-none"
+              />
+          </div>
+          <button onClick={handleQuickNote} className="w-full py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold hover:bg-emerald-500/30 transition-all">
+              {isZh ? '儲存' : 'Save'}
+          </button>
+      </div>
+  );
 
   return (
-    <>
-        <DailyBriefingModal 
-            isOpen={showBriefing} 
-            onClose={handleCloseBriefing} 
+    <div className="space-y-6 pb-24">
+        {editingNote && (
+            <NoteEditor 
+                note={editingNote} 
+                onClose={() => setEditingNote(null)} 
+                onUpdate={updateNote} 
+                onDelete={deleteNote}
+                isZh={isZh}
+            />
+        )}
+
+        <UniversalPageHeader 
+            icon={Crown}
+            title={pageData.title}
+            description={pageData.desc}
             language={language}
-            userName={userName}
+            tag={pageData.tag}
         />
 
-        <div className="space-y-6 animate-fade-in pb-12">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4 pb-4 border-b border-white/5">
-            <div>
-                <h1 className="text-3xl font-bold text-white mb-2">
-                    {isZh ? `早安，${userName}` : `Good morning, ${userName}`}
-                </h1>
-                <p className="text-gray-400 flex items-center gap-2">
-                    {isZh ? '準備好開始今天的永續旅程了嗎？' : 'Ready to start your sustainability journey today?'}
-                    <span className="px-2 py-0.5 bg-celestial-emerald/10 text-celestial-emerald text-xs rounded-full border border-celestial-emerald/20">
-                        ESG Score: 88.4
+        {/* Tab Navigation */}
+        <div className="flex gap-2 border-b border-white/10 pb-1 overflow-x-auto no-scrollbar">
+            {[
+                { id: 'palace', icon: Hexagon, zh: '宮殿總覽', en: 'Palace Overview' },
+                { id: 'library', icon: FolderOpen, zh: '資產與檔案', en: 'Assets & Files' },
+                { id: 'notes', icon: StickyNote, zh: '萬能筆記', en: 'Universal Notes' },
+            ].map(tab => (
+                <button 
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === tab.id ? 'text-celestial-gold border-b-2 border-celestial-gold' : 'text-gray-500 hover:text-white'}`}
+                >
+                    <tab.icon className="w-4 h-4" />
+                    {isZh ? tab.zh : tab.en} 
+                    <span className="text-[10px] font-light opacity-60 ml-1 font-sans">
+                        {isZh ? tab.en : tab.zh}
                     </span>
-                </p>
-            </div>
-            
-            {/* View Switcher */}
-            <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 backdrop-blur-md">
-                <button 
-                    onClick={() => setActiveTab('overview')} 
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'overview' ? 'bg-celestial-purple text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                    <ListTodo className="w-4 h-4" /> {isZh ? '總覽' : 'Overview'}
                 </button>
-                <button 
-                    onClick={() => setActiveTab('files')} 
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'files' ? 'bg-celestial-blue text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                    <FolderOpen className="w-4 h-4" /> {isZh ? '檔案中心' : 'File Center'}
-                </button>
-            </div>
+            ))}
         </div>
 
-        {/* === FILES VIEW === */}
-        {activeTab === 'files' && (
-            <div className="space-y-6 animate-fade-in">
+        {/* === TAB: PALACE OVERVIEW (Customizable Grid) === */}
+        {activeTab === 'palace' && (
+            <div className="animate-fade-in relative">
+                {/* Customization Toggle */}
+                <div className="flex justify-end mb-4">
+                    <button 
+                        onClick={() => setIsEditMode(!isEditMode)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isEditMode ? 'bg-celestial-gold text-black' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                    >
+                        <Grid className="w-3 h-3" />
+                        {isZh ? (isEditMode ? '完成編輯' : '自訂版面') : (isEditMode ? 'Done' : 'Customize')}
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    {/* Hero Banner (Fixed) */}
+                    <div className="md:col-span-12 relative w-full h-64 rounded-2xl overflow-hidden group cursor-pointer border border-celestial-gold/30 shadow-2xl shadow-amber-900/20" onClick={() => onNavigate(View.ACADEMY)}>
+                        <div className="absolute inset-0">
+                            <img src="https://thumbs4.imagebam.com/12/1d/de/ME18KXOE_t.jpg" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Berkeley Course" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
+                        </div>
+                        <div className="absolute inset-0 p-8 flex flex-col justify-center max-w-xl relative z-10">
+                            <div className="flex gap-2 mb-2">
+                                <span className="px-2 py-0.5 bg-celestial-gold text-black text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                                    <Crown className="w-3 h-3" /> Featured Collection
+                                </span>
+                            </div>
+                            <h2 className="text-3xl font-bold text-white mb-2 leading-tight">
+                                Berkeley x TSISDA <br/>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-celestial-gold to-amber-200">International Strategy</span>
+                            </h2>
+                            <button className="w-fit px-4 py-2 bg-celestial-gold hover:bg-amber-400 text-black font-bold rounded-lg text-xs transition-all flex items-center gap-2 group/btn shadow-lg mt-4">
+                                {isZh ? '繼續學習' : 'Continue Learning'}
+                                <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Dynamic Widgets */}
+                    {palaceWidgets.map((widget) => {
+                        const colSpan = widget.gridSize === 'medium' ? 'md:col-span-6' : widget.gridSize === 'large' ? 'md:col-span-8' : 'md:col-span-3';
+                        let content = null;
+                        if (widget.type === 'quest_list') content = renderQuestWidget();
+                        else if (widget.type === 'intel_feed') content = renderIntelWidget();
+                        else if (widget.type === 'quick_note') content = renderQuickNoteWidget();
+                        else content = <div className="p-4 border border-dashed border-white/10 rounded-xl text-center text-gray-500 text-xs">Unknown Widget</div>;
+
+                        return (
+                            <div key={widget.id} className={`${colSpan} relative group h-[300px]`}>
+                                {content}
+                                {isEditMode && (
+                                    <button 
+                                        onClick={() => removePalaceWidget(widget.id)}
+                                        className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg z-20 hover:bg-red-600 transition-colors"
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    {isEditMode && (
+                        <button 
+                            onClick={() => setIsWidgetCatalogOpen(true)}
+                            className="md:col-span-3 h-[300px] border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-white/30 hover:bg-white/5 transition-all"
+                        >
+                            <Plus className="w-8 h-8 mb-2" />
+                            <span className="text-xs font-bold">{isZh ? '新增小工具' : 'Add Widget'}</span>
+                        </button>
+                    )}
+                </div>
+
+                {/* Widget Catalog Modal */}
+                {isWidgetCatalogOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+                        <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-white">{isZh ? '選擇小工具' : 'Select Widget'}</h3>
+                                <button onClick={() => setIsWidgetCatalogOpen(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => handleAddWidget('quest_list', 'Quests', 'medium')} className="p-4 bg-white/5 rounded-xl border border-white/5 hover:border-celestial-gold transition-all text-left">
+                                    <ShieldCheck className="w-6 h-6 text-celestial-gold mb-2" />
+                                    <div className="text-sm font-bold text-white">Quests</div>
+                                    <div className="text-xs text-gray-500">Medium</div>
+                                </button>
+                                <button onClick={() => handleAddWidget('intel_feed', 'Intel', 'medium')} className="p-4 bg-white/5 rounded-xl border border-white/5 hover:border-celestial-purple transition-all text-left">
+                                    <Radio className="w-6 h-6 text-celestial-purple mb-2" />
+                                    <div className="text-sm font-bold text-white">Intel Feed</div>
+                                    <div className="text-xs text-gray-500">Medium</div>
+                                </button>
+                                <button onClick={() => handleAddWidget('quick_note', 'Notes', 'small')} className="p-4 bg-white/5 rounded-xl border border-white/5 hover:border-emerald-400 transition-all text-left">
+                                    <PenTool className="w-6 h-6 text-emerald-400 mb-2" />
+                                    <div className="text-sm font-bold text-white">Quick Note</div>
+                                    <div className="text-xs text-gray-500">Small</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        )}
+
+        {/* === TAB: LIBRARY (Files & Assets) === */}
+        {activeTab === 'library' && (
+            <div className="animate-fade-in space-y-6">
+                
+                {/* NEW: Compliance Filing Section */}
+                <div className="glass-panel p-6 rounded-2xl border border-emerald-500/20 bg-emerald-900/10">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <FileCheck className="w-5 h-5 text-emerald-400" />
+                            {isZh ? '法遵合規申報專區' : 'Compliance Filing Zone'}
+                        </h3>
+                        <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded border border-emerald-500/30">Official</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-400">{isZh ? '合規標準' : 'Standard'}</label>
+                            <select 
+                                value={complianceForm.standard}
+                                onChange={(e) => setComplianceForm({...complianceForm, standard: e.target.value})}
+                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+                            >
+                                <option>ISO 14064-1</option>
+                                <option>ISO 50001</option>
+                                <option>PAS 2060</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-400">{isZh ? '證書編號' : 'Certificate ID'}</label>
+                            <input 
+                                value={complianceForm.certId}
+                                onChange={(e) => setComplianceForm({...complianceForm, certId: e.target.value})}
+                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+                                placeholder="e.g. TW-2024-001"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-gray-400">{isZh ? '頒發機構' : 'Issuer'}</label>
+                            <input 
+                                value={complianceForm.issuer}
+                                onChange={(e) => setComplianceForm({...complianceForm, issuer: e.target.value})}
+                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+                                placeholder="e.g. BSI, SGS"
+                            />
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={() => complianceFileInputRef.current?.click()}
+                        className="w-full py-3 border border-dashed border-emerald-500/30 rounded-xl text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-500/5 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Upload className="w-4 h-4" /> {isZh ? '上傳合規證明文件' : 'Upload Proof Document'}
+                    </button>
+                    <input type="file" ref={complianceFileInputRef} className="hidden" onChange={handleComplianceUpload} />
+                </div>
+
                 <div className="glass-panel p-6 rounded-2xl border-white/10">
                     <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                <FolderOpen className="w-6 h-6 text-celestial-blue" />
-                                {isZh ? '全域檔案中心' : 'Universal File Center'}
-                            </h3>
-                            <p className="text-sm text-gray-400 mt-1">
-                                {isZh ? '所有上傳的文件皆彙整於此，並由 AI 自動分析補全。' : 'All uploaded files are aggregated here, automatically analyzed by AI.'}
-                            </p>
-                        </div>
-                        <button 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="px-4 py-2 bg-celestial-blue hover:bg-blue-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
-                        >
-                            <Upload className="w-4 h-4" />
-                            {isZh ? '上傳檔案' : 'Upload File'}
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <FolderOpen className="w-5 h-5 text-celestial-blue" />
+                            {isZh ? '全域檔案中心' : 'Universal File Center'}
+                        </h3>
+                        <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-celestial-blue hover:bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-2 transition-all">
+                            <Upload className="w-4 h-4" /> {isZh ? '上傳一般檔案' : 'Upload File'}
                         </button>
                         <input type="file" ref={fileInputRef} className="hidden" onChange={handleGeneralFileUpload} />
                     </div>
-
-                    <div className="space-y-3">
-                        {files.length === 0 ? (
-                            <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {files.length === 0 && (
+                            <div className="col-span-full text-center py-12 border-2 border-dashed border-white/5 rounded-xl">
                                 <FolderOpen className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                                <p className="text-gray-500">{isZh ? '尚無檔案' : 'No files found'}</p>
+                                <p className="text-gray-500 text-sm">{isZh ? '尚無檔案' : 'No files found'}</p>
                             </div>
-                        ) : (
-                            files.map(file => (
-                                <div key={file.id} className="p-4 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group hover:border-celestial-blue/30 transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-3 rounded-xl ${file.status === 'scanning' ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-gray-300'}`}>
-                                            {file.status === 'scanning' ? <Loader2 className="w-6 h-6 animate-spin" /> : <FileText className="w-6 h-6" />}
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-white text-sm mb-1">{file.name}</h4>
-                                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                <span>{file.size}</span>
-                                                <span>•</span>
-                                                <span className="text-celestial-blue">{file.sourceModule}</span>
-                                                <span>•</span>
-                                                <span>{new Date(file.uploadDate).toLocaleDateString()}</span>
-                                            </div>
-                                            {file.aiSummary && (
-                                                <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
-                                                    <Sparkles className="w-3 h-3" />
-                                                    {file.aiSummary}
-                                                </div>
-                                            )}
-                                        </div>
+                        )}
+                        {files.map(file => (
+                            <div key={file.id} className="p-4 bg-white/5 border border-white/5 rounded-xl flex items-start gap-4 group hover:border-celestial-blue/30 transition-all hover:bg-white/10">
+                                <div className={`p-3 rounded-xl ${file.status === 'scanning' ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-gray-300'}`}>
+                                    {file.status === 'scanning' ? <Loader2 className="w-6 h-6 animate-spin" /> : <FileText className="w-6 h-6" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-white text-sm mb-1 truncate">{file.name}</h4>
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                                        <span>{file.size}</span>
+                                        <span>•</span>
+                                        <span className="text-celestial-blue">{file.sourceModule}</span>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap gap-1 mt-2">
                                         {file.tags.map(tag => (
-                                            <span key={tag} className="text-[10px] px-2 py-1 bg-white/10 rounded text-gray-300 hidden sm:block">
+                                            <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-black/30 rounded text-gray-300">
                                                 {tag}
                                             </span>
                                         ))}
-                                        <button onClick={() => removeFile(file.id)} className="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-red-400 transition-colors">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 </div>
-                            ))
-                        )}
+                                <button onClick={() => removeFile(file.id)} className="p-2 hover:bg-white/10 rounded-lg text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
         )}
 
-        {/* === OVERVIEW VIEW === */}
-        {activeTab === 'overview' && (
-            <>
-                {/* Star Course Headline Banner */}
-                <div className="relative w-full h-72 md:h-80 rounded-2xl overflow-hidden group cursor-pointer border border-celestial-gold/30 shadow-2xl shadow-amber-900/20 mb-2" onClick={handleStarCourseClick}>
-                    <div className="absolute inset-0">
-                        <img src="https://thumbs4.imagebam.com/12/1d/de/ME18KXOE_t.jpg" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Berkeley Course" />
-                        {/* Gradient Overlay for Text Readability */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
-                    </div>
-                    <div className="absolute inset-0 p-8 flex flex-col justify-center max-w-2xl relative z-10">
-                        <div className="flex gap-2 mb-3">
-                            <span className="px-3 py-1 bg-celestial-gold text-black text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1 animate-pulse">
-                                <Crown className="w-3 h-3" /> Headline
-                            </span>
-                            <span className="px-3 py-1 bg-white/10 text-white text-xs font-bold rounded-full uppercase tracking-wider backdrop-blur-md border border-white/20">
-                                Limited Time
-                            </span>
-                        </div>
-                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight">
-                            Berkeley x TSISDA <br/>
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-celestial-gold to-amber-200">International ESG Strategy Program</span>
-                        </h2>
-                        <p className="text-gray-300 mb-6 text-sm md:text-base line-clamp-2 max-w-xl">
-                            {isZh 
-                                ? '全球唯一整合 Berkeley Haas IBI 八大機構智慧與台灣永續實務。五合一訓練：策略 × 合規 × 創新 × 創價 × 顧問。立即報名雙證班。' 
-                                : 'The only global program integrating Berkeley Haas IBI wisdom with Taiwan\'s practical ESG implementation. 5-in-1 Strategy Training. Register for Dual Certification.'}
-                        </p>
-                        <button className="w-fit px-6 py-3 bg-celestial-gold hover:bg-amber-400 text-black font-bold rounded-xl transition-all flex items-center gap-2 group/btn shadow-lg">
-                            {isZh ? '立即查看' : 'View Now'}
-                            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <div className="md:col-span-2 glass-panel p-0 rounded-2xl border-white/10 flex flex-col overflow-hidden relative">
-                        <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center relative z-10">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                <ShieldCheck className="w-5 h-5 text-celestial-gold" />
-                                {isZh ? '我的任務 (My Quests)' : 'My Quests'}
-                            </h3>
-                            <div className="flex gap-2">
-                                <span className="text-[10px] px-2 py-1 bg-white/10 rounded text-gray-300 border border-white/5 flex items-center gap-1">
-                                    <Users className="w-3 h-3" /> {isZh ? '系統指派' : 'System Assigned'}
-                                </span>
+        {/* === TAB: UNIVERSAL NOTES 2.0 === */}
+        {activeTab === 'notes' && (
+            <div className="animate-fade-in space-y-6">
+                <div className="glass-panel p-6 rounded-2xl border-white/10 min-h-[500px] flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <PenTool className="w-5 h-5 text-celestial-gold" />
+                            {isZh ? '萬能筆記本 2.0' : 'Universal Notebook 2.0'}
+                        </h3>
+                        <div className="flex gap-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500" />
+                                <input placeholder={isZh ? "AI 語意搜尋..." : "AI Semantic Search..."} className="bg-slate-900/50 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-celestial-gold/50" />
                             </div>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 max-h-[300px] bg-slate-900/40">
-                            {quests.map(quest => (
-                                <div 
-                                    key={quest.id} 
-                                    onClick={() => handleQuestClick(quest)}
-                                    className={`
-                                        relative p-3 rounded-xl border transition-all cursor-pointer group flex items-center gap-4 overflow-hidden
-                                        ${getRarityStyles(quest.rarity)}
-                                        ${quest.status === 'completed' ? 'opacity-50 grayscale' : 'hover:scale-[1.01] hover:shadow-lg'}
-                                    `}
-                                >
-                                    {quest.rarity === 'Legendary' && <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent animate-pulse pointer-events-none" />}
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 ${
-                                        quest.status === 'completed' ? 'bg-emerald-500 border-emerald-400' :
-                                        quest.status === 'verifying' ? 'bg-blue-500 border-blue-400 animate-pulse' :
-                                        'bg-black/30 border-white/20'
-                                    }`}>
-                                        {quest.status === 'completed' ? <CheckSquare className="w-5 h-5 text-white" /> :
-                                        quest.status === 'verifying' ? <Loader2 className="w-5 h-5 text-white animate-spin" /> :
-                                        quest.requirement === 'image_upload' ? <ImageIcon className="w-5 h-5 text-gray-300" /> :
-                                        <Target className="w-5 h-5 text-gray-300" />
-                                        }
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <span className={`text-xs font-bold uppercase tracking-wider px-1.5 rounded-sm border 
-                                                ${quest.rarity === 'Legendary' ? 'text-amber-400 border-amber-500/30' : 
-                                                quest.rarity === 'Epic' ? 'text-purple-400 border-purple-500/30' : 
-                                                quest.rarity === 'Rare' ? 'text-blue-400 border-blue-500/30' : 'text-gray-400 border-gray-600'}
-                                            `}>
-                                                {quest.type}
-                                            </span>
-                                            <h4 className={`text-sm font-bold truncate ${quest.status === 'completed' ? 'text-gray-500 line-through' : 'text-white'}`}>
-                                                {quest.title}
-                                            </h4>
-                                        </div>
-                                        <p className="text-xs text-gray-400 truncate">{quest.desc}</p>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <div className="text-sm font-mono font-bold text-celestial-gold">+{quest.xp} XP</div>
-                                        {quest.requirement === 'image_upload' && quest.status === 'active' && (
-                                            <div className="text-[10px] text-blue-400 flex items-center justify-end gap-1 mt-1">
-                                                <Upload className="w-3 h-3" /> {isZh ? '需上傳' : 'Upload'}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <input type="file" ref={questFileInputRef} className="hidden" accept="image/*" onChange={handleQuestFileUpload} />
-                    </div>
-
-                    <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                <Radio className="w-5 h-5 text-celestial-purple animate-pulse" />
-                                {isZh ? '我的情報' : 'My Intelligence'}
-                            </h3>
                             <button 
-                                onClick={() => onNavigate(View.BUSINESS_INTEL)}
-                                className="text-[10px] bg-celestial-purple/20 text-celestial-purple px-2 py-1 rounded hover:bg-celestial-purple/30 transition-colors"
+                                onClick={() => addNote("", [], "")} // Empty note triggers logic
+                                className="px-4 py-1.5 bg-celestial-gold text-black text-xs font-bold rounded-lg hover:bg-amber-400 transition-colors flex items-center gap-2"
                             >
-                                {isZh ? '前往商情中心' : 'Go to Intel Center'}
+                                <Plus className="w-3 h-3" /> {isZh ? '新增' : 'New'}
                             </button>
                         </div>
-                        <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar max-h-[300px]">
-                            {myIntelligence.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 text-xs">
-                                    {isZh ? '尚無儲存的情報。請前往商情中心生成報告。' : 'No saved intelligence. Go to Business Intel to generate reports.'}
-                                </div>
-                            ) : (
-                                myIntelligence.map(item => (
-                                    <div key={item.id} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:border-celestial-purple/30 transition-all group flex gap-3">
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
-                                                    item.type === 'report' ? 'bg-purple-500/20 text-purple-300' :
-                                                    item.type === 'competitor' ? 'bg-blue-500/20 text-blue-300' :
-                                                    'bg-gray-500/20 text-gray-300'
-                                                }`}>
-                                                    {item.type}
-                                                </span>
-                                                <span className="text-[10px] text-gray-500">{new Date(item.date).toLocaleDateString()}</span>
-                                            </div>
-                                            <h4 className="text-sm font-medium text-white group-hover:text-celestial-purple transition-colors leading-snug mb-1">
-                                                {item.title}
-                                            </h4>
-                                            <p className="text-[10px] text-gray-400 line-clamp-2">{item.summary}</p>
-                                        </div>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleBookmark(item); }}
-                                            className={`self-start p-1 rounded hover:bg-white/10 ${bookmarks.some(b => b.id === item.id) ? 'text-celestial-gold' : 'text-gray-600 hover:text-celestial-gold'}`}
-                                        >
-                                            <Star className={`w-4 h-4 ${bookmarks.some(b => b.id === item.id) ? 'fill-current' : ''}`} />
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
                     </div>
-
-                    <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                <ListTodo className="w-5 h-5 text-emerald-400" />
-                                {isZh ? '我的待辦 (To-Do)' : 'My To-Do'}
-                            </h3>
-                            <div className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">
-                                {todos.filter(t => t.done).length}/{todos.length}
+                    
+                    {/* Notes Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 content-start">
+                        {universalNotes.length === 0 && (
+                            <div className="col-span-full text-center py-12 text-gray-500 text-sm">
+                                {isZh ? '筆記本是空的' : 'Notebook is empty'}
                             </div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 max-h-[200px]">
-                            {todos.map(task => (
-                                <div key={task.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 group transition-colors">
-                                    <div className="flex items-center gap-3 overflow-hidden cursor-pointer" onClick={() => toggleTodo(task.id)}>
-                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${task.done ? 'bg-emerald-500 border-emerald-500' : 'border-gray-500 hover:border-emerald-400'}`}>
-                                            {task.done && <CheckSquare className="w-3 h-3 text-white" />}
-                                        </div>
-                                        <span className={`text-sm truncate ${task.done ? 'text-gray-600 line-through' : 'text-gray-300'}`}>
-                                            {task.text}
-                                        </span>
+                        )}
+                        {universalNotes.map(note => (
+                            <div key={note.id} className="p-4 bg-yellow-100/5 border border-yellow-100/10 rounded-xl relative group hover:bg-yellow-100/10 transition-all flex flex-col h-48 cursor-pointer hover:border-celestial-gold/30" onClick={() => setEditingNote(note)}>
+                                <div className="flex justify-between items-start mb-2">
+                                    <h4 className="font-bold text-white text-sm truncate pr-2">{note.title}</h4>
+                                    {note.backlinks && note.backlinks.length > 0 && (
+                                        <Link2 className="w-3 h-3 text-celestial-blue" />
+                                    )}
+                                </div>
+                                <div className="text-gray-300 text-xs leading-relaxed whitespace-pre-wrap flex-1 overflow-hidden line-clamp-5 mb-2 opacity-80">
+                                    {note.content}
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] text-gray-500 pt-2 border-t border-white/5 mt-auto">
+                                    <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                                    <div className="flex gap-1">
+                                        {note.tags.map(t => (
+                                            <span key={t} className="px-1.5 py-0.5 bg-white/5 rounded text-gray-400">{t}</span>
+                                        ))}
                                     </div>
-                                    <button onClick={() => deleteTodo(task.id)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-600 hover:text-red-400 transition-all">
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
                                 </div>
-                            ))}
-                        </div>
-                        <form onSubmit={handleAddTodo} className="mt-4 pt-3 border-t border-white/10 relative">
-                            <input 
-                                type="text" 
-                                value={newTodo}
-                                onChange={(e) => setNewTodo(e.target.value)}
-                                placeholder={isZh ? "新增個人記事..." : "Add note..."}
-                                className="w-full bg-slate-900/50 border border-white/10 rounded-lg pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:border-celestial-emerald/50"
-                            />
-                            <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors">
-                                <Plus className="w-3 h-3" />
-                            </button>
-                        </form>
-                    </div>
-
-                    {/* Dr. Yang Report Card (Original) */}
-                    <div className="col-span-1 md:col-span-2 glass-panel p-6 rounded-2xl relative overflow-hidden group border-celestial-gold/30">
-                        <div className="absolute inset-0 bg-gradient-to-r from-celestial-gold/10 via-transparent to-transparent opacity-50" />
-                        <div className="absolute right-0 top-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <Sparkles className="w-12 h-12 text-celestial-gold/20 animate-spin-slow" />
-                        </div>
-                        <div className="relative z-10 flex flex-col h-full justify-between">
-                            <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="px-2 py-1 bg-celestial-gold text-black text-xs font-bold rounded flex items-center gap-1">
-                                        <Crown className="w-3 h-3" /> Exclusive
-                                    </span>
-                                    <span className="text-xs text-celestial-gold">{isZh ? '每週更新' : 'Weekly Update'}</span>
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2 leading-tight">
-                                    {isZh ? '來自楊博的永續觀察報告' : 'Sustainability Insights from Dr. Yang'}
-                                </h3>
-                                <p className="text-sm text-gray-300 line-clamp-2 mb-4">
-                                    {isZh 
-                                        ? '本週深度解析：CBAM 正式上路後的供應鏈衝擊與應對策略。為何企業需要立即啟動雙重重大性評估？' 
-                                        : 'Deep Dive this week: Supply chain impacts of CBAM implementation and strategies. Why double materiality assessment is urgent.'}
-                                </p>
                             </div>
-                            <button className="flex items-center gap-2 text-sm text-celestial-gold font-bold hover:underline">
-                                {isZh ? '閱讀完整報告' : 'Read Full Report'} <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="glass-panel p-6 rounded-2xl border-white/10 flex flex-col">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <Calendar className="w-5 h-5 text-red-400" />
-                            {isZh ? '我的日曆 (Calendar)' : 'My Calendar'}
-                        </h3>
-                        <div className="flex justify-between mb-4 pb-2 border-b border-white/5">
-                            {weekDays.map((d, i) => (
-                                <div key={i} className={`flex flex-col items-center p-1.5 rounded-lg ${d.active ? 'bg-red-500/20 text-white border border-red-500/40' : 'text-gray-500 hover:bg-white/5'}`}>
-                                    <span className="text-[9px] uppercase tracking-wide">{d.day}</span>
-                                    <span className={`text-xs font-bold ${d.active ? 'text-red-400' : ''}`}>{d.date}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar max-h-[150px]">
-                            {calendarItems.map(ev => (
-                                <div key={ev.id} className="flex gap-3 items-center p-2 rounded-lg hover:bg-white/5 cursor-pointer group">
-                                    <div className={`w-1 h-full min-h-[2rem] rounded-full ${ev.date === 25 ? 'bg-red-400' : 'bg-gray-600'}`} />
-                                    <div className="flex-1">
-                                        <div className="text-sm font-medium text-white group-hover:text-red-300 transition-colors">{ev.title}</div>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <Clock className="w-3 h-3" />
-                                            <span>{ev.time}</span>
-                                            <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px]">{ev.type}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="glass-panel p-6 rounded-2xl border-white/10 bg-gradient-to-b from-slate-800/50 to-transparent">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <Bookmark className="w-5 h-5 text-celestial-gold" />
-                            {isZh ? '我的收藏' : 'My Collection'}
-                        </h3>
-                        <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
-                            {bookmarks.length === 0 ? (
-                                <span className="text-xs text-gray-500 block text-center py-4">No bookmarks yet.</span>
-                            ) : (
-                                bookmarks.map((b) => (
-                                    <div key={b.id} className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/5 hover:border-celestial-gold/30 group cursor-pointer">
-                                        <Star className="w-3 h-3 text-celestial-gold fill-current" />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-xs font-bold text-white truncate">{b.title}</div>
-                                            <div className="text-[9px] text-gray-500">{b.type.toUpperCase()} • {new Date(b.addedAt).toLocaleDateString()}</div>
-                                        </div>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); toggleBookmark(b); }}
-                                            className="p-1 opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                        ))}
                     </div>
                 </div>
-            </>
+            </div>
         )}
     </div>
-    </>
   );
 };

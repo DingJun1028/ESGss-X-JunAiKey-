@@ -12,6 +12,7 @@ import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy
 import { LockedFeature } from './LockedFeature';
 import { SubscriptionModal } from './SubscriptionModal';
 import { universalIntelligence } from '../services/evolutionEngine';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface StrategyHubProps {
   language: Language;
@@ -95,6 +96,12 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
   const [isDebating, setIsDebating] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   
+  const pageData = {
+      title: { zh: '策略中樞', en: 'Strategy Hub' },
+      desc: { zh: '風險熱點圖與多代理決策模擬', en: 'Risk Heatmaps & Multi-Agent Decision Simulation' },
+      tag: { zh: '認知核心', en: 'Cognition Core' }
+  };
+
   // Safe Interval Ref
   const debateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -161,21 +168,16 @@ export const StrategyHub: React.FC<StrategyHubProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in relative">
+    <div className="space-y-8 animate-fade-in relative pb-12">
       <SubscriptionModal isOpen={showSubModal} onClose={() => setShowSubModal(false)} language={language} />
       
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-2 tracking-tight flex items-center gap-2">
-            {t.modules.strategy.title}
-            <div className="px-2 py-0.5 rounded-full bg-celestial-purple/20 border border-celestial-purple/30 flex items-center gap-1">
-               <BrainCircuit className="w-3 h-3 text-celestial-purple" />
-               <span className="text-[10px] text-celestial-purple font-mono">MULTI-AGENT ACTIVE</span>
-            </div>
-          </h2>
-          <p className="text-gray-400">{t.modules.strategy.desc}</p>
-        </div>
-      </div>
+      <UniversalPageHeader 
+          icon={Target}
+          title={pageData.title}
+          description={pageData.desc}
+          language={language}
+          tag={pageData.tag}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Risk Heatmap */}

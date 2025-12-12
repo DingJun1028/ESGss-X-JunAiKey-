@@ -7,6 +7,7 @@ import { useCompany } from './providers/CompanyProvider';
 import { useToast } from '../contexts/ToastContext';
 import { getEsgCards } from '../constants';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface GoodwillCoinProps {
   language: Language;
@@ -90,6 +91,12 @@ export const GoodwillCoin: React.FC<GoodwillCoinProps> = ({ language }) => {
   const [isTransacting, setIsTransacting] = useState(false);
   const [openingPack, setOpeningPack] = useState(false);
 
+  const pageData = {
+      title: { zh: '善向幣市集', en: 'Goodwill Marketplace' },
+      desc: { zh: '兌換 ESG 知識卡片與虛擬資產', en: 'Redeem ESG Knowledge Cards & Virtual Assets' },
+      tag: { zh: '經濟核心', en: 'Econ Core' }
+  };
+
   // Dynamic Cards
   const ESG_CARDS = useMemo(() => getEsgCards(language), [language]);
 
@@ -143,22 +150,14 @@ export const GoodwillCoin: React.FC<GoodwillCoinProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-        <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-celestial-gold/10 rounded-xl border border-celestial-gold/20">
-                    <Coins className="w-8 h-8 text-celestial-gold" />
-                </div>
-                <div>
-                    <h2 className="text-3xl font-bold text-white">{isZh ? '善向幣市集' : 'Goodwill Marketplace'}</h2>
-                    <p className="text-gray-400">{isZh ? '兌換 ESG 知識卡片與虛擬資產' : 'Redeem ESG Knowledge Cards & Virtual Assets'}</p>
-                </div>
-            </div>
-            <div className="text-right">
-                <div className="text-sm text-gray-400">{isZh ? '當前餘額' : 'Current Balance'}</div>
-                <div className="text-2xl font-mono text-celestial-gold font-bold">{goodwillBalance.toLocaleString()} GWC</div>
-            </div>
-        </div>
+    <div className="space-y-8 animate-fade-in pb-12">
+        <UniversalPageHeader 
+            icon={Coins}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Wallet Card (Now Agent) */}

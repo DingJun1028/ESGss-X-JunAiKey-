@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { getMockCourses, TRANSLATIONS } from '../constants';
-import { PlayCircle, Award, Clock, Scale, Cpu, Users, Briefcase, Tag, Globe, Zap, ArrowRight, Calendar, Ticket, Target, GraduationCap, Star, BookOpen, CheckCircle, Crown } from 'lucide-react';
+import { PlayCircle, Cpu, Users, Briefcase, Zap, ArrowRight, Calendar, Ticket, GraduationCap, Crown, BookOpen, CheckCircle, Globe, Scale, Award, Target, Clock } from 'lucide-react';
 import { Language, Course } from '../types';
 import { OmniEsgCell } from './OmniEsgCell';
 import { CoursePlayer } from './CoursePlayer';
 import { useToast } from '../contexts/ToastContext';
 import { useCompany } from './providers/CompanyProvider';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface AcademyProps {
   language: Language;
@@ -59,7 +60,13 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
       addToast('success', isZh ? '正在前往報名頁面...' : 'Redirecting to registration...', 'System');
   };
 
-  // --- MOCK DATA ---
+  const pageData = {
+      title: { zh: '永續學院', en: 'Sustainability Academy' },
+      desc: { zh: '提升團隊 ESG 技能與知識體系', en: 'Upskill your team with curated ESG learning paths.' },
+      tag: { zh: '知識核心', en: 'Knowledge Core' }
+  };
+
+  // --- MOCK DATA (Consolidated) ---
   const regulations = [
       { id: 'reg-1', title: 'IFRS S1/S2', desc: isZh ? '國際財務報導準則永續揭露準則完全解析' : 'Deep dive into IFRS Sustainability Disclosure Standards.', tag: 'Compliance', date: '2024.06.01' },
       { id: 'reg-2', title: 'EU ESRS & CSDDD', desc: isZh ? '歐盟供應鏈盡職調查指令對亞洲企業的衝擊' : 'Impact of EU CSDDD on Asian Supply Chains.', tag: 'Supply Chain', date: '2024.05.28' },
@@ -82,7 +89,6 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
       { id: 'off-2', title: isZh ? '雙重重大性分析' : 'Double Materiality', discount: 'Enterprise Plan', desc: isZh ? '符合 CSRD/GRI 要求' : 'CSRD/GRI Compliant' },
   ];
 
-  // SDG Colors (Approximate)
   const sdgColors = [
       "#E5243B", "#DDA63A", "#4C9F38", "#C5192D", "#FF3A21", 
       "#26BDE2", "#FCC30B", "#A21942", "#FD6925", "#DD1367", 
@@ -112,7 +118,6 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
 
   return (
     <>
-        {/* Course Player Overlay */}
         {activeCourse && (
             <CoursePlayer 
                 course={activeCourse} 
@@ -121,57 +126,36 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
             />
         )}
 
-        <div className="space-y-8 animate-fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 className="text-3xl font-bold text-white">{t.title}</h2>
-                    <p className="text-gray-400">{t.subtitle}</p>
-                </div>
-                
-                {/* OmniEsgCell as a Badge */}
-                <OmniEsgCell 
-                    mode="badge" 
-                    value={t.levelInfo} 
-                    confidence="high" 
-                    color="gold" 
-                    verified={true}
-                    traits={['evolution']} 
-                />
-            </div>
+        <div className="space-y-8 animate-fade-in pb-12">
+            <UniversalPageHeader 
+                icon={GraduationCap}
+                title={pageData.title}
+                description={pageData.desc}
+                language={language}
+                tag={pageData.tag}
+            />
 
             {/* Navigation Tabs */}
-            <div className="flex gap-2 border-b border-white/10 pb-1 overflow-x-auto">
-                <button 
-                    onClick={() => setActiveTab('star')}
-                    className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'star' ? 'text-celestial-gold border-b-2 border-celestial-gold' : 'text-gray-500 hover:text-white'}`}
-                >
-                    <Crown className="w-4 h-4" />
-                    {isZh ? '明星課程 (Star Course)' : 'Star Course'}
-                </button>
-                <button 
-                    onClick={() => setActiveTab('courses')}
-                    className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'courses' ? 'text-white border-b-2 border-emerald-500' : 'text-gray-500 hover:text-white'}`}
-                >
-                    {isZh ? '核心課程 (Courses)' : 'Core Courses'}
-                </button>
-                <button 
-                    onClick={() => setActiveTab('sdgs')}
-                    className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'sdgs' ? 'text-white border-b-2 border-blue-500' : 'text-gray-500 hover:text-white'}`}
-                >
-                    {isZh ? '聯合國 SDGs' : 'UN SDGs'}
-                </button>
-                <button 
-                    onClick={() => setActiveTab('trends')}
-                    className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'trends' ? 'text-white border-b-2 border-celestial-blue' : 'text-gray-500 hover:text-white'}`}
-                >
-                    {isZh ? '法規與趨勢 (Trends & Regs)' : 'Trends & Regs'}
-                </button>
-                <button 
-                    onClick={() => setActiveTab('community')}
-                    className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'community' ? 'text-white border-b-2 border-celestial-gold' : 'text-gray-500 hover:text-white'}`}
-                >
-                    {isZh ? '社群與顧問 (Community)' : 'Community & Consulting'}
-                </button>
+            <div className="flex gap-2 border-b border-white/10 pb-1 overflow-x-auto no-scrollbar">
+                {[
+                    { id: 'star', icon: Crown, zh: '明星課程', en: 'Star Course' },
+                    { id: 'courses', icon: BookOpen, zh: '核心課程', en: 'Core Courses' },
+                    { id: 'sdgs', icon: Globe, zh: '聯合國 SDGs', en: 'UN SDGs' },
+                    { id: 'trends', icon: Scale, zh: '法規與趨勢', en: 'Trends & Regs' },
+                    { id: 'community', icon: Users, zh: '社群與顧問', en: 'Community' },
+                ].map(tab => (
+                    <button 
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === tab.id ? 'text-celestial-gold border-b-2 border-celestial-gold' : 'text-gray-500 hover:text-white'}`}
+                    >
+                        <tab.icon className="w-4 h-4" />
+                        {isZh ? tab.zh : tab.en}
+                        <span className="text-[10px] font-light opacity-60 ml-1 font-sans">
+                            {isZh ? tab.en : tab.zh}
+                        </span>
+                    </button>
+                ))}
             </div>
 
             {/* === TAB: STAR COURSE (BERKELEY) === */}
@@ -325,7 +309,7 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
                 </div>
             )}
 
-            {/* === TAB: COURSES === */}
+            {/* ... other tabs ... */}
             {activeTab === 'courses' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
                     {isLoading 
@@ -419,7 +403,6 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
                 </div>
             )}
 
-            {/* ... (Trends & Community tabs logic remains similar) ... */}
             {/* === TAB: TRENDS & REGS === */}
             {activeTab === 'trends' && (
                 <div className="space-y-8 animate-fade-in">
@@ -470,7 +453,6 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
             {/* === TAB: COMMUNITY & CONSULTING === */}
             {activeTab === 'community' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
-                    
                     {/* Community Exchange */}
                     <div className="glass-panel p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
                         <div className="flex justify-between items-center mb-6">
@@ -540,7 +522,6 @@ export const Academy: React.FC<AcademyProps> = ({ language }) => {
                             <p className="text-[10px] text-gray-500">{isZh ? '由 ESG Sunshine 顧問團隊提供專業支持。' : 'Professional support by ESG Sunshine Consulting Team.'}</p>
                         </div>
                     </div>
-
                 </div>
             )}
         </div>

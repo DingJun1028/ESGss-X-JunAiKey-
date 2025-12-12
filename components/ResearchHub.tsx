@@ -9,6 +9,7 @@ import { performLocalRAG, quantizeData, inferSemanticContext } from '../services
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { universalIntelligence } from '../services/evolutionEngine';
 import { useCompany } from './providers/CompanyProvider';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface ResearchHubProps {
   language: Language;
@@ -98,6 +99,12 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
   const [quantumNodes, setQuantumNodes] = useState<QuantumNode[]>([]);
   const [isQuantizing, setIsQuantizing] = useState(false);
   const [quantumInput, setQuantumInput] = useState('Scope 3 includes 15 categories such as purchased goods, capital goods, and business travel. It is often 70% of total emissions.');
+
+  const pageData = {
+      title: { zh: '研究中心', en: 'Research Center' },
+      desc: { zh: '深入挖掘數據、法規與量子知識圖譜', en: 'Deep dive into data, regulations, and Quantum Knowledge Graph.' },
+      tag: { zh: '知識核心', en: 'Knowledge Core' }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 1200);
@@ -236,10 +243,17 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-       {/* Header */}
+       <UniversalPageHeader 
+            icon={Search}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+       />
+
+       {/* Header Tabs & Search */}
        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">{t.title}</h2>
           <div className="flex gap-4 border-b border-white/10 overflow-x-auto no-scrollbar">
               <button 
                 onClick={() => setActiveTab('quantum')}
@@ -416,7 +430,7 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
           </div>
       )}
 
-      {/* ... (rest of the component logic) ... */}
+      {/* ... (rest of the component logic for sdr, scanner, explorer) ... */}
       {activeTab === 'sdr' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in">
               <div className="col-span-full mb-4 flex justify-between items-center">

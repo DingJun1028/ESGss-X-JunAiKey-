@@ -6,6 +6,7 @@ import { OmniEsgCell } from './OmniEsgCell';
 import { useCompany } from './providers/CompanyProvider';
 import { useToast } from '../contexts/ToastContext';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface CultureBotProps {
   language: Language;
@@ -65,6 +66,12 @@ export const CultureBot: React.FC<CultureBotProps> = ({ language }) => {
       { id: 1, role: 'bot', text: isZh ? "早安！今天的減碳小撇步：隨手關閉不必要的電源，可以減少約 5% 的辦公室能耗喔！" : "Good morning! Tip of the day: Turning off idle electronics can save up to 5% of office energy!" }
   ]);
 
+  const pageData = {
+      title: { zh: '文化推廣機器人', en: 'Culture Bot' },
+      desc: { zh: '每日微學習與 ESG 參與', en: 'Daily Micro-learning & ESG Engagement' },
+      tag: { zh: '文化核心', en: 'Culture Core' }
+  };
+
   const activeQuests = quests.filter(q => q.status !== 'completed');
 
   const handleQuestClick = (quest: any) => {
@@ -95,8 +102,8 @@ export const CultureBot: React.FC<CultureBotProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-        <div className="flex items-center gap-6">
+    <div className="space-y-8 animate-fade-in pb-12">
+        <div className="flex items-center gap-6 border-b border-white/5 pb-6 mb-2">
             {/* The Agent Avatar */}
             <div className="shrink-0">
                 <CultureSpiritAgent 
@@ -105,10 +112,14 @@ export const CultureBot: React.FC<CultureBotProps> = ({ language }) => {
                     xp={xp} 
                 />
             </div>
-            
-            <div>
-                <h2 className="text-3xl font-bold text-white">{isZh ? '文化推廣機器人' : 'Culture Bot'}</h2>
-                <p className="text-gray-400">{isZh ? '每日微學習與 ESG 參與' : 'Daily Micro-learning & ESG Engagement'}</p>
+            <div className="flex-1">
+                <UniversalPageHeader 
+                    icon={Bot}
+                    title={pageData.title}
+                    description={pageData.desc}
+                    language={language}
+                    tag={pageData.tag}
+                />
             </div>
         </div>
 

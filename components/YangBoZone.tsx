@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Language } from '../types';
 import { Crown, Mic, BookOpen, BrainCircuit, PlayCircle, ArrowRight, Lightbulb, X, Star, Award, Briefcase } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface YangBoZoneProps {
   language: Language;
@@ -13,6 +14,12 @@ export const YangBoZone: React.FC<YangBoZoneProps> = ({ language }) => {
   const { addToast } = useToast();
   const [activeSimulation, setActiveSimulation] = useState<boolean>(false);
   const [simulationStep, setSimulationStep] = useState(0);
+
+  const pageData = {
+      title: { zh: '楊博專區', en: 'Yang Bo Zone' },
+      desc: { zh: '創價者的永續智庫與實戰指導', en: 'Sustainability Insights & Practical Guidance from Dr. Yang' },
+      tag: { zh: '策略核心', en: 'Strategy Core' }
+  };
 
   // Profile Data based on PDF
   const profile = {
@@ -72,15 +79,13 @@ export const YangBoZone: React.FC<YangBoZoneProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-celestial-gold to-amber-600 rounded-xl shadow-lg shadow-amber-500/20 text-black">
-                <Crown className="w-8 h-8" />
-            </div>
-            <div>
-                <h2 className="text-3xl font-bold text-white">{isZh ? '楊博專區' : 'Yang Bo Zone'}</h2>
-                <p className="text-gray-400">{isZh ? '創價者的永續智庫與實戰指導' : 'Sustainability Insights & Practical Guidance from Dr. Yang'}</p>
-            </div>
-        </div>
+        <UniversalPageHeader 
+            icon={Crown}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
 
         {/* SPEAKER PROFILE CARD */}
         <div className="glass-panel p-8 rounded-2xl border border-celestial-gold/30 bg-gradient-to-r from-slate-900 to-slate-900/50 relative overflow-hidden">

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { OmniEsgCell } from './OmniEsgCell';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface AlumniZoneProps {
   language: Language;
@@ -42,6 +43,12 @@ export const AlumniZone: React.FC<AlumniZoneProps> = ({ language }) => {
   const [currentRole, setCurrentRole] = useState<UserRole>('Student');
   const [activeTab, setActiveTab] = useState('courses');
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const pageData = {
+      title: { zh: '校友專區 & LMS', en: 'Alumni & LMS Zone' },
+      desc: { zh: '全方位學習管理：課前、課中、課後一站式服務', en: 'Comprehensive Learning Management: Pre, In, Post-class services' },
+      tag: { zh: '學習核心', en: 'LMS Core' }
+  };
 
   // Toggle Role Function
   const handleRoleSwitch = (role: UserRole) => {
@@ -321,15 +328,13 @@ export const AlumniZone: React.FC<AlumniZoneProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-celestial-blue/10 rounded-xl border border-celestial-blue/20">
-                <Users className="w-8 h-8 text-celestial-blue" />
-            </div>
-            <div>
-                <h2 className="text-3xl font-bold text-white">{isZh ? '校友專區 & LMS' : 'Alumni & LMS Zone'}</h2>
-                <p className="text-gray-400">{isZh ? '全方位學習管理：課前、課中、課後一站式服務' : 'Comprehensive Learning Management: Pre, In, Post-class services'}</p>
-            </div>
-        </div>
+        <UniversalPageHeader 
+            icon={Users}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
 
         <RoleSelector />
         

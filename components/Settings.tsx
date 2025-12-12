@@ -4,6 +4,7 @@ import { useCompany } from './providers/CompanyProvider';
 import { useToast } from '../contexts/ToastContext';
 import { Language } from '../types';
 import { Settings as SettingsIcon, Save, RotateCcw, User, Building, CreditCard, Globe, ShieldAlert, Cpu, PlayCircle } from 'lucide-react';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface SettingsProps {
   language: Language;
@@ -24,6 +25,12 @@ export const Settings: React.FC<SettingsProps> = ({ language }) => {
   
   const { addToast } = useToast();
   const isZh = language === 'zh-TW';
+
+  const pageData = {
+      title: { zh: '系統設定', en: 'Settings' },
+      desc: { zh: '管理個人資料、企業參數與模擬環境', en: 'Manage profile, enterprise parameters, and simulation environment' },
+      tag: { zh: '配置核心', en: 'Config Core' }
+  };
 
   const [formData, setFormData] = useState({
     companyName,
@@ -74,15 +81,13 @@ export const Settings: React.FC<SettingsProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 animate-fade-in max-w-4xl mx-auto pb-24">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-slate-800 rounded-xl border border-white/10">
-          <SettingsIcon className="w-8 h-8 text-gray-200" />
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-white">{isZh ? '系統設定' : 'Settings'}</h2>
-          <p className="text-gray-400">{isZh ? '管理個人資料、企業參數與模擬環境' : 'Manage profile, enterprise parameters, and simulation environment'}</p>
-        </div>
-      </div>
+      <UniversalPageHeader 
+          icon={SettingsIcon}
+          title={pageData.title}
+          description={pageData.desc}
+          language={language}
+          tag={pageData.tag}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         

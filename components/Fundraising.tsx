@@ -4,6 +4,7 @@ import { Heart, Globe, ArrowRight, Coins, Users, Target, ShieldCheck } from 'luc
 import { Language } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import { useCompany } from './providers/CompanyProvider';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface FundraisingProps {
   language: Language;
@@ -13,6 +14,12 @@ export const Fundraising: React.FC<FundraisingProps> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
   const { goodwillBalance, updateGoodwillBalance, addAuditLog } = useCompany();
+
+  const pageData = {
+      title: { zh: '善向募資', en: 'ESG Fundraising' },
+      desc: { zh: '將善向幣轉化為真實世界的影響力', en: 'Convert Goodwill Coins into Real-world Impact' },
+      tag: { zh: '社會影響力', en: 'Social Impact' }
+  };
 
   const projects = [
       {
@@ -66,15 +73,13 @@ export const Fundraising: React.FC<FundraisingProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-pink-500/10 rounded-xl border border-pink-500/20">
-                <Heart className="w-8 h-8 text-pink-400" />
-            </div>
-            <div>
-                <h2 className="text-3xl font-bold text-white">{isZh ? '善向募資' : 'ESG Fundraising'}</h2>
-                <p className="text-gray-400">{isZh ? '將善向幣轉化為真實世界的影響力' : 'Convert Goodwill Coins into Real-world Impact'}</p>
-            </div>
-        </div>
+        <UniversalPageHeader 
+            icon={Heart}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => {
@@ -156,4 +161,3 @@ export const Fundraising: React.FC<FundraisingProps> = ({ language }) => {
     </div>
   );
 };
-    

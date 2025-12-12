@@ -3,31 +3,46 @@
  * Defines the available views/modules within the application.
  */
 export enum View {
+  // Core (Personal & Gamification)
   MY_ESG = 'MY_ESG', 
+  YANG_BO = 'YANG_BO', // Moved to Core
+  USER_JOURNAL = 'USER_JOURNAL',
+  RESTORATION = 'RESTORATION', // Universal Restoration (Crystals)
+  CARD_GAME_ARENA = 'CARD_GAME_ARENA', // Goodwill Era
+
+  // Ops (Enterprise Operations)
   DASHBOARD = 'DASHBOARD',
-  CARD_GAME = 'CARD_GAME',
-  RESEARCH_HUB = 'RESEARCH_HUB', 
-  ACADEMY = 'ACADEMY', 
-  DIAGNOSTICS = 'DIAGNOSTICS', 
-  SETTINGS = 'SETTINGS',
   STRATEGY = 'STRATEGY',
-  TALENT = 'TALENT',
   CARBON = 'CARBON',
   REPORT = 'REPORT',
   INTEGRATION = 'INTEGRATION',
-  CULTURE = 'CULTURE',
   FINANCE = 'FINANCE',
   AUDIT = 'AUDIT',
-  GOODWILL = 'GOODWILL',
-  YANG_BO = 'YANG_BO',
-  BUSINESS_INTEL = 'BUSINESS_INTEL',
   HEALTH_CHECK = 'HEALTH_CHECK',
-  UNIVERSAL_TOOLS = 'UNIVERSAL_TOOLS',
+
+  // Intel (Knowledge & Growth)
+  BUSINESS_INTEL = 'BUSINESS_INTEL',
+  RESEARCH_HUB = 'RESEARCH_HUB', 
+  ACADEMY = 'ACADEMY', 
+  LIBRARY = 'LIBRARY',
+
+  // Eco (Community & Ecosystem)
+  GOODWILL = 'GOODWILL',
   FUNDRAISING = 'FUNDRAISING',
-  ABOUT_US = 'ABOUT_US',
+  ALUMNI_ZONE = 'ALUMNI_ZONE',
+  TALENT = 'TALENT',
+  CULTURE = 'CULTURE',
+  
+  // Sys (System & Tools)
+  SETTINGS = 'SETTINGS',
+  DIAGNOSTICS = 'DIAGNOSTICS', 
   API_ZONE = 'API_ZONE',
   UNIVERSAL_BACKEND = 'UNIVERSAL_BACKEND',
-  ALUMNI_ZONE = 'ALUMNI_ZONE'
+  UNIVERSAL_TOOLS = 'UNIVERSAL_TOOLS',
+  ABOUT_US = 'ABOUT_US',
+  
+  // Deprecated/Mapped
+  CARD_GAME = 'RESTORATION', 
 }
 
 export type Language = 'zh-TW' | 'en-US';
@@ -49,6 +64,47 @@ export interface UniversalCrystal {
     fragmentsRequired: number;
     linkedModule: View; // The functional module this crystal wraps
     abilities: string[]; // Unlocked capabilities
+}
+
+// --- USER JOURNEY SYSTEM ---
+export type JourneyStepStatus = 'pending' | 'active' | 'completed';
+
+export interface JourneyStep {
+    id: string;
+    label: string;
+    targetView: View;
+    instruction: string; // Message from AI
+    status: JourneyStepStatus;
+    triggerCondition?: string; // e.g., "carbon_calculated"
+}
+
+export interface UserJourney {
+    id: string;
+    name: string;
+    description: string;
+    steps: JourneyStep[];
+    currentStepIndex: number;
+    isCompleted: boolean;
+}
+
+// --- USER JOURNAL & INSIGHTS ---
+export interface UserJournalEntry {
+    id: string;
+    timestamp: number;
+    title: string;
+    impact: string; // e.g., "Reduced Carbon Calculation time by 40%"
+    xpGained: number;
+    tags: string[]; // e.g., ["Learning", "Operation", "Community"]
+    type: 'milestone' | 'action' | 'insight';
+}
+
+// --- CHANGELOG SYSTEM ---
+export interface ChangelogEntry {
+    version: string;
+    date: string;
+    title: string;
+    changes: string[];
+    category: 'Core' | 'Feature' | 'UI' | 'Fix';
 }
 
 // --- MCP (Model Context Protocol) Definitions ---
@@ -104,7 +160,14 @@ export interface Toast {
   rewardData?: { xp?: number; coins?: number; card?: EsgCard; };
 }
 
-// --- Universal File System ---
+// --- Universal File System & Compliance ---
+export interface ComplianceData {
+    standard: string; // e.g., ISO 14064
+    certId: string;
+    issuer: string;
+    expiryDate: string;
+}
+
 export interface AppFile {
   id: string;
   name: string;
@@ -116,12 +179,13 @@ export interface AppFile {
   tags: string[];
   aiSummary?: string;
   confidence: number;
+  complianceData?: ComplianceData; // Linked compliance info
 }
 
 // --- Universal Intelligence System ---
 export interface IntelligenceItem {
   id: string;
-  type: 'report' | 'news' | 'competitor' | 'regulation';
+  type: 'report' | 'news' | 'competitor' | 'regulation' | 'note';
   title: string;
   source: string;
   date: string;
@@ -237,10 +301,13 @@ export interface ToDoItem {
 
 export interface NoteItem {
   id: string;
+  title: string; // New: Auto-generated Title
   content: string;
   tags: string[];
   createdAt: number;
   source?: 'manual' | 'voice' | 'ai';
+  backlinks?: string[]; // New: Reverse Links
+  isOptimized?: boolean;
 }
 
 export interface BookmarkItem {
@@ -337,6 +404,13 @@ export interface ChatMessage {
       status: 'pending' | 'approved' | 'rejected' | 'completed';
   };
   uiComponent?: any; // For Generative UI JSON payload
+  // New: For AI Proactive Suggestions
+  suggestion?: {
+      title: string;
+      reason: string;
+      actionLabel: string;
+      targetView: View;
+  };
 }
 
 export interface SystemHealth {
@@ -356,7 +430,7 @@ export interface ReportSection {
   principles?: string;
 }
 
-export type WidgetType = 'kpi_card' | 'chart_area' | 'feed_list' | 'mini_map';
+export type WidgetType = 'kpi_card' | 'chart_area' | 'feed_list' | 'mini_map' | 'quest_list' | 'intel_feed' | 'quick_note';
 
 export interface DashboardWidget {
   id: string;

@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useMe
 import { 
   DashboardWidget, AuditLogEntry, EsgCard, Quest, ToDoItem, NoteItem, BookmarkItem, 
   UserTier, CarbonData, MasteryLevel, Badge, WidgetType, AppFile, IntelligenceItem,
-  UniversalCrystal
+  UniversalCrystal, UserJournalEntry
 } from '../../types';
 import { UNIVERSAL_CORES } from '../../constants';
 import { universalIntelligence } from '../../services/evolutionEngine';
@@ -27,7 +27,7 @@ interface CompanyContextType {
   
   xp: number;
   level: number;
-  awardXp: (amount: number) => void;
+  awardXp: (amount: number, reason?: string) => void;
   
   goodwillBalance: number;
   updateGoodwillBalance: (amount: number) => void;
@@ -64,8 +64,8 @@ interface CompanyContextType {
   deleteTodo: (id: number) => void;
   
   universalNotes: NoteItem[];
-  addNote: (content: string, tags?: string[]) => void;
-  updateNote: (id: string, content: string) => void;
+  addNote: (content: string, tags?: string[], title?: string) => void; // Updated signature
+  updateNote: (id: string, content: string, title?: string, tags?: string[]) => void; // Updated
   deleteNote: (id: string) => void;
   
   bookmarks: BookmarkItem[];
@@ -88,6 +88,11 @@ interface CompanyContextType {
   customWidgets: DashboardWidget[];
   addCustomWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full' }) => void;
   removeCustomWidget: (id: string) => void;
+
+  // Palace Widgets
+  palaceWidgets: DashboardWidget[];
+  addPalaceWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full' }) => void;
+  removePalaceWidget: (id: string) => void;
   
   checkBadges: () => Badge[];
   resetData: () => void;
@@ -104,6 +109,10 @@ interface CompanyContextType {
   crystals: UniversalCrystal[];
   collectCrystalFragment: (crystalId: string) => void;
   restoreCrystal: (crystalId: string) => void;
+
+  // User Journal
+  journal: UserJournalEntry[];
+  addJournalEntry: (title: string, impact: string, xp: number, type: 'milestone' | 'action' | 'insight', tags: string[]) => void;
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
@@ -142,8 +151,12 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [cardMastery, setCardMastery] = useState<Record<string, MasteryLevel>>({ 'card-legend-001': 'Master' });
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   
-  // Universal Crystals
+  // Universal Crystals & Journal
   const [crystals, setCrystals] = useState<UniversalCrystal[]>(UNIVERSAL_CORES);
+  const [journal, setJournal] = useState<UserJournalEntry[]>([
+      { id: 'j1', timestamp: Date.now() - 86400000, title: 'System Initialization', impact: 'ESGss Platform Activated', xpGained: 100, type: 'milestone', tags: ['System'] },
+      { id: 'j2', timestamp: Date.now() - 43200000, title: 'Carbon Data Synced', impact: 'Scope 1 & 2 baseline established', xpGained: 50, type: 'action', tags: ['Operation'] }
+  ]);
 
   // Productivity & Files
   const [todos, setTodos] = useState<ToDoItem[]>([]);
@@ -163,6 +176,11 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [customWidgets, setCustomWidgets] = useState<DashboardWidget[]>([
     { id: 'w1', type: 'kpi_card', title: 'ESG Score', config: { metricId: '3' }, gridSize: 'small' }
   ]);
+  const [palaceWidgets, setPalaceWidgets] = useState<DashboardWidget[]>([
+      { id: 'pw1', type: 'quest_list', title: 'Daily Quests', gridSize: 'medium' },
+      { id: 'pw2', type: 'intel_feed', title: 'My Intel', gridSize: 'medium' },
+      { id: 'pw3', type: 'quick_note', title: 'Quick Notes', gridSize: 'small' }
+  ]);
   
   // Cross-Module State
   const [intelligenceBrief, setIntelligenceBrief] = useState<any>(null);
@@ -173,7 +191,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // Persistence (Load)
   useEffect(() => {
-    const saved = localStorage.getItem('esgss_state_v4');
+    const saved = localStorage.getItem('esgss_state_v5');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -198,8 +216,14 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
         setMyIntelligence(data.myIntelligence || []);
         setLastBriefingDate(data.lastBriefingDate || 'never');
         setCustomWidgets(data.customWidgets || []);
+        setPalaceWidgets(data.palaceWidgets || [
+            { id: 'pw1', type: 'quest_list', title: 'Daily Quests', gridSize: 'medium' },
+            { id: 'pw2', type: 'intel_feed', title: 'My Intel', gridSize: 'medium' },
+            { id: 'pw3', type: 'quick_note', title: 'Quick Notes', gridSize: 'small' }
+        ]);
         setIsAiToolsUnlocked(data.isAiToolsUnlocked || false);
         if(data.crystals) setCrystals(data.crystals);
+        if(data.journal) setJournal(data.journal);
       } catch (e) { console.error("Failed to load state", e); }
     }
   }, []);
@@ -209,15 +233,35 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     const state = {
       userName, userRole, companyName, tier, xp, goodwillBalance, esgScores, carbonData,
       budget, carbonCredits, collectedCards, purifiedCards, cardMastery, auditLogs,
-      todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets,
-      isAiToolsUnlocked, crystals
+      todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets, palaceWidgets,
+      isAiToolsUnlocked, crystals, journal
     };
-    localStorage.setItem('esgss_state_v4', JSON.stringify(state));
-  }, [userName, userRole, companyName, tier, xp, goodwillBalance, esgScores, carbonData, budget, carbonCredits, collectedCards, purifiedCards, cardMastery, auditLogs, todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets, isAiToolsUnlocked, crystals]);
+    localStorage.setItem('esgss_state_v5', JSON.stringify(state));
+  }, [userName, userRole, companyName, tier, xp, goodwillBalance, esgScores, carbonData, budget, carbonCredits, collectedCards, purifiedCards, cardMastery, auditLogs, todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets, palaceWidgets, isAiToolsUnlocked, crystals, journal]);
 
   // Actions wrapped in useCallback for performance
+  const addJournalEntry = useCallback((title: string, impact: string, xpGain: number, type: 'milestone' | 'action' | 'insight', tags: string[]) => {
+      const entry: UserJournalEntry = {
+          id: `j-${Date.now()}`,
+          timestamp: Date.now(),
+          title,
+          impact,
+          xpGained: xpGain,
+          type,
+          tags
+      };
+      setJournal(prev => [entry, ...prev].slice(0, 100)); // Keep last 100
+  }, []);
+
   const upgradeTier = useCallback((newTier: UserTier) => setTier(newTier), []);
-  const awardXp = useCallback((amount: number) => setXp(prev => prev + amount), []);
+  
+  const awardXp = useCallback((amount: number, reason: string = 'Activity') => {
+      setXp(prev => prev + amount);
+      if (amount >= 50) {
+          addJournalEntry(reason, `Gained ${amount} XP`, amount, 'action', ['Growth']);
+      }
+  }, [addJournalEntry]);
+
   const updateGoodwillBalance = useCallback((amount: number) => setGoodwillBalance(prev => prev + amount), []);
   
   const updateEsgScore = useCallback((cat: 'environmental' | 'social' | 'governance', val: number) => {
@@ -234,8 +278,9 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   
   const completeQuest = useCallback((id: string, reward: number) => {
     updateQuestStatus(id, 'completed');
-    awardXp(reward);
-  }, [updateQuestStatus, awardXp]);
+    const quest = quests.find(q => q.id === id);
+    awardXp(reward, `Quest Complete: ${quest?.title || 'Unknown'}`);
+  }, [updateQuestStatus, awardXp, quests]);
   
   const addAuditLog = useCallback((action: string, details: string) => {
     const newLog: AuditLogEntry = {
@@ -278,12 +323,22 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     setTodos(prev => prev.filter(t => t.id !== id));
   }, []);
   
-  const addNote = useCallback((content: string, tags: string[] = []) => {
-    setUniversalNotes(prev => [{ id: Date.now().toString(), content, tags, createdAt: Date.now(), source: 'manual' }, ...prev]);
+  const addNote = useCallback((content: string, tags: string[] = [], title?: string) => {
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const generatedTitle = title || `${dateStr} - New Note`;
+    setUniversalNotes(prev => [{ 
+        id: Date.now().toString(), 
+        title: generatedTitle,
+        content, 
+        tags, 
+        createdAt: Date.now(), 
+        source: 'manual',
+        backlinks: []
+    }, ...prev]);
   }, []);
   
-  const updateNote = useCallback((id: string, content: string) => {
-    setUniversalNotes(prev => prev.map(n => n.id === id ? { ...n, content } : n));
+  const updateNote = useCallback((id: string, content: string, title?: string, tags?: string[]) => {
+    setUniversalNotes(prev => prev.map(n => n.id === id ? { ...n, content, title: title || n.title, tags: tags || n.tags } : n));
   }, []);
   
   const deleteNote = useCallback((id: string) => {
@@ -331,6 +386,11 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
                       autoTags.push('Operations');
                   }
 
+                  // Auto-collect Crystal Fragment for Perception Core
+                  if (Math.random() > 0.5) {
+                      collectCrystalFragment('core-perception');
+                  }
+
                   return {
                       ...f,
                       status: 'processed',
@@ -356,6 +416,8 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
           timestamp: Date.now(),
           payload: { title: item.title, type: item.type }
       });
+      // Collecting cognition fragments
+      collectCrystalFragment('core-cognition');
   }, []);
   
   const markBriefingRead = useCallback(() => setLastBriefingDate(new Date().toDateString()), []);
@@ -374,11 +436,26 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const removeCustomWidget = useCallback((id: string) => {
     setCustomWidgets(prev => prev.filter(w => w.id !== id));
   }, []);
+
+  const addPalaceWidget = useCallback((widget: Partial<DashboardWidget>) => {
+    const newWidget: DashboardWidget = {
+      id: `pw-${Date.now()}`,
+      type: widget.type || 'kpi_card',
+      title: widget.title || 'New Widget',
+      config: widget.config || {},
+      gridSize: widget.gridSize || 'small'
+    };
+    setPalaceWidgets(prev => [...prev, newWidget]);
+  }, []);
+
+  const removePalaceWidget = useCallback((id: string) => {
+    setPalaceWidgets(prev => prev.filter(w => w.id !== id));
+  }, []);
   
   const checkBadges = useCallback((): Badge[] => [], []);
   
   const resetData = useCallback(() => {
-    localStorage.removeItem('esgss_state_v4');
+    localStorage.removeItem('esgss_state_v5');
     window.location.reload();
   }, []);
 
@@ -390,23 +467,29 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const collectCrystalFragment = useCallback((crystalId: string) => {
       setCrystals(prev => prev.map(c => {
           if (c.id === crystalId) {
-              const newFragments = Math.min(c.fragmentsCollected + 1, c.fragmentsRequired);
-              const newState = newFragments >= c.fragmentsRequired && c.state === 'Fragmented' ? 'Crystallizing' : c.state;
-              return { ...c, fragmentsCollected: newFragments, state: newState };
+              if (c.fragmentsCollected < c.fragmentsRequired) {
+                  const newFragments = c.fragmentsCollected + 1;
+                  const newState = newFragments >= c.fragmentsRequired && c.state === 'Fragmented' ? 'Crystallizing' : c.state;
+                  // Log if state changed
+                  if (newState !== c.state) {
+                      addJournalEntry('Crystal Evolution', `${c.name} is now Crystallizing`, 500, 'milestone', ['System']);
+                  }
+                  return { ...c, fragmentsCollected: newFragments, state: newState };
+              }
           }
           return c;
       }));
-  }, []);
+  }, [addJournalEntry]);
 
   const restoreCrystal = useCallback((crystalId: string) => {
       setCrystals(prev => prev.map(c => {
           if (c.id === crystalId && c.state === 'Crystallizing') {
-              // Increase integrity when restored
+              addJournalEntry('System Restoration', `${c.name} Fully Restored`, 1000, 'milestone', ['System']);
               return { ...c, state: 'Restored', integrity: 100 };
           }
           return c;
       }));
-  }, []);
+  }, [addJournalEntry]);
 
   // Optimized Context Value
   const contextValue = useMemo(() => ({
@@ -417,22 +500,25 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
       collectedCards, unlockCard, purifiedCards, purifyCard, cardMastery, updateCardMastery,
       todos, addTodo, toggleTodo, deleteTodo, universalNotes, addNote, updateNote, deleteNote,
       bookmarks, toggleBookmark, lastBriefingDate, markBriefingRead, latestEvent, setLatestEvent,
-      customWidgets, addCustomWidget, removeCustomWidget, checkBadges, resetData,
+      customWidgets, addCustomWidget, removeCustomWidget, 
+      palaceWidgets, addPalaceWidget, removePalaceWidget,
+      checkBadges, resetData,
       intelligenceBrief, setIntelligenceBrief,
       files, addFile, removeFile,
       myIntelligence, saveIntelligence,
       isAiToolsUnlocked, unlockAiTools,
-      crystals, collectCrystalFragment, restoreCrystal
+      crystals, collectCrystalFragment, restoreCrystal,
+      journal, addJournalEntry
   }), [
       userName, userRole, companyName, tier, xp, level, goodwillBalance, esgScores, totalScore,
       carbonData, budget, carbonCredits, quests, auditLogs, collectedCards, purifiedCards, cardMastery,
       todos, universalNotes, bookmarks, lastBriefingDate, latestEvent, customWidgets, intelligenceBrief,
-      files, myIntelligence, isAiToolsUnlocked, crystals,
+      files, myIntelligence, isAiToolsUnlocked, crystals, journal, palaceWidgets,
       upgradeTier, awardXp, updateGoodwillBalance, updateEsgScore, updateCarbonData,
       updateQuestStatus, completeQuest, addAuditLog, unlockCard, purifyCard, updateCardMastery,
       addTodo, toggleTodo, deleteTodo, addNote, updateNote, deleteNote, toggleBookmark,
-      markBriefingRead, addCustomWidget, removeCustomWidget, checkBadges, resetData,
-      addFile, removeFile, saveIntelligence, unlockAiTools, collectCrystalFragment, restoreCrystal
+      markBriefingRead, addCustomWidget, removeCustomWidget, addPalaceWidget, removePalaceWidget, checkBadges, resetData,
+      addFile, removeFile, saveIntelligence, unlockAiTools, collectCrystalFragment, restoreCrystal, addJournalEntry
   ]);
 
   return (

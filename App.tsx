@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { View, Language } from './types';
 import { Layout } from './components/Layout';
@@ -25,7 +26,10 @@ const CultureBot = lazy(() => import('./components/CultureBot').then(module => (
 const FinanceSim = lazy(() => import('./components/FinanceSim').then(module => ({ default: module.FinanceSim })));
 const AuditTrail = lazy(() => import('./components/AuditTrail').then(module => ({ default: module.AuditTrail })));
 const GoodwillCoin = lazy(() => import('./components/GoodwillCoin').then(module => ({ default: module.GoodwillCoin })));
-const Gamification = lazy(() => import('./components/Gamification').then(module => ({ default: module.Gamification })));
+// Import Split Components
+const UniversalRestoration = lazy(() => import('./components/Gamification').then(module => ({ default: module.UniversalRestoration })));
+const CardGameArenaView = lazy(() => import('./components/Gamification').then(module => ({ default: module.CardGameArenaView })));
+
 const Settings = lazy(() => import('./components/Settings').then(module => ({ default: module.Settings })));
 const YangBoZone = lazy(() => import('./components/YangBoZone').then(module => ({ default: module.YangBoZone })));
 const BusinessIntel = lazy(() => import('./components/BusinessIntel').then(module => ({ default: module.BusinessIntel })));
@@ -36,6 +40,8 @@ const AboutUs = lazy(() => import('./components/AboutUs').then(module => ({ defa
 const ApiZone = lazy(() => import('./components/ApiZone').then(module => ({ default: module.ApiZone })));
 const UniversalBackend = lazy(() => import('./components/UniversalBackend'));
 const AlumniZone = lazy(() => import('./components/AlumniZone').then(module => ({ default: module.AlumniZone })));
+const GoodwillLibrary = lazy(() => import('./components/GoodwillLibrary').then(module => ({ default: module.GoodwillLibrary })));
+const UserJournal = lazy(() => import('./components/UserJournal').then(module => ({ default: module.UserJournal })));
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -77,7 +83,10 @@ const App: React.FC = () => {
                     switch (currentView) {
                       case View.MY_ESG: return <MyEsg language={language} onNavigate={setCurrentView} />;
                       case View.DASHBOARD: return <Dashboard language={language} />;
-                      case View.CARD_GAME: return <Gamification language={language} />;
+                      case View.RESTORATION: return <UniversalRestoration language={language} />;
+                      case View.CARD_GAME_ARENA: return <CardGameArenaView language={language} />;
+                      case View.USER_JOURNAL: return <UserJournal language={language} />;
+                      
                       case View.FUNDRAISING: return <Fundraising language={language} />;
                       case View.ABOUT_US: return <AboutUs language={language} />;
                       case View.API_ZONE: return <ApiZone language={language} />;
@@ -100,6 +109,7 @@ const App: React.FC = () => {
                       case View.HEALTH_CHECK: return <HealthCheck language={language} onNavigate={setCurrentView} />;
                       case View.UNIVERSAL_TOOLS: return <UniversalTools language={language} />;
                       case View.ALUMNI_ZONE: return <AlumniZone language={language} />;
+                      case View.LIBRARY: return <GoodwillLibrary language={language} />;
                       default: return <MyEsg language={language} onNavigate={setCurrentView} />;
                     }
                   })()}

@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useCompany } from './providers/CompanyProvider';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { universalIntelligence } from '../services/evolutionEngine';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface IntegrationHubProps {
   language: Language;
@@ -134,6 +135,12 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
   const { addAuditLog } = useCompany();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const pageData = {
+      title: { zh: '集成中樞', en: 'Integration Hub' },
+      desc: { zh: '整合 Blue CC, Flowlu, Google/Apple Calendar', en: 'Unifying Blue CC, Flowlu, Google/Apple Calendar' },
+      tag: { zh: '連結核心', en: 'Nexus Core' }
+  };
+
   const [pipelines, setPipelines] = useState([
     { id: 'pipe-1', name: 'Blue CC (ERP)', status: 'active', latency: '45ms', throughput: '1.2 GB/h', type: 'Database' },
     { id: 'pipe-2', name: 'Siemens IoT', status: 'active', latency: '12ms', throughput: '500 MB/h', type: 'Wifi' },
@@ -164,15 +171,16 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-             {isZh ? '集成中樞' : 'Integration Hub'}
-             <Network className="w-6 h-6 text-celestial-blue" />
-          </h2>
-          <p className="text-gray-400">{isZh ? '整合 Blue CC, Flowlu, Google/Apple Calendar' : 'Unifying Blue CC, Flowlu, Google/Apple Calendar'}</p>
-        </div>
+    <div className="space-y-8 animate-fade-in pb-12">
+      <UniversalPageHeader 
+          icon={Network}
+          title={pageData.title}
+          description={pageData.desc}
+          language={language}
+          tag={pageData.tag}
+      />
+
+      <div className="flex justify-end -mt-16 mb-4 relative z-10">
         <button 
             onClick={handleRefresh}
             disabled={isRefreshing}

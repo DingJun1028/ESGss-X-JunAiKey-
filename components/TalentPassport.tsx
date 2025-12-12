@@ -7,6 +7,7 @@ import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadius
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { useCompany } from './providers/CompanyProvider';
 import { useToast } from '../contexts/ToastContext';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface TalentPassportProps {
   language: Language;
@@ -100,6 +101,12 @@ export const TalentPassport: React.FC<TalentPassportProps> = ({ language }) => {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<'skills' | 'certs'>('skills');
 
+  const pageData = {
+      title: { zh: '人才護照', en: 'Talent Passport' },
+      desc: { zh: '區塊鏈驗證技能與職涯星系', en: 'Blockchain Verified Skills & Career Galaxy' },
+      tag: { zh: '人才核心', en: 'Talent Core' }
+  };
+
   // Mock Data for Radar Chart
   const skillData = [
     { subject: isZh ? '碳管理' : 'Carbon Mgmt', A: 120, B: 110, fullMark: 150 },
@@ -115,16 +122,14 @@ export const TalentPassport: React.FC<TalentPassportProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-             {isZh ? '人才護照' : 'Talent Passport'}
-             <Fingerprint className="w-6 h-6 text-celestial-emerald" />
-          </h2>
-          <p className="text-gray-400">{isZh ? '區塊鏈驗證技能與職涯星系' : 'Blockchain Verified Skills & Career Galaxy'}</p>
-        </div>
-      </div>
+    <div className="space-y-8 animate-fade-in pb-12">
+      <UniversalPageHeader 
+          icon={Fingerprint}
+          title={pageData.title}
+          description={pageData.desc}
+          language={language}
+          tag={pageData.tag}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Card */}

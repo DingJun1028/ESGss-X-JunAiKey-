@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Language } from '../types';
 import { Code, Key, Book, Activity, Copy, CheckCircle, Terminal, Zap, Shield, Globe, Server, Radio, Network, Wifi, Trash2, Send, Plus, RefreshCw } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface ApiZoneProps {
   language: Language;
@@ -27,6 +28,12 @@ export const ApiZone: React.FC<ApiZoneProps> = ({ language }) => {
       { id: 'wh_2', event: 'alert.critical', url: 'https://api.enterprise.com/hooks/alerts', status: 'active' }
   ]);
   const [newWebhookUrl, setNewWebhookUrl] = useState('');
+
+  const pageData = {
+      title: { zh: 'API 開發者專區', en: 'API Developer Zone' },
+      desc: { zh: '整合 JunAiKey 引擎至您的企業應用與後台管理', en: 'Integrate JunAiKey Engine & Manage Backend Connections' },
+      tag: { zh: '開發核心', en: 'Dev Core' }
+  };
 
   const handleCopy = () => {
       navigator.clipboard.writeText(apiKey);
@@ -74,15 +81,13 @@ export const ApiZone: React.FC<ApiZoneProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 animate-fade-in pb-12 max-w-6xl mx-auto">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-                <Code className="w-8 h-8 text-indigo-400" />
-            </div>
-            <div>
-                <h2 className="text-3xl font-bold text-white">{isZh ? 'API 開發者專區' : 'API Developer Zone'}</h2>
-                <p className="text-gray-400">{isZh ? '整合 JunAiKey 引擎至您的企業應用與後台管理' : 'Integrate JunAiKey Engine & Manage Backend Connections'}</p>
-            </div>
-        </div>
+        <UniversalPageHeader 
+            icon={Code}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* API Key Management */}

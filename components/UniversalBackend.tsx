@@ -1,12 +1,12 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { universalIntelligence, SystemVital, MCPRegistryItem } from '../services/evolutionEngine';
-import { Activity, Database, Cpu, Network, Zap, Server, BrainCircuit, MemoryStick, HardDrive, Box, ShieldCheck, CheckCircle } from 'lucide-react';
+import { Activity, Database, Cpu, Network, Zap, Server, BrainCircuit, MemoryStick, HardDrive, Box, ShieldCheck, FileText, CheckCircle } from 'lucide-react';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
+import { useUniversalAgent } from '../contexts/UniversalAgentContext';
 
-// ----------------------------------------------------------------------
-// Agent: Core Node (Consciousness) - The Infinite Evolution Wheel
-// ----------------------------------------------------------------------
+// ... (CoreNodeBase and MetricCard components remain the same) ...
+// Re-declaring for context completeness in the replace block
 interface CoreNodeProps extends InjectedProxyProps {
     evolutionStage: number;
 }
@@ -14,7 +14,6 @@ interface CoreNodeProps extends InjectedProxyProps {
 const CoreNodeBase: React.FC<CoreNodeProps> = ({ 
     evolutionStage, adaptiveTraits, isAgentActive, trackInteraction 
 }) => {
-    // Visuals based on agent state
     const isLearning = isAgentActive || adaptiveTraits?.includes('learning');
     const isEvolved = adaptiveTraits?.includes('evolution');
 
@@ -23,18 +22,11 @@ const CoreNodeBase: React.FC<CoreNodeProps> = ({
             className="relative w-[400px] h-[400px] mb-16 flex items-center justify-center cursor-pointer group"
             onClick={() => trackInteraction?.('click')}
         >
-            {/* Outer Ring - Rotating */}
             <div className={`absolute inset-0 rounded-full border border-cyan-900/50 border-dashed animate-[spin_60s_linear_infinite_reverse] ${isLearning ? 'border-cyan-500/30' : ''}`} />
-            
-            {/* Middle Ring - Counter Rotating */}
             <div className={`absolute inset-8 rounded-full border-2 border-transparent border-t-cyan-500/30 border-b-cyan-500/30 animate-[spin_20s_linear_infinite] ${isEvolved ? 'border-t-celestial-gold/30 border-b-celestial-gold/30' : ''}`} />
-            
-            {/* Inner Ring - Pulse */}
             <div className={`absolute inset-0 animate-[spin_3s_linear_infinite] ${isLearning ? 'opacity-100' : 'opacity-30'}`}>
                 <div className="absolute top-0 left-1/2 w-1 h-20 bg-gradient-to-b from-cyan-400 to-transparent blur-[1px]" />
             </div>
-
-            {/* Core Glow */}
             <div className={`absolute inset-32 rounded-full bg-slate-950 border transition-all duration-500 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(6,182,212,0.15)] z-20 backdrop-blur-md group-hover:scale-105
                 ${isLearning ? 'border-celestial-gold/50 shadow-[0_0_50px_rgba(251,191,36,0.2)]' : 'border-cyan-500/20'}
             `}>
@@ -58,7 +50,6 @@ const CoreNodeBase: React.FC<CoreNodeProps> = ({
 
 const CoreNode = withUniversalProxy(CoreNodeBase);
 
-// Helper Component: Metric Card (Memoized)
 const MetricCard = React.memo(({ icon, label, value, subtext, color, progress }: any) => {
   const colorMap: Record<string, string> = {
     cyan: 'text-cyan-400 border-cyan-500/20 bg-cyan-500',
@@ -76,10 +67,8 @@ const MetricCard = React.memo(({ icon, label, value, subtext, color, progress }:
         </div>
         <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">{label}</span>
       </div>
-      
       <div className="text-3xl font-bold text-white mb-1 font-sans">{value}</div>
       <div className="text-xs text-slate-500">{subtext}</div>
-
       {progress !== undefined && (
         <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-800">
           <div 
@@ -99,7 +88,8 @@ const MetricCard = React.memo(({ icon, label, value, subtext, color, progress }:
 const UniversalBackend: React.FC = () => {
   const [vitals, setVitals] = useState<SystemVital | null>(null);
   const [registry, setRegistry] = useState<MCPRegistryItem[]>([]);
-  const [activeTab, setActiveTab] = useState<'monitor' | 'registry'>('monitor');
+  const [activeTab, setActiveTab] = useState<'monitor' | 'registry' | 'evolution'>('monitor');
+  const { evolutionPlan } = useUniversalAgent();
 
   useEffect(() => {
     const sub1 = universalIntelligence.vitals$.subscribe(setVitals);
@@ -143,20 +133,23 @@ const UniversalBackend: React.FC = () => {
           >
               <Database className="w-4 h-4" /> MCP Registry
           </button>
+          <button 
+              onClick={() => setActiveTab('evolution')}
+              className={`px-4 py-2 text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'evolution' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-500 hover:text-white'}`}
+          >
+              <FileText className="w-4 h-4" /> Evolution Report
+          </button>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8 relative z-10">
         
         {activeTab === 'monitor' && (
             <div className="flex flex-col items-center">
-                {/* Core Visualization */}
                 <CoreNode 
                     id="AIOS_Core_Monitor"
                     label="Nexus Core"
                     evolutionStage={vitals.evolutionStage} 
                 />
-
-                {/* Metrics Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl mb-12">
                     <MetricCard 
                         icon={<Cpu className="w-5 h-5" />}
@@ -193,7 +186,6 @@ const UniversalBackend: React.FC = () => {
 
         {activeTab === 'registry' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in w-full max-w-7xl mx-auto">
-                {/* Tools List */}
                 <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col h-fit">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <Box className="w-5 h-5 text-celestial-purple" />
@@ -216,8 +208,6 @@ const UniversalBackend: React.FC = () => {
                         ))}
                     </div>
                 </div>
-
-                {/* Resources List */}
                 <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col h-fit">
                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <HardDrive className="w-5 h-5 text-emerald-400" />
@@ -235,6 +225,69 @@ const UniversalBackend: React.FC = () => {
                                 </div>
                                 <div className="text-[10px] text-gray-400 bg-white/10 px-2 py-1 rounded">
                                     {res.description}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Evolution Report Tab */}
+        {activeTab === 'evolution' && (
+            <div className="w-full max-w-7xl mx-auto animate-fade-in">
+                <div className="glass-panel p-8 rounded-2xl border border-emerald-500/20 bg-slate-900/50">
+                    <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                        <Zap className="w-6 h-6 text-emerald-400" />
+                        AI Self-Evolution Roadmap
+                    </h3>
+                    <p className="text-gray-400 mb-8 max-w-3xl">
+                        This report details the projected upgrade path for the JunAiKey Kernel.
+                        Based on current entropy levels ({vitals.entropy.toFixed(3)}) and interaction density.
+                    </p>
+
+                    <div className="space-y-6">
+                        {evolutionPlan.map((milestone, idx) => (
+                            <div key={idx} className={`p-6 rounded-xl border flex flex-col md:flex-row gap-6 transition-all ${
+                                milestone.status === 'current' 
+                                    ? 'bg-emerald-900/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10' 
+                                    : milestone.status === 'completed'
+                                    ? 'bg-white/5 border-white/10 opacity-70'
+                                    : 'bg-black/40 border-white/5 opacity-50'
+                            }`}>
+                                <div className="md:w-48 shrink-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {milestone.status === 'completed' && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                                        <span className={`text-sm font-bold font-mono ${milestone.status === 'current' ? 'text-emerald-400' : 'text-gray-400'}`}>
+                                            {milestone.version}
+                                        </span>
+                                    </div>
+                                    <h4 className="text-xl font-bold text-white mb-1">{milestone.codename}</h4>
+                                    <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${
+                                        milestone.status === 'current' ? 'bg-emerald-500 text-black' : 'bg-white/10 text-gray-400'
+                                    }`}>
+                                        {milestone.status}
+                                    </span>
+                                </div>
+                                
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <div className="text-xs text-gray-500 uppercase font-bold mb-2">Core Focus</div>
+                                        <div className="text-sm text-gray-200">{milestone.focus}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-gray-500 uppercase font-bold mb-2">Technical Improvements</div>
+                                        <ul className="text-sm text-gray-300 list-disc list-inside">
+                                            {milestone.improvements.map((imp, i) => (
+                                                <li key={i}>{imp}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="md:w-32 shrink-0 flex flex-col justify-center border-l border-white/10 pl-6">
+                                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">Impact</div>
+                                    <div className="text-emerald-400 font-bold">{milestone.estimatedImpact}</div>
                                 </div>
                             </div>
                         ))}

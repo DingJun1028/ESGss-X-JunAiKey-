@@ -1,5 +1,5 @@
 
-import { Metric, Course, SystemHealth, Language, ReportSection, EsgCard, CardSynergy, UniversalCrystal, View } from './types';
+import { Metric, Course, SystemHealth, Language, ReportSection, EsgCard, CardSynergy, UniversalCrystal, View, ChangelogEntry, UserJourney } from './types';
 
 // --- Universal Cores (The Crystals) ---
 export const UNIVERSAL_CORES: UniversalCrystal[] = [
@@ -7,7 +7,7 @@ export const UNIVERSAL_CORES: UniversalCrystal[] = [
         id: 'core-perception',
         name: 'Perception Core (Spectral Eye)',
         type: 'Perception',
-        description: 'Grants the ability to see and digitize the physical world.',
+        description: 'Grants the ability to see and digitize the physical world. (OCR, Vision, IoT)',
         state: 'Fragmented',
         integrity: 45,
         fragmentsCollected: 1,
@@ -19,7 +19,7 @@ export const UNIVERSAL_CORES: UniversalCrystal[] = [
         id: 'core-cognition',
         name: 'Cognition Core (Deep Mind)',
         type: 'Cognition',
-        description: 'Unlocks deep reasoning, simulation, and strategic foresight.',
+        description: 'Unlocks deep reasoning, simulation, and strategic foresight. (CoT, Game Theory)',
         state: 'Fragmented',
         integrity: 60,
         fragmentsCollected: 2,
@@ -31,7 +31,7 @@ export const UNIVERSAL_CORES: UniversalCrystal[] = [
         id: 'core-memory',
         name: 'Memory Core (Quantum Lattice)',
         type: 'Memory',
-        description: 'Stores knowledge as atomic nodes for infinite recall and context.',
+        description: 'Stores knowledge as atomic nodes for infinite recall and context. (RAG, Vector DB)',
         state: 'Restored',
         integrity: 90,
         fragmentsCollected: 5,
@@ -43,7 +43,7 @@ export const UNIVERSAL_CORES: UniversalCrystal[] = [
         id: 'core-expression',
         name: 'Expression Core (The Scribe)',
         type: 'Expression',
-        description: 'Manifests insights into reports, visuals, and interfaces.',
+        description: 'Manifests insights into reports, visuals, and interfaces. (GenUI, Reports)',
         state: 'Crystallizing',
         integrity: 75,
         fragmentsCollected: 3,
@@ -55,7 +55,7 @@ export const UNIVERSAL_CORES: UniversalCrystal[] = [
         id: 'core-nexus',
         name: 'Nexus Core (The Synapse)',
         type: 'Nexus',
-        description: 'Orchestrates the entire system and connects to external reality.',
+        description: 'Orchestrates the entire system and connects to external reality. (API, HITL)',
         state: 'Fragmented',
         integrity: 30,
         fragmentsCollected: 1,
@@ -65,6 +65,108 @@ export const UNIVERSAL_CORES: UniversalCrystal[] = [
     }
 ];
 
+// --- SYSTEM CHANGELOG (Updated per discussion) ---
+export const SYSTEM_CHANGELOG: ChangelogEntry[] = [
+    {
+        version: 'v16.0 (Future)',
+        date: '2025.Q4',
+        title: 'Roadmap: The Omni-Synchronization',
+        category: 'Core',
+        changes: [
+            'Global Digital Twin: Real-time planetary ESG simulation.',
+            'DAO Governance: Community-voted sustainability protocols.',
+            'Quantum Uplink: Direct integration with quantum computing for molecular simulation.',
+            'Holographic Interface: Spatial computing support for Vision Pro.'
+        ]
+    },
+    {
+        version: 'v15.0',
+        date: '2025.05.20',
+        title: 'The AIOS Awakening (Current)',
+        category: 'Core',
+        changes: [
+            'Architecture Reborn: Established 5 Universal Cores (Perception, Cognition, Memory, Expression, Nexus).',
+            'AIOS Kernel: Introduced Universal Agent Context for component-level agency.',
+            'Zero Hallucination Protocol: Self-awareness mechanism locking high-risk features when integrity is low.',
+            'MCP Standard: Standardized Tool Calls and Resource Mounting for external connectivity.'
+        ]
+    },
+    {
+        version: 'v14.8',
+        date: '2025.05.18',
+        title: 'User Journey & Compliance',
+        category: 'Feature',
+        changes: [
+            'User Journey System: "Carbon Kickstart" guided interactive tutorial.',
+            'Compliance Zone: Specialized input area for ISO/GRI certificates in File Center.',
+            'Data Injection: Report Generator now actively pulls data from Carbon Assets & Compliance files.',
+            'Visual Guidance: Highlighting and AI prompts for active workflow steps.'
+        ]
+    },
+    {
+        version: 'v14.5',
+        date: '2025.05.15',
+        title: 'Universal Notes & Palace Upgrade',
+        category: 'Feature',
+        changes: [
+            'Universal Notes 2.0: AI toolbar for expansion, summarization, and auto-formatting.',
+            'Palace Customization: Grid-based widget layout with resizeable blocks (S/M/L).',
+            'Smart Tagging: Auto-generation of YYYYMMDD titles and semantic tags.',
+            'Intel Bridge: One-click save from Notes to Universal Intelligence (My Intel).'
+        ]
+    },
+    {
+        version: 'v14.2',
+        date: '2025.05.10',
+        title: 'Navigation & Standardization',
+        category: 'UI',
+        changes: [
+            'Navigation Reorg: Moved Yang Bo Zone to Core; Standardized "Market Analysis" & "Research Center".',
+            'Universal Header: Unified page headers with breadcrumbs and tags.',
+            'HOC Implementation: "withUniversalProxy" applied to key components for telemetry.'
+        ]
+    },
+    {
+        version: 'v13.8',
+        date: '2025.05.01',
+        title: 'Gamification & Restoration',
+        category: 'Feature',
+        changes: [
+            'Restoration Mechanics: Crystal fragments collection system linked to feature unlocking.',
+            'Goodwill Era: Card Game Arena for strategic knowledge battles.',
+            'User Journal: Immutable log of XP gains and system milestones.'
+        ]
+    },
+    {
+        version: 'v1.0',
+        date: '2024.01.01',
+        title: 'Genesis Launch',
+        category: 'Core',
+        changes: [
+            'Platform Initialization: Basic dashboard and calculator.',
+            'Initial Release of ESGss Protocol.'
+        ]
+    }
+];
+
+// --- JOURNEY TEMPLATES ---
+export const JOURNEY_TEMPLATES = {
+    carbon_kickstart: {
+        id: 'carbon_kickstart',
+        name: 'Carbon Kickstart',
+        description: 'Master your first Scope 1 & 2 inventory with AI guidance.',
+        steps: [
+            { id: 's1', label: 'Go to Carbon Asset', targetView: View.CARBON, instruction: 'Navigate to the Carbon Asset module to begin your journey.', status: 'pending' },
+            { id: 's2', label: 'Open Calculator', targetView: View.CARBON, instruction: 'Switch to the "Calculator" tab to input your activity data.', status: 'pending' },
+            { id: 's3', label: 'Input Activity Data', targetView: View.CARBON, instruction: 'Enter Fuel (L) and Electricity (kWh). The AI is waiting to calculate.', status: 'pending', triggerCondition: 'carbon_calculated' },
+            { id: 's4', label: 'Check Audit Trail', targetView: View.AUDIT, instruction: 'Verify your data immutability in the Audit Trail.', status: 'pending' }
+        ],
+        currentStepIndex: 0,
+        isCompleted: false
+    } as UserJourney
+};
+
+// ... (Rest of existing constants: GLOBAL_GLOSSARY, TRANSLATIONS, etc.) ...
 // --- NEW: Global Knowledge Base for Tooltips ---
 export const GLOBAL_GLOSSARY: Record<string, { definition: string; formula?: string; rationale?: string; tags?: string[] }> = {
     'Scope 1': {
@@ -137,7 +239,10 @@ export const TRANSLATIONS = {
       finance: 'ROI Simulator',
       audit: 'Audit Trail',
       goodwill: 'Goodwill Coin',
-      cardGame: 'Core Restoration', // Renamed
+      cardGame: 'Core Restoration',
+      cardGameArena: 'Goodwill Era Arena',
+      userJournal: 'User Log',
+      restoration: 'Universal Restoration',
       researchHub: 'Research Hub',
       academy: 'Academy',
       diagnostics: 'Diagnostics',
@@ -150,7 +255,8 @@ export const TRANSLATIONS = {
       aboutUs: 'About Us',
       universalBackend: 'Universal Backend',
       apiZone: 'API Zone',
-      alumniZone: 'Alumni & LMS'
+      alumniZone: 'Alumni & LMS',
+      library: 'Goodwill Library'
     },
     modules: {
       myEsg: { title: 'My ESG Cockpit', desc: 'Your personalized sustainability command center.' },
@@ -212,31 +318,40 @@ export const TRANSLATIONS = {
   },
   'zh-TW': {
     nav: {
-      myEsg: '我的 ESG',
+      myEsg: '我的 ESG (My ESG)',
+      userJournal: '使用日誌 (Journal)',
+      restoration: '萬能修復 (Crystals)',
+      cardGameArena: '善向紀元 (Card Game)',
+      
       dashboard: '儀表板 (Dashboard)',
       strategy: '策略中樞 (Strategy Hub)',
-      talent: '人材護照 (Talent Passport)',
       carbon: '碳資產 (Carbon Asset)',
       report: '報告生成 (Report Gen)',
-      integration: '集成中樞 (Integration Hub)',
-      culture: '文化推廣 (Culture Bot)',
-      finance: 'ROI 模擬 (ROI Simulator)',
-      audit: '稽核軌跡 (Audit Trail)',
-      goodwill: '善向幣 (Goodwill Coin)',
-      cardGame: '萬能核心修復', // Renamed
-      researchHub: '研究中心 (Research Hub)',
-      academy: '永續學院 (Academy)',
-      diagnostics: '系統診斷 (Diagnostics)',
-      settings: '設定 (Settings)',
-      yangBo: '楊博專區 (Yang Bo)',
+      integration: '集成中樞 (Integration)',
+      finance: 'ROI 模擬 (ROI Sim)',
+      audit: '稽核軌跡 (Audit)',
+      healthCheck: '全方位健檢 (Check)',
+      
+      researchHub: '研究中心 (Research)',
       businessIntel: '商情中心 (Biz Intel)',
-      healthCheck: '全方位健檢 (Health Check)',
-      universalTools: '萬能工具 (Universal Tools)',
+      academy: '永續學院 (Academy)',
+      library: '善向圖書館 (Library)',
+      yangBo: '楊博專區 (Yang Bo)',
+      
+      goodwill: '善向幣 (Goodwill)',
       fundraising: '善向募資 (Fundraising)',
-      aboutUs: '關於我們 (About Us)',
-      universalBackend: '萬能管理後臺 (Backend Zone)',
+      alumniZone: '校友專區 (Alumni)',
+      talent: '人材護照 (Passport)',
+      culture: '文化推廣 (Culture)',
+      
+      settings: '設定 (Settings)',
+      diagnostics: '系統診斷 (Diagnosis)',
       apiZone: 'API 專區',
-      alumniZone: '校友專區 (Alumni LMS)'
+      universalBackend: '萬能後臺 (Backend)',
+      universalTools: '萬能工具 (Tools)',
+      aboutUs: '關於我們 (About)',
+      
+      cardGame: '萬能核心修復', // Legacy
     },
     modules: {
       myEsg: { title: '我的 ESG (My ESG)', desc: '您的個人化永續戰情室與成長中心。' },
@@ -357,11 +472,7 @@ export const REPORT_STRUCTURE: ReportSection[] = [
   }
 ];
 
-/**
- * Universal Optical Cards - The Knowledge Prism
- * Theme: "Refracting Resources into Impact"
- * Updated to support bilingual display dynamically.
- */
+// ... (Rest of file unchanged: Cards, Metrics, etc.)
 export const getEsgCards = (language: Language): EsgCard[] => {
   const isZh = language === 'zh-TW';
   return [
@@ -453,7 +564,6 @@ export const getEsgCards = (language: Language): EsgCard[] => {
   ];
 };
 
-// --- Synergy System Data ---
 export const getCardSynergies = (lang: Language): CardSynergy[] => {
     const isZh = lang === 'zh-TW';
     return [
@@ -481,10 +591,8 @@ export const getCardSynergies = (lang: Language): CardSynergy[] => {
     ];
 };
 
-// Deprecated static export, kept for legacy if any, but modules should use getEsgCards(lang)
 export const ESG_CARDS = getEsgCards('en-US'); 
 
-// SDR Global Databases
 export const GLOBAL_SDR_MODULES = [
     { id: 'sdr-cdp', name: 'CDP Open Data', description: 'Global disclosure system for investors, companies, cities.', status: 'available', icon: 'Database' },
     { id: 'sdr-gri', name: 'GRI Database', description: 'Comprehensive sustainability reporting standards data.', status: 'available', icon: 'FileText' },

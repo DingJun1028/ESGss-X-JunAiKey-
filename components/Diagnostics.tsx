@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { getMockHealth, TRANSLATIONS } from '../constants';
-import { ShieldCheck, Activity, Server, AlertTriangle, Zap } from 'lucide-react';
+import { ShieldCheck, Activity, Server, AlertTriangle, Zap, Skull } from 'lucide-react';
 import { Language } from '../types';
 import { OmniEsgCell } from './OmniEsgCell';
 import { useToast } from '../contexts/ToastContext';
+import { useUniversalAgent } from '../contexts/UniversalAgentContext';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface DiagnosticsProps {
   language: Language;
@@ -11,9 +14,17 @@ interface DiagnosticsProps {
 
 export const Diagnostics: React.FC<DiagnosticsProps> = ({ language }) => {
   const t = TRANSLATIONS[language].diagnostics;
+  const isZh = language === 'zh-TW';
   const healthData = getMockHealth(language);
   const { addToast } = useToast();
+  const { triggerSystemCrash, systemStatus } = useUniversalAgent();
   const [isLoading, setIsLoading] = useState(true);
+
+  const pageData = {
+      title: { zh: '系統診斷', en: 'System Diagnostics' },
+      desc: { zh: '平台健康與 JunAiKey 狀態', en: 'Platform health and intelligence verification status' },
+      tag: { zh: '系統核心', en: 'System Core' }
+  };
 
   // Simulate Diagnostics Check
   useEffect(() => {
@@ -31,15 +42,26 @@ export const Diagnostics: React.FC<DiagnosticsProps> = ({ language }) => {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-        <div className="flex items-center gap-4">
-            <div className="p-3 bg-celestial-emerald/10 rounded-xl border border-celestial-emerald/20">
-                 <Zap className="w-8 h-8 text-celestial-emerald" />
-            </div>
-            <div>
-                <h2 className="text-3xl font-bold text-white">{t.title}</h2>
-                <p className="text-gray-400">{t.subtitle}</p>
-            </div>
+    <div className="space-y-8 animate-fade-in pb-12">
+        <UniversalPageHeader 
+            icon={Activity}
+            title={pageData.title}
+            description={pageData.desc}
+            language={language}
+            tag={pageData.tag}
+        />
+
+        {/* Action Bar */}
+        <div className="flex justify-end -mt-16 mb-6 relative z-10">
+            <button 
+                onClick={triggerSystemCrash}
+                disabled={systemStatus !== 'STABLE'}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                title="Simulate Critical Failure"
+            >
+                <Skull className="w-4 h-4 group-hover:animate-bounce" />
+                {isZh ? '模擬系統崩潰 (Chaos Test)' : 'Simulate System Crash'}
+            </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -115,9 +137,9 @@ export const Diagnostics: React.FC<DiagnosticsProps> = ({ language }) => {
                             <OmniEsgCell 
                                 mode="cell" 
                                 label={t.version} 
-                                value="v12.0.4" 
+                                value="v15.2.0" 
                                 color="slate" 
-                                subValue="Stable"
+                                subValue="AIOS Active"
                             />
                         </>
                     )}
@@ -137,7 +159,7 @@ export const Diagnostics: React.FC<DiagnosticsProps> = ({ language }) => {
                         <div>
                             <div className="text-sm font-medium text-amber-400">{t.maintenance}</div>
                             <div className="text-xs text-gray-400 mt-1">
-                                Data Verification Engine update scheduled for 03:00 UTC. No downtime expected.
+                                Neural Net Re-training scheduled for 03:00 UTC. Zero downtime expected.
                             </div>
                         </div>
                     </div>

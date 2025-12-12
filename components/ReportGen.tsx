@@ -4,7 +4,7 @@ import { useCompany } from './providers/CompanyProvider';
 import { generateReportChapter, auditReportContent } from '../services/ai-service';
 import { Language, ReportSection } from '../types';
 import { REPORT_STRUCTURE } from '../constants';
-import { FileText, Sparkles, Download, Loader2, Save, ChevronRight, BookOpen, ShieldCheck, CheckCircle, Info, Crown, X, FileBarChart } from 'lucide-react';
+import { FileText, Sparkles, Download, Loader2, Save, ChevronRight, BookOpen, ShieldCheck, CheckCircle, Info, Crown, X, FileBarChart, FileCheck } from 'lucide-react';
 import { marked } from 'marked';
 import { useToast } from '../contexts/ToastContext';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
@@ -12,6 +12,7 @@ import { LockedFeature } from './LockedFeature';
 import { SubscriptionModal } from './SubscriptionModal';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
+import { UniversalPageHeader } from './UniversalPageHeader';
 
 interface ReportGenProps {
   language: Language;
@@ -71,7 +72,7 @@ const ChapterAgent = withUniversalProxy(ChapterNodeBase);
 // ----------------------------------------------------------------------
 
 export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
-  const { companyName, esgScores, totalScore, carbonCredits, budget, tier, carbonData } = useCompany();
+  const { companyName, esgScores, totalScore, carbonCredits, budget, tier, carbonData, files } = useCompany();
   const { addToast } = useToast();
   
   const [activeSectionId, setActiveSectionId] = useState<string>('1.01');
@@ -90,6 +91,16 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const masterReportRef = useRef<HTMLDivElement>(null);
   const isZh = language === 'zh-TW';
+
+  const pageData = {
+      title: { zh: '永續報告書編撰平台', en: 'Sustainability Report Builder' },
+      desc: { zh: 'GRI Standards 2021 合規指引與 AI 撰寫', en: 'GRI Standards 2021 Compliance & AI Writing' },
+      tag: { zh: '表達核心', en: 'Expression Core' }
+  };
+
+  // Compliance Data Retrieval
+  const complianceFiles = files.filter(f => f.sourceModule === 'Compliance_Filling');
+  const hasComplianceData = complianceFiles.length > 0;
 
   const getActiveSectionData = (): ReportSection | undefined => {
     for (const chapter of REPORT_STRUCTURE) {
@@ -121,7 +132,11 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
         company: companyName, scores: esgScores, overall_esg_score: totalScore,
         carbon_credits_inventory: carbonCredits, financial_budget_remaining: budget,
         reporting_year: new Date().getFullYear(),
+        // INJECTED DATA
+        linked_carbon_data: carbonData,
+        compliance_documents: complianceFiles.map(f => f.name)
       };
+      
       const content = await generateReportChapter(activeSection.title, activeSection.template || "", activeSection.example || "", contextData, language);
       setGeneratedContent(prev => ({ ...prev, [activeSection.id]: content }));
       addToast('success', isZh ? '草稿生成完成' : 'Draft generated', 'AI Reporter');
@@ -173,6 +188,8 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
                   budget: budget,
                   credits: carbonCredits
               },
+              compliance: complianceFiles.length > 0 ? "Verified" : "Pending",
+              compliance_docs: complianceFiles.map(f => f.name),
               year: new Date().getFullYear()
           };
 
@@ -181,8 +198,9 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
           Sections: 
           1. Executive Summary (Overall Score & Status)
           2. Environmental Performance (Carbon Data Analysis)
-          3. Strategic Outlook (Based on scores)
-          4. CEO Key Message.
+          3. Compliance Status (Based on linked documents)
+          4. Strategic Outlook (Based on scores)
+          5. CEO Key Message.
           Tone: Professional, Visionary, High-Level.
           Data: ${JSON.stringify(masterContext)}`;
 
@@ -265,18 +283,16 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
             </div>
         )}
 
-        <div className="flex justify-between items-center shrink-0">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-celestial-purple/10 rounded-xl border border-celestial-purple/20">
-                    <FileText className="w-6 h-6 text-celestial-purple" />
-                </div>
-                <div>
-                    <h2 className="text-2xl font-bold text-white">{isZh ? '永續報告書編撰平台' : 'Sustainability Report Builder'}</h2>
-                    <p className="text-gray-400 text-sm">{isZh ? 'GRI Standards 2021 合規指引' : 'GRI Standards 2021 Compliance'}</p>
-                </div>
-            </div>
+        <div className="flex justify-between items-end shrink-0">
+            <UniversalPageHeader 
+                icon={FileText}
+                title={pageData.title}
+                description={pageData.desc}
+                language={language}
+                tag={pageData.tag}
+            />
             
-            <div className="flex gap-3">
+            <div className="flex gap-3 mb-8">
                 <button 
                     onClick={handleGenerateMasterReport}
                     disabled={isGeneratingMaster}
@@ -296,7 +312,7 @@ export const ReportGen: React.FC<ReportGenProps> = ({ language }) => {
             </div>
         </div>
 
-        <div className="flex-1 grid grid-cols-12 gap-6 min-h-0">
+        <div className="flex-1 grid grid-cols-12 gap-6 min-h-0 -mt-6">
             <div className="col-span-3 glass-panel rounded-2xl flex flex-col overflow-hidden border border-white/10">
                 <div className="p-4 border-b border-white/10 bg-white/5"><span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{isZh ? '目錄' : 'Contents'}</span></div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">

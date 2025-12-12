@@ -141,7 +141,7 @@ const SystemCrashOverlay: React.FC = () => {
             {/* CRT Scanline Effect */}
             <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[201] bg-[length:100%_2px,3px_100%] pointer-events-none" />
             
-            <div className="relative z-[202] w-full max-w-2xl p-8">
+            <div className="relative z-20 w-full max-w-2xl p-8">
                 {systemStatus === 'UNSTABLE' && (
                     <div className="text-amber-400 text-center animate-pulse">
                         <AlertOctagon className="w-24 h-24 mx-auto mb-4" />
@@ -253,6 +253,9 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
   const xpProgress = Math.min(100, Math.max(0, ((xp - currentLevelBaseXp) / 1000) * 100));
   const isCritical = totalScore < 60 || systemStatus === 'CRITICAL';
 
+  // Better Avatar Seed
+  const avatarUrl = `https://api.dicebear.com/9.x/notionists/svg?seed=${userName}&backgroundColor=b6e3f4`;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -279,8 +282,8 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
       {
           title: language === 'zh-TW' ? '核心' : 'Core',
           items: [
-              { id: View.MY_ESG, icon: Home, label: t.nav.myEsg }, // Eternal Palace
-              { id: View.YANG_BO, icon: Crown, label: t.nav.yangBo }, // Yang Bo moved here
+              { id: View.MY_ESG, icon: Home, label: t.nav.myEsg }, 
+              { id: View.YANG_BO, icon: Crown, label: t.nav.yangBo }, 
               { id: View.USER_JOURNAL, icon: Book, label: t.nav.userJournal },
               { id: View.RESTORATION, icon: Hexagon, label: t.nav.restoration, highlight: true },
               { id: View.CARD_GAME_ARENA, icon: Swords, label: t.nav.cardGameArena },
@@ -299,8 +302,8 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
       {
           title: language === 'zh-TW' ? '洞察' : 'Intel',
           items: [
-              { id: View.BUSINESS_INTEL, icon: Briefcase, label: language === 'zh-TW' ? '商情分析 (Market Analysis)' : 'Market Analysis' }, // Renamed
-              { id: View.RESEARCH_HUB, icon: Search, label: language === 'zh-TW' ? '研究中心 (Research Center)' : 'Research Center' }, // Renamed
+              { id: View.BUSINESS_INTEL, icon: Briefcase, label: language === 'zh-TW' ? '商情分析 (Market Analysis)' : 'Market Analysis' },
+              { id: View.RESEARCH_HUB, icon: Search, label: language === 'zh-TW' ? '研究中心 (Research Center)' : 'Research Center' },
               { id: View.ACADEMY, icon: GraduationCap, label: t.nav.academy },
               { id: View.LIBRARY, icon: Library, label: t.nav.library },
           ]
@@ -435,7 +438,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
               <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                   <div className="relative group cursor-pointer" onClick={() => onNavigate(View.RESTORATION)}>
                       <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-celestial-purple to-blue-600 p-[1.5px]">
-                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName}`} alt="Profile" className="w-full h-full rounded-full bg-slate-900 object-cover" />
+                          <img src={avatarUrl} alt="Profile" className="w-full h-full rounded-full bg-slate-900 object-cover" />
                       </div>
                       <div className={`absolute -bottom-0.5 -right-0.5 bg-slate-900 rounded-full p-0.5 border border-white/10 ${isCritical ? 'animate-ping' : ''}`}>
                           <div className={`w-2.5 h-2.5 rounded-full ${isCritical ? 'bg-red-500' : 'bg-emerald-500'}`} />
@@ -493,6 +496,14 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
+                <button 
+                    onClick={() => onNavigate(View.ABOUT_US)}
+                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+                    title={language === 'zh-TW' ? "關於我們" : "About Us"}
+                >
+                    <Info className="w-4 h-4" />
+                </button>
+
                 <button 
                     onClick={() => setIsZenMode(true)}
                     className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"

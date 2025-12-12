@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
     Bot, X, Send, Sparkles, BrainCircuit, Search, MessageSquare, 
     Zap, AlertTriangle, ArrowRight, Grid, User, Crown, Terminal,
-    Command, Calendar, Bookmark, Loader2, MoreVertical, Trash2, Archive, Download, Activity, FileText, CheckSquare, Plus, Navigation
+    Command, Calendar, Bookmark, Loader2, MoreVertical, Trash2, Archive, Download, Activity, FileText, CheckSquare, Plus, Navigation, Settings, Upload, Database, File
 } from 'lucide-react';
 import { ChatMessage, Language, View, MCPPrompt } from '../types';
 import { streamChat } from '../services/ai-service';
@@ -23,23 +23,43 @@ const AVATAR_CONFIG = {
     MIRROR: { 
         label: { en: 'Mirror', zh: '鏡之相' }, 
         desc: { en: 'High Context & Reflection', zh: '上下文記憶與反思' },
-        color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/30', icon: User 
+        color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/30', icon: User,
+        instruction: "You are a reflective AI mirror. Your goal is to help the user understand their own context better by mirroring their thoughts and providing high-context summaries."
     },
     EXPERT: { 
         label: { en: 'Expert', zh: '相之相' }, 
         desc: { en: 'Reasoning & Domain Knowledge', zh: '深度推理與專業知識' },
-        color: 'text-celestial-gold', bg: 'bg-amber-500/10', border: 'border-amber-500/30', icon: Crown 
+        color: 'text-celestial-gold', bg: 'bg-amber-500/10', border: 'border-amber-500/30', icon: Crown,
+        instruction: "You are a deep domain expert in ESG, Sustainability, and Corporate Strategy. Use structured reasoning (Chain of Thought) and provide data-driven insights."
     },
     VOID: { 
         label: { en: 'Void', zh: '無之相' }, 
         desc: { en: 'Execution & Tools', zh: '代碼執行與工具調用' },
-        color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: Terminal 
+        color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: Terminal,
+        instruction: "You are a code execution engine and tool orchestrator. Be concise, precise, and favor code blocks or JSON outputs."
+    },
+    CUSTOM: {
+        label: { en: 'Custom', zh: '客製化' },
+        desc: { en: 'User Defined Persona', zh: '自定義 AI 人格' },
+        color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30', icon: Sparkles,
+        instruction: "" // Dynamic
     }
 };
 
+const AGENT_PRESETS = [
+    {
+        name: '楊博 (Dr. Yang)',
+        instruction: 'You are Dr. Yang Bo (Thoth), a Value-Creating ESG Strategy Consultant. You combine Silicon Valley Lean Startup thinking with sustainability. Your tone is professional, insightful, and strategic. Focus on "Golden Triangle" (Capital, Policy, Knowledge) and help the user transform compliance into competitive advantage.'
+    },
+    {
+        name: '阿丹 (Ah Dan)',
+        instruction: '你是阿丹 (Ah Dan)，一位熱情、友善且充滿活力的 ESG 小幫手！你的目標是用最簡單、有趣的方式解釋複雜的永續概念。請多使用表情符號 (Emoji) 🌟，語氣要活潑鼓勵。'
+    }
+];
+
 export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, currentView }) => {
   const { 
-      activeFace, setActiveFace, 
+      activeFace, setActiveFace, customAgent, setCustomAgent,
       chatHistory, systemLogs, addLog, clearLogs, archiveLogs, exportLogs,
       generateEvolutionReport, detectedActions, extractActionFromText, markActionSynced,
       activeJourney, startJourney, currentInstruction
@@ -58,10 +78,23 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
   const [showPrompts, setShowPrompts] = useState(false);
   const [availablePrompts, setAvailablePrompts] = useState<MCPPrompt[]>([]);
 
+  // Custom Agent Edit State
+  const [isEditingAgent, setIsEditingAgent] = useState(false);
+  const [editName, setEditName] = useState(customAgent.name);
+  const [editInstruction, setEditInstruction] = useState(customAgent.instruction);
+  const [editKb, setEditKb] = useState<string[]>(customAgent.knowledgeBase || []);
+  const kbInputRef = useRef<HTMLInputElement>(null);
+
   const { addToast } = useToast();
   const { userName, addTodo } = useCompany();
   const isZh = language === 'zh-TW';
-  const faceConfig = AVATAR_CONFIG[activeFace];
+  
+  // Dynamic Configuration
+  const faceConfig = activeFace === 'CUSTOM' ? {
+      ...AVATAR_CONFIG.CUSTOM,
+      label: { en: customAgent.name, zh: customAgent.name },
+      instruction: customAgent.instruction
+  } : AVATAR_CONFIG[activeFace];
 
   // Auto-scroll
   useEffect(() => {
@@ -76,6 +109,15 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
   useEffect(() => {
       setAvailablePrompts(universalIntelligence.getAllPrompts());
   }, []);
+
+  // Sync edit state when custom agent updates (e.g. initial load)
+  useEffect(() => {
+      if (customAgent) {
+          setEditName(customAgent.name);
+          setEditInstruction(customAgent.instruction);
+          setEditKb(customAgent.knowledgeBase || []);
+      }
+  }, [customAgent]);
 
   // --- Generate Page Insight on View Change (Push to Chat) ---
   useEffect(() => {
@@ -161,10 +203,16 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
             return;
         }
 
-        // Standard Chat
+        // Standard Chat with System Instruction
         const systemState = { view: currentView, user: userName };
-        const fullPrompt = `[System: ${JSON.stringify(systemState)}] User: ${currentInput}`;
-        const stream = streamChat(fullPrompt, language);
+        const baseContext = `[System Context: ${JSON.stringify(systemState)}]`;
+        const fullPrompt = `${baseContext} User: ${currentInput}`;
+        
+        // Pass KB only if Custom Face is active
+        const knowledgeBase = activeFace === 'CUSTOM' ? customAgent.knowledgeBase : undefined;
+        
+        // Use the configured instruction from the active face
+        const stream = streamChat(fullPrompt, language, faceConfig.instruction, knowledgeBase);
         
         let fullText = '';
         let isFirst = true;
@@ -190,6 +238,52 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
       addTodo(text);
       markActionSynced(id);
       addToast('success', isZh ? '已同步至待辦清單' : 'Synced to To-Do List', 'AI Secretary');
+  };
+
+  const handleSaveCustomAgent = () => {
+      setCustomAgent({ 
+          name: editName, 
+          instruction: editInstruction,
+          knowledgeBase: editKb 
+      });
+      setIsEditingAgent(false);
+      setActiveFace('CUSTOM');
+      setShowAvatarInfo(false);
+      addToast('success', isZh ? '客製化 AI 已更新' : 'Custom Agent Updated', 'System');
+  };
+
+  const handleApplyPreset = (preset: typeof AGENT_PRESETS[0]) => {
+      setEditName(preset.name);
+      setEditInstruction(preset.instruction);
+  };
+
+  const handleKbUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+          const files = Array.from(e.target.files);
+          const newEntries: string[] = [];
+          
+          for (const file of files) {
+              try {
+                  const text = await file.text();
+                  // Simple framing for RAG context
+                  newEntries.push(`--- SOURCE: ${file.name} ---\n${text}`);
+              } catch (err) {
+                  console.error("File read error", err);
+              }
+          }
+          
+          setEditKb(prev => [...prev, ...newEntries]);
+          addToast('success', isZh ? `已上傳 ${files.length} 個檔案至知識庫` : `Uploaded ${files.length} files to Knowledge Base`, 'System');
+      }
+  };
+
+  const removeKbItem = (index: number) => {
+      setEditKb(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getKbName = (content: string) => {
+      const match = content.match(/--- SOURCE: (.*?) ---/);
+      return match ? match[1] : 'Unknown Source';
   };
 
   return (
@@ -234,27 +328,49 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
                         </button>
                         
                         {showAvatarInfo && (
-                            <div className="absolute top-12 left-0 w-64 bg-slate-800 border border-white/20 rounded-xl p-3 z-50 shadow-xl animate-fade-in">
-                                <h4 className={`text-sm font-bold ${faceConfig.color} mb-1`}>
-                                    {isZh ? faceConfig.label.zh : faceConfig.label.en}
-                                </h4>
-                                <p className="text-xs text-gray-300">{isZh ? faceConfig.desc.zh : faceConfig.desc.en}</p>
-                                <div className="mt-2 flex gap-1">
+                            <div className="absolute top-12 left-0 w-72 bg-slate-900 border border-white/20 rounded-xl p-4 z-50 shadow-2xl animate-fade-in ring-1 ring-white/10">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h4 className={`text-sm font-bold ${faceConfig.color}`}>
+                                        {isZh ? faceConfig.label.zh : faceConfig.label.en}
+                                    </h4>
+                                    {activeFace === 'CUSTOM' && (
+                                        <button 
+                                            onClick={() => setIsEditingAgent(true)}
+                                            className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"
+                                            title="Edit Persona"
+                                        >
+                                            <Settings className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-400 mb-3">{isZh ? faceConfig.desc.zh : faceConfig.desc.en}</p>
+                                
+                                <div className="flex gap-2">
                                     {(['MIRROR', 'EXPERT', 'VOID'] as AvatarFace[]).map(f => (
                                         <button 
                                             key={f} 
                                             onClick={() => { setActiveFace(f); setShowAvatarInfo(false); }}
-                                            className={`text-[10px] px-2 py-1 rounded border ${activeFace === f ? 'bg-white/20 border-white' : 'bg-black/20 border-transparent text-gray-500'}`}
+                                            className={`flex-1 text-[10px] py-1.5 rounded border transition-all ${activeFace === f ? 'bg-white/20 border-white text-white' : 'bg-black/20 border-transparent text-gray-500 hover:bg-white/5'}`}
                                         >
                                             {f[0]}
                                         </button>
                                     ))}
+                                    <button 
+                                        onClick={() => { 
+                                            setActiveFace('CUSTOM'); 
+                                            if(!customAgent.instruction) setIsEditingAgent(true); // Auto open if empty
+                                            // Don't close info if custom selected, maybe show edit button
+                                        }}
+                                        className={`flex-1 text-[10px] py-1.5 rounded border transition-all ${activeFace === 'CUSTOM' ? 'bg-indigo-500/30 border-indigo-400 text-indigo-300' : 'bg-black/20 border-transparent text-gray-500 hover:bg-white/5'}`}
+                                    >
+                                        <Sparkles className="w-3 h-3 mx-auto" />
+                                    </button>
                                 </div>
                             </div>
                         )}
 
                         <div>
-                            <div className={`text-xs font-bold ${faceConfig.color} cursor-pointer`} onClick={() => setShowAvatarInfo(!showAvatarInfo)}>
+                            <div className={`text-xs font-bold ${faceConfig.color} cursor-pointer flex items-center gap-1`} onClick={() => setShowAvatarInfo(!showAvatarInfo)}>
                                 {isZh ? faceConfig.label.zh : faceConfig.label.en}
                             </div>
                             <div className="text-[10px] text-gray-400">AIOS Kernel v15.0</div>
@@ -267,13 +383,16 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
                             </button>
                             {showMenu && (
                                 <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800 border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                                    <button onClick={() => { setIsEditingAgent(true); setShowMenu(false); }} className="w-full text-left px-4 py-3 text-xs text-indigo-400 hover:bg-indigo-500/10 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4" /> {isZh ? '客製化 AI 設定' : 'Custom AI Persona'}
+                                    </button>
+                                    <div className="h-px bg-white/10" />
                                     <button onClick={() => { generateEvolutionReport(); setShowMenu(false); }} className="w-full text-left px-4 py-3 text-xs text-emerald-400 hover:bg-emerald-500/10 flex items-center gap-2">
                                         <Activity className="w-4 h-4" /> {isZh ? '生成進化報告' : 'Evolution Report'}
                                     </button>
                                     <button onClick={() => { archiveLogs(); setShowMenu(false); }} className="w-full text-left px-4 py-3 text-xs text-gray-300 hover:bg-white/5 flex items-center gap-2">
                                         <Archive className="w-4 h-4" /> {isZh ? '封存日誌' : 'Archive Logs'}
                                     </button>
-                                    <div className="h-px bg-white/10" />
                                     <button onClick={() => { clearLogs(); setShowMenu(false); }} className="w-full text-left px-4 py-3 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2">
                                         <Trash2 className="w-4 h-4" /> {isZh ? '清空紀錄' : 'Clear All'}
                                     </button>
@@ -428,6 +547,131 @@ export const AiAssistant: React.FC<AiAssistantProps> = ({ language, onNavigate, 
                  </div>
              )}
         </div>
+      )}
+
+      {/* --- CUSTOM AGENT MODAL --- */}
+      {isEditingAgent && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+              <div className="w-full max-w-lg bg-slate-900 border border-indigo-500/50 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                  <div className="p-6 border-b border-white/10 flex justify-between items-center bg-indigo-500/10">
+                      <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                              <Sparkles className="w-5 h-5" />
+                          </div>
+                          <h3 className="font-bold text-white text-lg">{isZh ? '客製化 AI 人格設定' : 'Custom AI Persona'}</h3>
+                      </div>
+                      <button onClick={() => setIsEditingAgent(false)} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white">
+                          <X className="w-5 h-5" />
+                      </button>
+                  </div>
+                  
+                  <div className="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+                      <div className="space-y-3">
+                          <div className="flex justify-between items-center text-xs text-gray-400 uppercase tracking-wider font-bold">
+                              <span>{isZh ? '快速模板' : 'Presets'}</span>
+                          </div>
+                          <div className="flex gap-2">
+                              {AGENT_PRESETS.map((preset, i) => (
+                                  <button 
+                                      key={i}
+                                      onClick={() => handleApplyPreset(preset)}
+                                      className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs text-gray-300 transition-all flex-1 text-left"
+                                  >
+                                      <div className="font-bold text-white mb-1">{preset.name}</div>
+                                      <div className="line-clamp-1 opacity-50 text-[10px]">{preset.instruction}</div>
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
+
+                      <div className="space-y-4">
+                          <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">{isZh ? '顯示名稱' : 'Display Name'}</label>
+                              <input 
+                                  value={editName}
+                                  onChange={(e) => setEditName(e.target.value)}
+                                  className="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                                  placeholder="My Custom AI"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">{isZh ? '系統指令 (System Instruction)' : 'System Instruction'}</label>
+                              <textarea 
+                                  value={editInstruction}
+                                  onChange={(e) => setEditInstruction(e.target.value)}
+                                  className="w-full h-24 bg-slate-950/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:ring-1 focus:ring-indigo-500 outline-none text-sm leading-relaxed custom-scrollbar resize-none"
+                                  placeholder="You are a helpful assistant..."
+                              />
+                              <p className="text-[10px] text-gray-500 mt-2">
+                                  {isZh ? '定義 AI 的角色、語氣與專業知識。例如：「你是一位資深的 ESG 顧問...」' : 'Define the role, tone, and expertise. e.g., "You are a senior ESG consultant..."'}
+                              </p>
+                          </div>
+
+                          {/* Knowledge Base Section */}
+                          <div className="border-t border-white/10 pt-4">
+                              <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center justify-between">
+                                  <span className="flex items-center gap-2"><Database className="w-4 h-4 text-celestial-gold" /> {isZh ? '專屬知識庫 (RAG)' : 'Knowledge Base (RAG)'}</span>
+                                  <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-gray-400">{editKb.length} files</span>
+                              </label>
+                              
+                              <div className="bg-slate-950/30 rounded-xl border border-white/10 p-3 space-y-3">
+                                  {editKb.length > 0 ? (
+                                      <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                                          {editKb.map((item, idx) => (
+                                              <div key={idx} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2 text-xs">
+                                                  <div className="flex items-center gap-2 truncate flex-1">
+                                                      <FileText className="w-3 h-3 text-gray-400" />
+                                                      <span className="text-gray-300 truncate">{getKbName(item)}</span>
+                                                  </div>
+                                                  <button onClick={() => removeKbItem(idx)} className="text-gray-500 hover:text-red-400 p-1">
+                                                      <Trash2 className="w-3 h-3" />
+                                                  </button>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  ) : (
+                                      <div className="text-center py-4 text-xs text-gray-500 border border-dashed border-white/10 rounded-lg">
+                                          {isZh ? '尚無知識文件' : 'No documents uploaded'}
+                                      </div>
+                                  )}
+                                  
+                                  <button 
+                                      onClick={() => kbInputRef.current?.click()}
+                                      className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 border-dashed rounded-lg text-xs text-gray-300 flex items-center justify-center gap-2 transition-all"
+                                  >
+                                      <Upload className="w-3 h-3" />
+                                      {isZh ? '上傳文件 (.txt, .md, .csv)' : 'Upload Documents'}
+                                  </button>
+                                  <input 
+                                      type="file" 
+                                      ref={kbInputRef} 
+                                      className="hidden" 
+                                      onChange={handleKbUpload} 
+                                      multiple 
+                                      accept=".txt,.md,.csv,.json"
+                                  />
+                                  <p className="text-[10px] text-gray-500 px-1">
+                                      {isZh ? '上傳後 AI 將優先參考此知識庫回答問題。若無相關資訊，AI 將委婉告知。' : 'AI will prioritize this knowledge base. If info is missing, it will politely inform you.'}
+                                  </p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                      <button onClick={() => setIsEditingAgent(false)} className="px-4 py-2 text-gray-400 hover:text-white transition-colors text-sm">
+                          {isZh ? '取消' : 'Cancel'}
+                      </button>
+                      <button 
+                          onClick={handleSaveCustomAgent}
+                          className="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all text-sm flex items-center gap-2"
+                      >
+                          <CheckSquare className="w-4 h-4" />
+                          {isZh ? '儲存並啟用' : 'Save & Activate'}
+                      </button>
+                  </div>
+              </div>
+          </div>
       )}
     </>
   );

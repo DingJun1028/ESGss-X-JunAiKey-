@@ -4,7 +4,7 @@ import { useToast } from './ToastContext';
 import { JOURNEY_TEMPLATES } from '../constants';
 import { UserJourney, JourneyStep, View } from '../types';
 
-export type AvatarFace = 'MIRROR' | 'EXPERT' | 'VOID';
+export type AvatarFace = 'MIRROR' | 'EXPERT' | 'VOID' | 'CUSTOM';
 export type SystemStatus = 'STABLE' | 'UNSTABLE' | 'CRITICAL' | 'REBOOTING';
 
 export interface AgentLog {
@@ -32,9 +32,19 @@ export interface EvolutionMilestone {
     estimatedImpact: string;
 }
 
+export interface CustomAgentConfig {
+    name: string;
+    instruction: string;
+    knowledgeBase: string[]; // Array of text content from uploaded files, formatted with headers
+}
+
 interface UniversalAgentContextType {
     activeFace: AvatarFace;
     setActiveFace: (face: AvatarFace) => void;
+    
+    customAgent: CustomAgentConfig;
+    setCustomAgent: (config: CustomAgentConfig) => void;
+
     logs: AgentLog[];
     chatHistory: AgentLog[];
     systemLogs: AgentLog[];
@@ -72,6 +82,12 @@ const UniversalAgentContext = createContext<UniversalAgentContextType | undefine
 
 export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [activeFace, setActiveFace] = useState<AvatarFace>('MIRROR');
+    const [customAgent, setCustomAgent] = useState<CustomAgentConfig>({
+        name: 'Custom Agent',
+        instruction: 'You are a helpful custom assistant.',
+        knowledgeBase: []
+    });
+
     const [logs, setLogs] = useState<AgentLog[]>([]);
     const [archivedLogs, setArchivedLogs] = useState<AgentLog[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -217,7 +233,9 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         let resultMsg = '';
         if (activeFace === 'MIRROR') resultMsg = `Reflection complete. [${label}] has been integrated into your workflow.`;
         else if (activeFace === 'EXPERT') resultMsg = `Optimization success. [${label}] execution efficiency increased by 24%.`;
-        else resultMsg = `Command [${label}] executed. Output stored in void buffer.`;
+        else if (activeFace === 'VOID') resultMsg = `Command [${label}] executed. Output stored in void buffer.`;
+        else resultMsg = `Custom Agent executed [${label}].`;
+        
         addLog(resultMsg, 'success', 'Matrix');
         addToast('success', `${label} Protocol Complete`, 'Universal Agent');
         setSubAgentsActive([]);
@@ -261,6 +279,7 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
     return (
         <UniversalAgentContext.Provider value={{
             activeFace, setActiveFace,
+            customAgent, setCustomAgent,
             logs, chatHistory, systemLogs, 
             addLog, clearLogs, archiveLogs, exportLogs,
             isProcessing, activeKeyId, executeMatrixProtocol,

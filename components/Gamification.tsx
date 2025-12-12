@@ -4,7 +4,7 @@ import { Language, View, CrystalType } from '../types';
 import { useCompany } from './providers/CompanyProvider';
 import { useToast } from '../contexts/ToastContext';
 import { UniversalCrystal } from './UniversalCrystal';
-import { Sparkles, Activity, Layers, ArrowUpRight, Swords, Dna, Package, Shield, Zap, FlaskConical, Plus, Hexagon } from 'lucide-react';
+import { Sparkles, Activity, Layers, ArrowUpRight, Swords, Dna, Package, Shield, Zap, FlaskConical, Plus, Hexagon, Library, History, Archive, ScrollText, Trophy, Sun } from 'lucide-react';
 import { getEsgCards } from '../constants';
 import { UniversalCard } from './UniversalCard';
 import { UniversalPageHeader } from './UniversalPageHeader';
@@ -13,7 +13,225 @@ interface GamificationProps {
   language: Language;
 }
 
-// Sub-Component: AI Nursery
+// Sub-Component: Eternal Palace
+const EternalPalace: React.FC<{ isZh: boolean }> = ({ isZh }) => {
+    const { journal, collectedCards, checkBadges } = useCompany();
+    const badges = checkBadges(); // Mock badges
+    const cards = getEsgCards(isZh ? 'zh-TW' : 'en-US');
+    const myDeck = cards.filter(c => collectedCards.includes(c.id));
+
+    const [activeSection, setActiveSection] = useState<'ark' | 'corridor' | 'epics'>('ark');
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            {/* Palace Nav */}
+            <div className="flex justify-center mb-6">
+                <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10">
+                    {[
+                        { id: 'ark', label: isZh ? '收藏聖櫃 (Ark)' : 'Ark of Collection', icon: Archive },
+                        { id: 'corridor', label: isZh ? '回憶長廊 (Memory)' : 'Memory Corridor', icon: History },
+                        { id: 'epics', label: isZh ? '史詩篇章 (Epics)' : 'Epic Chapters', icon: ScrollText },
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveSection(tab.id as any)}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeSection === tab.id ? 'bg-celestial-gold text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <tab.icon className="w-4 h-4" />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Ark of Collection (Cards + Light Scripture) */}
+            {activeSection === 'ark' && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    {/* The Light Scripture (Special Item) */}
+                    <div className="relative w-64 h-96 rounded-2xl bg-gradient-to-br from-celestial-gold/20 to-transparent border border-celestial-gold/50 flex flex-col items-center justify-center p-6 text-center cursor-pointer group hover:scale-105 transition-transform">
+                        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+                        <div className="w-24 h-24 rounded-full bg-celestial-gold/10 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(251,191,36,0.3)] animate-pulse">
+                            <Sun className="w-12 h-12 text-celestial-gold" />
+                        </div>
+                        <h4 className="text-xl font-bold text-white mb-2">{isZh ? '光之聖典' : 'Light Scripture'}</h4>
+                        <p className="text-xs text-gray-300">{isZh ? 'ESGss 技術規格白皮書與創世智慧。' : 'The Genesis Wisdom & Technical Whitepaper.'}</p>
+                        <div className="mt-4 px-3 py-1 bg-celestial-gold text-black text-[10px] font-bold rounded-full uppercase">
+                            LEGENDARY ITEM
+                        </div>
+                    </div>
+
+                    {myDeck.length > 0 ? myDeck.map(card => (
+                        <div key={card.id} className="transform hover:scale-105 transition-transform duration-300">
+                            <UniversalCard 
+                                card={card}
+                                isLocked={false}
+                                isSealed={false}
+                                masteryLevel="Novice"
+                                onClick={() => {}}
+                                onKnowledgeInteraction={() => {}}
+                                onPurifyRequest={() => {}}
+                            />
+                        </div>
+                    )) : (
+                        <div className="col-span-full text-center py-20 text-gray-500">
+                            <Archive className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                            {isZh ? '聖櫃空空如也，請前往市集收集卡牌' : 'The Ark is empty. Collect cards in the Marketplace.'}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Memory Corridor (Timeline) */}
+            {activeSection === 'corridor' && (
+                <div className="relative border-l-2 border-white/10 ml-6 space-y-8 py-4">
+                    {journal.map((entry, i) => (
+                        <div key={entry.id} className="relative pl-8 group">
+                            <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 transition-all z-10 ${entry.type === 'milestone' ? 'bg-celestial-gold border-celestial-gold' : 'bg-slate-900 border-white/20'}`} />
+                            <div className="glass-panel p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all">
+                                <div className="text-xs text-gray-500 mb-1">{new Date(entry.timestamp).toLocaleString()}</div>
+                                <h4 className={`font-bold ${entry.type === 'milestone' ? 'text-celestial-gold' : 'text-white'}`}>{entry.title}</h4>
+                                <p className="text-sm text-gray-400 mt-1">{entry.impact}</p>
+                                <div className="mt-2 flex gap-2">
+                                    {entry.tags.map(tag => (
+                                        <span key={tag} className="text-[10px] px-2 py-0.5 bg-white/5 rounded border border-white/5 text-gray-400">{tag}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Epic Chapters (Achievements) */}
+            {activeSection === 'epics' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="glass-panel p-6 rounded-2xl border border-celestial-gold/30 bg-celestial-gold/5 flex flex-col items-center text-center">
+                        <Trophy className="w-12 h-12 text-celestial-gold mb-4" />
+                        <h4 className="text-lg font-bold text-white mb-2">Genesis Pioneer</h4>
+                        <p className="text-sm text-gray-400">Joined during the Alpha Launch.</p>
+                        <span className="mt-4 text-xs font-mono text-celestial-gold bg-black/30 px-3 py-1 rounded-full">UNLOCKED</span>
+                    </div>
+                    {/* Mock locked items */}
+                    <div className="glass-panel p-6 rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center text-center opacity-50 grayscale">
+                        <Shield className="w-12 h-12 text-gray-400 mb-4" />
+                        <h4 className="text-lg font-bold text-white mb-2">Carbon Master</h4>
+                        <p className="text-sm text-gray-400">Reduce emissions by 50%.</p>
+                        <span className="mt-4 text-xs font-mono text-gray-500 bg-black/30 px-3 py-1 rounded-full">LOCKED</span>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Sub-Component: Card Game Arena (Goodwill Era)
+const CardGameArena: React.FC<{ isZh: boolean }> = ({ isZh }) => {
+    const { collectedCards } = useCompany();
+    const cards = getEsgCards(isZh ? 'zh-TW' : 'en-US');
+    const myDeck = cards.filter(c => collectedCards.includes(c.id));
+    const [view, setView] = useState<'arena' | 'palace'>('arena');
+
+    return (
+        <div className="space-y-8 animate-fade-in pb-12">
+            <UniversalPageHeader 
+                icon={Swords}
+                title={{ zh: '善向紀元 (Goodwill Era)', en: 'Goodwill Era' }}
+                description={{ zh: '永續對決與永恆收藏', en: 'Sustainability Duels & Eternal Collection' }}
+                language={isZh ? 'zh-TW' : 'en-US'}
+                tag={{ zh: '遊戲核心', en: 'Game Core' }}
+            />
+
+            {/* Main Tabs */}
+            <div className="flex border-b border-white/10 gap-6">
+                <button 
+                    onClick={() => setView('arena')}
+                    className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${view === 'arena' ? 'border-celestial-gold text-white' : 'border-transparent text-gray-500 hover:text-white'}`}
+                >
+                    <Swords className="w-4 h-4" /> {isZh ? '競技場 (Arena)' : 'Arena'}
+                </button>
+                <button 
+                    onClick={() => setView('palace')}
+                    className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${view === 'palace' ? 'border-celestial-purple text-white' : 'border-transparent text-gray-500 hover:text-white'}`}
+                >
+                    <Library className="w-4 h-4" /> {isZh ? '永恆宮殿 (Eternal Palace)' : 'Eternal Palace'}
+                </button>
+            </div>
+
+            {view === 'arena' && (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex justify-end -mt-20 mb-4 relative z-10 pointer-events-none">
+                       {/* Space for header actions if needed */}
+                    </div>
+                    
+                    <div className="flex justify-end">
+                        <button className="px-6 py-2 bg-celestial-gold text-black font-bold rounded-xl shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
+                            <Zap className="w-4 h-4" /> {isZh ? '尋找對手' : 'Find Opponent'}
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Deck View */}
+                        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/10 min-h-[400px]">
+                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">{isZh ? '我的戰鬥牌組' : 'Battle Deck'} ({myDeck.length}/30)</h4>
+                            <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-4 p-2">
+                                {myDeck.length > 0 ? myDeck.map(card => (
+                                    <div key={card.id} className="transform scale-75 origin-top-left -mr-16 hover:mr-0 hover:scale-100 transition-all duration-300 z-0 hover:z-10 hover:-translate-y-4">
+                                        <UniversalCard 
+                                            card={card}
+                                            isLocked={false}
+                                            isSealed={false}
+                                            masteryLevel="Novice"
+                                            onClick={() => {}}
+                                            onKnowledgeInteraction={() => {}}
+                                            onPurifyRequest={() => {}}
+                                        />
+                                    </div>
+                                )) : (
+                                    <div className="w-full text-center py-12 text-gray-500">
+                                        {isZh ? '尚無卡牌' : 'No cards.'}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Stats / Meta */}
+                        <div className="space-y-6">
+                            <div className="glass-panel p-6 rounded-2xl border border-celestial-purple/30 bg-celestial-purple/10">
+                                <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <Activity className="w-5 h-5 text-celestial-purple" /> Season 1 Meta
+                                </h4>
+                                <div className="space-y-3 text-sm text-gray-300">
+                                    <div className="flex justify-between">
+                                        <span>Global Rank</span>
+                                        <span className="font-bold text-white">#4,285</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Win Rate</span>
+                                        <span className="font-bold text-emerald-400">58%</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Favorite Attr</span>
+                                        <span className="font-bold text-blue-400">Environmental</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
+                                <Package className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-xs text-gray-500">{isZh ? '每週贏得 3 場勝利可獲得卡包' : 'Win 3 matches weekly for a pack'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {view === 'palace' && <EternalPalace isZh={isZh} />}
+        </div>
+    );
+};
+
+// ... (RestorationProject and other components remain unchanged) ...
+// Re-declaring for context in this file block replacement
 const AiNursery: React.FC<{ isZh: boolean }> = ({ isZh }) => {
     const { crystals, goodwillBalance, updateGoodwillBalance } = useCompany();
     const { addToast } = useToast();
@@ -27,7 +245,6 @@ const AiNursery: React.FC<{ isZh: boolean }> = ({ isZh }) => {
         }
         updateGoodwillBalance(-amount);
         addToast('reward', isZh ? `注入 ${amount} 能量！核心穩定度提升。` : `Injected ${amount} Energy! Stability increased.`, 'AI Nursery');
-        // Logic to update crystal integrity would go here in a real app
     };
 
     return (
@@ -61,7 +278,6 @@ const AiNursery: React.FC<{ isZh: boolean }> = ({ isZh }) => {
                                 </span>
                             </div>
                             
-                            {/* Growth Visual */}
                             <div className="h-24 flex items-center justify-center relative my-2">
                                 <div className={`absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent bottom-0 transition-all duration-1000`} style={{ height: `${crystal.integrity}%` }} />
                                 <Dna className={`w-12 h-12 text-white/50 ${selectedCrystal === crystal.id ? 'animate-pulse text-emerald-200' : ''}`} />
@@ -80,7 +296,6 @@ const AiNursery: React.FC<{ isZh: boolean }> = ({ isZh }) => {
                         </div>
                     ))}
                     
-                    {/* Add Slot */}
                     <div className="p-4 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-white/30 transition-all cursor-pointer min-h-[180px]">
                         <Plus className="w-8 h-8 mb-2" />
                         <span className="text-xs">{isZh ? '擴充培育槽' : 'Add Slot'}</span>
@@ -91,96 +306,14 @@ const AiNursery: React.FC<{ isZh: boolean }> = ({ isZh }) => {
     );
 };
 
-// Sub-Component: Card Game Arena (Goodwill Era)
-const CardGameArena: React.FC<{ isZh: boolean }> = ({ isZh }) => {
-    const { collectedCards } = useCompany();
-    const cards = getEsgCards(isZh ? 'zh-TW' : 'en-US');
-    const myDeck = cards.filter(c => collectedCards.includes(c.id));
-
-    return (
-        <div className="space-y-8 animate-fade-in">
-            <UniversalPageHeader 
-                icon={Swords}
-                title={{ zh: '善向紀元：永續對決', en: 'Goodwill Era: Sustainability Duel' }}
-                description={{ zh: '運用您的 ESG 知識卡牌進行策略對戰', en: 'Strategic battles using your ESG knowledge cards' }}
-                language={isZh ? 'zh-TW' : 'en-US'}
-                tag={{ zh: '卡牌競技', en: 'Card Arena' }}
-            />
-
-            <div className="flex justify-end -mt-16 mb-4 relative z-10">
-                <button className="px-6 py-2 bg-celestial-gold text-black font-bold rounded-xl shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
-                    <Zap className="w-4 h-4" /> {isZh ? '尋找對手' : 'Find Opponent'}
-                </button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Deck View */}
-                <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/10 min-h-[400px]">
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">{isZh ? '我的牌組' : 'My Deck'} ({myDeck.length}/30)</h4>
-                    <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-4 p-2">
-                        {myDeck.length > 0 ? myDeck.map(card => (
-                            <div key={card.id} className="transform scale-75 origin-top-left -mr-16 hover:mr-0 hover:scale-100 transition-all duration-300 z-0 hover:z-10 hover:-translate-y-4">
-                                <UniversalCard 
-                                    card={card}
-                                    isLocked={false}
-                                    isSealed={false}
-                                    masteryLevel="Novice"
-                                    onClick={() => {}}
-                                    onKnowledgeInteraction={() => {}}
-                                    onPurifyRequest={() => {}}
-                                />
-                            </div>
-                        )) : (
-                            <div className="w-full text-center py-12 text-gray-500">
-                                {isZh ? '尚無卡牌，請前往市集獲取' : 'No cards. Visit Marketplace.'}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Stats / Meta */}
-                <div className="space-y-6">
-                    <div className="glass-panel p-6 rounded-2xl border border-celestial-purple/30 bg-celestial-purple/10">
-                        <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <Activity className="w-5 h-5 text-celestial-purple" /> Season 1 Meta
-                        </h4>
-                        <div className="space-y-3 text-sm text-gray-300">
-                            <div className="flex justify-between">
-                                <span>Global Rank</span>
-                                <span className="font-bold text-white">#4,285</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Win Rate</span>
-                                <span className="font-bold text-emerald-400">58%</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Favorite Attr</span>
-                                <span className="font-bold text-blue-400">Environmental</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-                        <Package className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-xs text-gray-500">{isZh ? '每週贏得 3 場勝利可獲得卡包' : 'Win 3 matches weekly for a pack'}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Sub-Component: Restoration Project (Crystals)
 const RestorationProject: React.FC<{ isZh: boolean }> = ({ isZh }) => {
     const { crystals, restoreCrystal, collectCrystalFragment } = useCompany();
     const { addToast } = useToast();
     const [activeTab, setActiveTab] = useState<'crystals' | 'nursery'>('crystals');
 
-    // System Level Calculation
     const totalRestored = crystals.filter(c => c.state === 'Restored' || c.state === 'Perfected').length;
     const systemLevel = Math.floor((totalRestored / crystals.length) * 100);
 
-    // Simulate finding a fragment on mount
     useEffect(() => {
         const timer = setTimeout(() => {
             const randomCrystal = crystals[Math.floor(Math.random() * crystals.length)];
@@ -207,7 +340,6 @@ const RestorationProject: React.FC<{ isZh: boolean }> = ({ isZh }) => {
                 tag={{ zh: '系統修復', en: 'System Restore' }}
             />
 
-            {/* System Level / Integrity Bar */}
             <div className="glass-panel p-6 rounded-2xl border border-white/10 -mt-6 mb-8 flex items-center gap-6">
                 <div className="flex-1">
                     <div className="flex justify-between items-center mb-2">
@@ -241,12 +373,9 @@ const RestorationProject: React.FC<{ isZh: boolean }> = ({ isZh }) => {
                 </div>
             </div>
 
-            {/* Content Switch */}
             {activeTab === 'crystals' && (
                 <>
-                    {/* The Monolith (Crystal Grid) */}
                     <div className="relative py-12">
-                        {/* Connecting Lines (SVG) */}
                         <div className="absolute inset-0 pointer-events-none">
                             <svg className="w-full h-full opacity-20">
                                 <defs>
@@ -274,7 +403,6 @@ const RestorationProject: React.FC<{ isZh: boolean }> = ({ isZh }) => {
                         </div>
                     </div>
 
-                    {/* Info Panel */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="glass-panel p-8 rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-transparent">
                             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">

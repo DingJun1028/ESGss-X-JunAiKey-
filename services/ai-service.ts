@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Language, SemanticContext } from '../types';
 
@@ -40,11 +41,48 @@ export const generateLegoImage = async (cardTitle: string, cardDesc: string): Pr
 
 // --- Text & Chat ---
 
-export async function* streamChat(prompt: string, language: Language) {
+export async function* streamChat(
+    prompt: string, 
+    language: Language, 
+    systemInstruction?: string,
+    knowledgeBase?: string[]
+) {
     try {
+        let finalInstruction = systemInstruction || '';
+
+        // If Knowledge Base is present, construct RAG Logic
+        if (knowledgeBase && knowledgeBase.length > 0) {
+            const kbContent = knowledgeBase.join('\n\n');
+            
+            // Extract persona name if available in instruction (Simple heuristic or placeholder)
+            const personaNameMatch = systemInstruction?.match(/You are (.*?)[.,]/) || systemInstruction?.match(/你是(.*?)[，。]/);
+            const personaName = personaNameMatch ? personaNameMatch[1] : 'AI Assistant';
+
+            finalInstruction = `
+${systemInstruction}
+
+[KNOWLEDGE BASE ACTIVATED]
+The user has provided the following specific knowledge context. You must prioritize this information.
+
+--- START KNOWLEDGE BASE ---
+${kbContent.substring(0, 100000)} 
+--- END KNOWLEDGE BASE ---
+
+[STRICT RESPONSE RULES]
+1. First, search the "KNOWLEDGE BASE" above for the answer to the user's query.
+2. If the answer is found within the Knowledge Base, answer clearly using that information.
+3. If the specific event or information is NOT found in the Knowledge Base:
+   - You MUST explicitly state: "抱歉，知識庫中未找到關於此事件的具體資訊。" (Sorry, specific information about this event was not found in the knowledge base.)
+   - THEN, proceed to offer help or answer generally based on your persona as ${personaName}. Say something like: "但我以 ${personaName} 的角度為你提供..." (But as ${personaName}, I can provide you with...).
+`;
+        }
+
         const result = await ai.models.generateContentStream({
             model: 'gemini-2.5-flash',
             contents: prompt,
+            config: {
+                systemInstruction: finalInstruction
+            }
         });
         for await (const chunk of result) {
             yield chunk.text || '';

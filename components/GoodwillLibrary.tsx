@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Language, View } from '../types';
-import { BookOpen, Calendar, Users, Database, Search, ArrowRight, Heart, Share2, Star, Download, ExternalLink, Library } from 'lucide-react';
+import { BookOpen, Calendar, Users, Database, Search, ArrowRight, Heart, Share2, Star, Download, ExternalLink, Library, FileText, BarChart2, Lightbulb, GraduationCap } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { UniversalPageHeader } from './UniversalPageHeader';
 
@@ -13,7 +13,7 @@ interface GoodwillLibraryProps {
 export const GoodwillLibrary: React.FC<GoodwillLibraryProps> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'books' | 'club' | 'repo'>('books');
+  const [activeTab, setActiveTab] = useState<'books' | 'club' | 'repo' | 'reports'>('reports');
 
   const pageData = {
       title: { zh: '善向圖書館', en: 'Goodwill Library' },
@@ -38,8 +38,24 @@ export const GoodwillLibrary: React.FC<GoodwillLibraryProps> = ({ language }) =>
       { category: isZh ? '萬能系統專區' : 'Universal System Zone', items: ['JunAiKey API Docs', 'System Architecture', 'Zero Hallucination Protocol'] },
   ];
 
+  const enterpriseReports = [
+      { id: 'r1', company: 'TSMC 台積電', year: '2023', sector: 'Semiconductor', score: 'AA', highlight: 'Water Management', color: 'bg-emerald-600' },
+      { id: 'r2', company: 'Delta 台達電', year: '2023', sector: 'Electronics', score: 'AAA', highlight: 'Energy Efficiency', color: 'bg-blue-600' },
+      { id: 'r3', company: 'E.SUN 玉山金控', year: '2023', sector: 'Finance', score: 'AA', highlight: 'Green Finance', color: 'bg-emerald-500' },
+      { id: 'r4', company: 'China Steel 中鋼', year: '2023', sector: 'Steel', score: 'A', highlight: 'Carbon Capture', color: 'bg-slate-600' },
+      { id: 'r5', company: 'Acer 宏碁', year: '2023', sector: 'Technology', score: 'AA', highlight: 'Circular Economy', color: 'bg-lime-600' },
+      { id: 'r6', company: 'Cathay 國泰金', year: '2023', sector: 'Finance', score: 'AA', highlight: 'Climate Action', color: 'bg-emerald-500' },
+  ];
+
   const handleRegister = (eventTitle: string) => {
       addToast('success', isZh ? `已報名：${eventTitle}` : `Registered: ${eventTitle}`, 'Book Club');
+  };
+
+  const handleReportAction = (action: string, company: string) => {
+      addToast('info', isZh ? `正在執行 ${company} 的${action}...` : `Running ${action} for ${company}...`, 'AI Analyst');
+      setTimeout(() => {
+          addToast('success', isZh ? '分析報告已生成至「商情分析」' : 'Analysis generated in Market Intel', 'System');
+      }, 1500);
   };
 
   return (
@@ -53,8 +69,9 @@ export const GoodwillLibrary: React.FC<GoodwillLibraryProps> = ({ language }) =>
         />
 
         {/* Tab Navigation */}
-        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 w-fit">
+        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 w-fit overflow-x-auto">
             {[
+                { id: 'reports', label: isZh ? '企業永續年鑑' : 'Enterprise Yearbook', icon: FileText },
                 { id: 'books', label: isZh ? '好書分享' : 'Book Sharing', icon: BookOpen },
                 { id: 'club', label: isZh ? '讀書會' : 'Book Club', icon: Users },
                 { id: 'repo', label: isZh ? '館藏知識庫' : 'Knowledge Repo', icon: Database },
@@ -62,13 +79,93 @@ export const GoodwillLibrary: React.FC<GoodwillLibraryProps> = ({ language }) =>
                 <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-celestial-gold text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-celestial-gold text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                 >
                     <tab.icon className="w-4 h-4" />
                     {tab.label}
                 </button>
             ))}
         </div>
+
+        {/* --- Content: Enterprise Yearbook (New) --- */}
+        {activeTab === 'reports' && (
+            <div className="space-y-6 animate-fade-in">
+                <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                    <div className="relative flex-1 w-full">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <input 
+                            type="text" 
+                            placeholder={isZh ? "搜尋企業報告書..." : "Search enterprise reports..."}
+                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:ring-1 focus:ring-celestial-gold outline-none"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <span className="text-xs text-gray-400 px-3 py-2 bg-white/5 rounded-lg border border-white/5 flex items-center gap-1">
+                            <Database className="w-3 h-3" /> Source: GRI / SDR
+                        </span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {enterpriseReports.map(report => (
+                        <div key={report.id} className="glass-panel rounded-2xl overflow-hidden border border-white/10 group hover:border-celestial-gold/30 transition-all flex flex-col">
+                            <div className={`h-32 ${report.color} relative p-6 flex flex-col justify-between`}>
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
+                                <div className="relative z-10 flex justify-between items-start">
+                                    <span className="px-2 py-1 bg-black/40 backdrop-blur-md rounded text-[10px] font-bold text-white border border-white/10">
+                                        {report.year} Report
+                                    </span>
+                                    <span className="text-2xl font-bold text-white opacity-20 group-hover:opacity-100 transition-opacity">
+                                        {report.score}
+                                    </span>
+                                </div>
+                                <div className="relative z-10">
+                                    <h3 className="text-xl font-bold text-white">{report.company}</h3>
+                                    <p className="text-xs text-gray-300">{report.sector}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="p-4 flex-1 flex flex-col gap-4">
+                                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                    <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-1">{isZh ? '年度亮點' : 'Highlight'}</div>
+                                    <div className="text-sm text-gray-200 flex items-center gap-2">
+                                        <Star className="w-3 h-3 text-celestial-gold fill-current" />
+                                        {report.highlight}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 mt-auto">
+                                    <button 
+                                        onClick={() => handleReportAction('AI Analysis', report.company)}
+                                        className="flex flex-col items-center justify-center gap-1 py-2 bg-celestial-purple/10 hover:bg-celestial-purple/20 text-celestial-purple rounded-lg transition-colors border border-celestial-purple/20"
+                                        title={isZh ? 'AI 深度分析' : 'AI Deep Analysis'}
+                                    >
+                                        <BarChart2 className="w-4 h-4" />
+                                        <span className="text-[9px] font-bold">{isZh ? '深度分析' : 'Analyze'}</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => handleReportAction('Summary', report.company)}
+                                        className="flex flex-col items-center justify-center gap-1 py-2 bg-celestial-gold/10 hover:bg-celestial-gold/20 text-celestial-gold rounded-lg transition-colors border border-celestial-gold/20"
+                                        title={isZh ? '重點提示摘要' : 'Key Highlights'}
+                                    >
+                                        <Lightbulb className="w-4 h-4" />
+                                        <span className="text-[9px] font-bold">{isZh ? '重點提示' : 'Summary'}</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => handleReportAction('Teaching Mode', report.company)}
+                                        className="flex flex-col items-center justify-center gap-1 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition-colors border border-emerald-500/20"
+                                        title={isZh ? '報告書教學模式' : 'Teaching Mode'}
+                                    >
+                                        <GraduationCap className="w-4 h-4" />
+                                        <span className="text-[9px] font-bold">{isZh ? '合規教學' : 'Teach'}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
         {/* --- Content: Book Sharing --- */}
         {activeTab === 'books' && (

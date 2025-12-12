@@ -64,8 +64,8 @@ interface CompanyContextType {
   deleteTodo: (id: number) => void;
   
   universalNotes: NoteItem[];
-  addNote: (content: string, tags?: string[], title?: string) => void; // Updated signature
-  updateNote: (id: string, content: string, title?: string, tags?: string[]) => void; // Updated
+  addNote: (content: string, tags?: string[], title?: string) => void; 
+  updateNote: (id: string, content: string, title?: string, tags?: string[]) => void;
   deleteNote: (id: string) => void;
   
   bookmarks: BookmarkItem[];
@@ -85,9 +85,16 @@ interface CompanyContextType {
   latestEvent: string;
   setLatestEvent: (event: string) => void;
   
+  // Dashboard Widgets
   customWidgets: DashboardWidget[];
   addCustomWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full' }) => void;
   removeCustomWidget: (id: string) => void;
+
+  // My ESG Widgets (New)
+  myEsgWidgets: DashboardWidget[];
+  addMyEsgWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full' }) => void;
+  removeMyEsgWidget: (id: string) => void;
+  updateMyEsgWidgetSize: (id: string, size: 'small' | 'medium' | 'large' | 'full') => void;
 
   // Palace Widgets
   palaceWidgets: DashboardWidget[];
@@ -159,7 +166,10 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   ]);
 
   // Productivity & Files
-  const [todos, setTodos] = useState<ToDoItem[]>([]);
+  const [todos, setTodos] = useState<ToDoItem[]>([
+      { id: 1, text: 'Review annual carbon report', done: false },
+      { id: 2, text: 'Schedule supplier audit', done: true }
+  ]);
   const [universalNotes, setUniversalNotes] = useState<NoteItem[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [files, setFiles] = useState<AppFile[]>([]);
@@ -170,12 +180,22 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
       { id: 'intel-def-2', type: 'report', title: 'Yang Bo Analysis EP.24', source: 'Yang Bo Zone', date: new Date().toISOString(), summary: 'Strategic insights for Q3.', tags: ['Strategy'], isRead: false }
   ]);
 
-  // System
+  // System & Widgets
   const [lastBriefingDate, setLastBriefingDate] = useState('never');
   const [latestEvent, setLatestEvent] = useState('System Initialized');
+  
   const [customWidgets, setCustomWidgets] = useState<DashboardWidget[]>([
     { id: 'w1', type: 'kpi_card', title: 'ESG Score', config: { metricId: '3' }, gridSize: 'small' }
   ]);
+  
+  const [myEsgWidgets, setMyEsgWidgets] = useState<DashboardWidget[]>([
+      // Updated Default Layout: Yang Bo Zone & Events included, Profile small.
+      { id: 'me-yb', type: 'yang_bo_feed', title: 'Dr. Yang Insights', config: {}, gridSize: 'medium' },
+      { id: 'me-events', type: 'event_list', title: 'Latest Activity', config: {}, gridSize: 'medium' },
+      { id: 'me-1', type: 'kpi_card', title: 'Profile', config: { type: 'profile' }, gridSize: 'small' },
+      { id: 'me-2', type: 'quest_list', title: 'Daily Quests', config: {}, gridSize: 'medium' },
+  ]);
+
   const [palaceWidgets, setPalaceWidgets] = useState<DashboardWidget[]>([
       { id: 'pw1', type: 'quest_list', title: 'Daily Quests', gridSize: 'medium' },
       { id: 'pw2', type: 'intel_feed', title: 'My Intel', gridSize: 'medium' },
@@ -216,6 +236,8 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
         setMyIntelligence(data.myIntelligence || []);
         setLastBriefingDate(data.lastBriefingDate || 'never');
         setCustomWidgets(data.customWidgets || []);
+        // Only load if exists, else use default logic above
+        if(data.myEsgWidgets) setMyEsgWidgets(data.myEsgWidgets);
         setPalaceWidgets(data.palaceWidgets || [
             { id: 'pw1', type: 'quest_list', title: 'Daily Quests', gridSize: 'medium' },
             { id: 'pw2', type: 'intel_feed', title: 'My Intel', gridSize: 'medium' },
@@ -233,11 +255,11 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     const state = {
       userName, userRole, companyName, tier, xp, goodwillBalance, esgScores, carbonData,
       budget, carbonCredits, collectedCards, purifiedCards, cardMastery, auditLogs,
-      todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets, palaceWidgets,
+      todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets, myEsgWidgets, palaceWidgets,
       isAiToolsUnlocked, crystals, journal
     };
     localStorage.setItem('esgss_state_v5', JSON.stringify(state));
-  }, [userName, userRole, companyName, tier, xp, goodwillBalance, esgScores, carbonData, budget, carbonCredits, collectedCards, purifiedCards, cardMastery, auditLogs, todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets, palaceWidgets, isAiToolsUnlocked, crystals, journal]);
+  }, [userName, userRole, companyName, tier, xp, goodwillBalance, esgScores, carbonData, budget, carbonCredits, collectedCards, purifiedCards, cardMastery, auditLogs, todos, universalNotes, bookmarks, files, myIntelligence, lastBriefingDate, customWidgets, myEsgWidgets, palaceWidgets, isAiToolsUnlocked, crystals, journal]);
 
   // Actions wrapped in useCallback for performance
   const addJournalEntry = useCallback((title: string, impact: string, xpGain: number, type: 'milestone' | 'action' | 'insight', tags: string[]) => {
@@ -437,6 +459,26 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
     setCustomWidgets(prev => prev.filter(w => w.id !== id));
   }, []);
 
+  // My ESG Widgets Helpers
+  const addMyEsgWidget = useCallback((widget: Partial<DashboardWidget>) => {
+    const newWidget: DashboardWidget = {
+      id: `me-${Date.now()}`,
+      type: widget.type || 'kpi_card',
+      title: widget.title || 'New Widget',
+      config: widget.config || {},
+      gridSize: widget.gridSize || 'small'
+    };
+    setMyEsgWidgets(prev => [...prev, newWidget]);
+  }, []);
+
+  const removeMyEsgWidget = useCallback((id: string) => {
+    setMyEsgWidgets(prev => prev.filter(w => w.id !== id));
+  }, []);
+
+  const updateMyEsgWidgetSize = useCallback((id: string, size: 'small' | 'medium' | 'large' | 'full') => {
+      setMyEsgWidgets(prev => prev.map(w => w.id === id ? { ...w, gridSize: size } : w));
+  }, []);
+
   const addPalaceWidget = useCallback((widget: Partial<DashboardWidget>) => {
     const newWidget: DashboardWidget = {
       id: `pw-${Date.now()}`,
@@ -501,6 +543,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
       todos, addTodo, toggleTodo, deleteTodo, universalNotes, addNote, updateNote, deleteNote,
       bookmarks, toggleBookmark, lastBriefingDate, markBriefingRead, latestEvent, setLatestEvent,
       customWidgets, addCustomWidget, removeCustomWidget, 
+      myEsgWidgets, addMyEsgWidget, removeMyEsgWidget, updateMyEsgWidgetSize,
       palaceWidgets, addPalaceWidget, removePalaceWidget,
       checkBadges, resetData,
       intelligenceBrief, setIntelligenceBrief,
@@ -513,12 +556,13 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
       userName, userRole, companyName, tier, xp, level, goodwillBalance, esgScores, totalScore,
       carbonData, budget, carbonCredits, quests, auditLogs, collectedCards, purifiedCards, cardMastery,
       todos, universalNotes, bookmarks, lastBriefingDate, latestEvent, customWidgets, intelligenceBrief,
-      files, myIntelligence, isAiToolsUnlocked, crystals, journal, palaceWidgets,
+      files, myIntelligence, isAiToolsUnlocked, crystals, journal, palaceWidgets, myEsgWidgets,
       upgradeTier, awardXp, updateGoodwillBalance, updateEsgScore, updateCarbonData,
       updateQuestStatus, completeQuest, addAuditLog, unlockCard, purifyCard, updateCardMastery,
       addTodo, toggleTodo, deleteTodo, addNote, updateNote, deleteNote, toggleBookmark,
       markBriefingRead, addCustomWidget, removeCustomWidget, addPalaceWidget, removePalaceWidget, checkBadges, resetData,
-      addFile, removeFile, saveIntelligence, unlockAiTools, collectCrystalFragment, restoreCrystal, addJournalEntry
+      addFile, removeFile, saveIntelligence, unlockAiTools, collectCrystalFragment, restoreCrystal, addJournalEntry,
+      addMyEsgWidget, removeMyEsgWidget, updateMyEsgWidgetSize
   ]);
 
   return (

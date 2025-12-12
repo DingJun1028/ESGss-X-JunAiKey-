@@ -430,7 +430,24 @@ export interface ReportSection {
   principles?: string;
 }
 
-export type WidgetType = 'kpi_card' | 'chart_area' | 'feed_list' | 'mini_map' | 'quest_list' | 'intel_feed' | 'quick_note';
+// --- Past Reports Archive ---
+export interface PastReport {
+    year: number;
+    title: string;
+    version: string;
+    publishDate: string;
+    status: 'Published' | 'Draft' | 'Archived';
+    metrics: {
+        scope1: number;
+        scope2: number;
+        scope3: number;
+        energyConsumption: number;
+        griCoverage: number; // Percentage
+    };
+    downloadUrl?: string;
+}
+
+export type WidgetType = 'kpi_card' | 'chart_area' | 'feed_list' | 'mini_map' | 'quest_list' | 'intel_feed' | 'quick_note' | 'yang_bo_feed' | 'event_list';
 
 export interface DashboardWidget {
   id: string;

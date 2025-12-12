@@ -13,9 +13,8 @@ interface IntegrationHubProps {
   language: Language;
 }
 
-// ----------------------------------------------------------------------
-// Agent: Pipeline Node (The Nerve Endings)
-// ----------------------------------------------------------------------
+// ... (Agent Components: PipelineNodeBase, PipelineAgent, CentralHubBase, CentralHubAgent - No changes needed here, keeping logic same) ...
+// Re-declaring interfaces/components for context in this file block replacement
 interface PipelineNodeProps extends InjectedProxyProps {
     id: string;
     pipe: any;
@@ -27,15 +26,13 @@ interface PipelineNodeProps extends InjectedProxyProps {
 const PipelineNodeBase: React.FC<PipelineNodeProps> = ({ 
     pipe, index, total, isRefreshing, adaptiveTraits, trackInteraction, isAgentActive 
 }) => {
-    // Agent Traits
     const isStressed = pipe.status === 'warning';
     const isEvolved = adaptiveTraits?.includes('evolution');
     const isLearning = adaptiveTraits?.includes('learning') || isAgentActive;
 
-    // Report status to the Hive Mind on mount/change
     useEffect(() => {
         if (isStressed) {
-            universalIntelligence.agentUpdate('Data Lake', { confidence: 'medium' }); // Stress the central hub
+            universalIntelligence.agentUpdate('Data Lake', { confidence: 'medium' }); 
         }
     }, [isStressed]);
 
@@ -61,7 +58,6 @@ const PipelineNodeBase: React.FC<PipelineNodeProps> = ({
             {pipe.type === 'Calendar' && <Calendar className="w-6 h-6 text-pink-400" />}
             {pipe.type === 'App' && <Box className="w-6 h-6 text-cyan-400" />}
             
-            {/* Connection Line (Axon) */}
             <div 
             className={`absolute h-[1px] w-[100px] origin-left -z-10 transition-colors duration-500 ${isStressed ? 'bg-amber-500/50' : 'bg-gradient-to-r from-transparent via-white/20 to-transparent'}`}
             style={{
@@ -72,7 +68,6 @@ const PipelineNodeBase: React.FC<PipelineNodeProps> = ({
             }}
             />
             
-            {/* Moving Packet (Neurotransmitter) */}
             {!isRefreshing && (
                 <div 
                 className={`absolute w-2 h-2 rounded-full top-1/2 left-1/2 -z-10 animate-ping ${isStressed ? 'bg-amber-400' : 'bg-white'}`}
@@ -83,7 +78,6 @@ const PipelineNodeBase: React.FC<PipelineNodeProps> = ({
                 />
             )}
 
-            {/* Label Tooltip */}
             <div className="absolute top-full mt-2 text-[9px] text-gray-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">
                 {pipe.name}
             </div>
@@ -93,9 +87,6 @@ const PipelineNodeBase: React.FC<PipelineNodeProps> = ({
 
 const PipelineAgent = withUniversalProxy(PipelineNodeBase);
 
-// ----------------------------------------------------------------------
-// Agent: Central Hub (The Hypothalamus)
-// ----------------------------------------------------------------------
 interface CentralHubProps extends InjectedProxyProps {
     isRefreshing: boolean;
     onClick: () => void;
@@ -116,14 +107,12 @@ const CentralHubBase: React.FC<CentralHubProps> = ({ isRefreshing, onClick, adap
             <div className={`absolute -bottom-8 text-xs font-bold text-celestial-blue whitespace-nowrap ${isRefreshing ? 'hidden' : 'block'}`}>
                 {isEvolved ? 'Hive Mind' : 'Data Lake'}
             </div>
-            {/* Core Glow */}
             <div className="absolute inset-0 bg-celestial-blue/30 blur-xl rounded-full animate-pulse" />
         </div>
     );
 };
 
 const CentralHubAgent = withUniversalProxy(CentralHubBase);
-
 
 // ----------------------------------------------------------------------
 // Main Component
@@ -154,7 +143,6 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
       setIsRefreshing(true);
       addToast('info', isZh ? '正在同步所有外部連接器...' : 'Synchronizing all external connectors...', 'Integration Hub');
       
-      // Trigger Evolution in Universal Intelligence
       universalIntelligence.agentUpdate('Data Lake', { 
           traits: ['optimization', 'performance'], 
           confidence: 'high' 
@@ -171,16 +159,18 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
-      <UniversalPageHeader 
-          icon={Network}
-          title={pageData.title}
-          description={pageData.desc}
-          language={language}
-          tag={pageData.tag}
-      />
+    <div className="h-[calc(100vh-140px)] flex flex-col animate-fade-in overflow-hidden">
+      <div className="shrink-0">
+          <UniversalPageHeader 
+              icon={Network}
+              title={pageData.title}
+              description={pageData.desc}
+              language={language}
+              tag={pageData.tag}
+          />
+      </div>
 
-      <div className="flex justify-end -mt-16 mb-4 relative z-10">
+      <div className="flex justify-end -mt-16 mb-2 relative z-10 shrink-0">
         <button 
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -191,9 +181,9 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Visual Topology */}
-          <div className="glass-panel p-8 rounded-2xl flex items-center justify-center relative min-h-[400px] overflow-hidden bg-slate-900/50 border border-white/10 group">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+          {/* Visual Topology - Responsive Height */}
+          <div className="glass-panel p-4 rounded-2xl flex items-center justify-center relative overflow-hidden bg-slate-900/50 border border-white/10 group h-full">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-celestial-blue/10 via-slate-900/0 to-slate-900/0 pointer-events-none" />
               
               {/* Central Agent */}
@@ -208,7 +198,7 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
               {pipelines.map((pipe, i) => (
                   <PipelineAgent 
                       key={pipe.id}
-                      id={pipe.name} // Unique Agent ID
+                      id={pipe.name} 
                       label={pipe.name}
                       pipe={pipe}
                       index={i}
@@ -218,32 +208,35 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
               ))}
           </div>
 
-          {/* Pipeline List */}
-          <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-4">{isZh ? '連接狀態' : 'Connection Status'}</h3>
-              {pipelines.map((pipe) => (
-                  <OmniEsgCell 
-                    key={pipe.id}
-                    id={`cell-${pipe.id}`}
-                    mode="list"
-                    label={pipe.name}
-                    value={pipe.status === 'active' ? 'Running' : 'Warning'}
-                    subValue={`Latency: ${pipe.latency} • ${pipe.throughput}`}
-                    color={pipe.status === 'active' ? 'emerald' : 'gold'}
-                    icon={pipe.type === 'Wifi' ? Wifi : pipe.type === 'Database' ? Database : pipe.type === 'Calendar' ? Calendar : Server}
-                    confidence={pipe.status === 'active' ? 'high' : 'medium'}
-                    verified={true}
-                    traits={pipe.status === 'active' ? ['seamless', 'bridging'] : ['gap-filling']}
-                  />
-              ))}
+          {/* Pipeline List - Scrollable */}
+          <div className="flex flex-col h-full min-h-0 overflow-hidden">
+              <h3 className="text-lg font-semibold text-white mb-2 shrink-0">{isZh ? '連接狀態' : 'Connection Status'}</h3>
               
-              <div className="p-4 rounded-xl bg-celestial-purple/10 border border-celestial-purple/20 mt-6 flex items-start gap-3">
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                  {pipelines.map((pipe) => (
+                      <OmniEsgCell 
+                        key={pipe.id}
+                        id={`cell-${pipe.id}`}
+                        mode="list"
+                        label={pipe.name}
+                        value={pipe.status === 'active' ? 'Running' : 'Warning'}
+                        subValue={`Latency: ${pipe.latency} • ${pipe.throughput}`}
+                        color={pipe.status === 'active' ? 'emerald' : 'gold'}
+                        icon={pipe.type === 'Wifi' ? Wifi : pipe.type === 'Database' ? Database : pipe.type === 'Calendar' ? Calendar : Server}
+                        confidence={pipe.status === 'active' ? 'high' : 'medium'}
+                        verified={true}
+                        traits={pipe.status === 'active' ? ['seamless', 'bridging'] : ['gap-filling']}
+                      />
+                  ))}
+              </div>
+              
+              <div className="p-3 rounded-xl bg-celestial-purple/10 border border-celestial-purple/20 mt-4 flex items-start gap-3 shrink-0">
                   <div className="p-2 bg-celestial-purple/20 rounded-lg">
-                      <Activity className="w-5 h-5 text-celestial-purple" />
+                      <Activity className="w-4 h-4 text-celestial-purple" />
                   </div>
                   <div>
-                      <h4 className="text-sm font-bold text-white mb-1">{isZh ? '系統神經反射報告' : 'Neural Reflex Report'}</h4>
-                      <p className="text-xs text-gray-400 leading-relaxed">
+                      <h4 className="text-xs font-bold text-white mb-1">{isZh ? '系統神經反射報告' : 'Neural Reflex Report'}</h4>
+                      <p className="text-[10px] text-gray-400 leading-relaxed">
                           {isZh ? '集成中心運行穩定。Flowlu API 偶發延遲，已列入觀察名單。' : 'Integration Hub stable. Flowlu API showing sporadic latency, added to watch list.'}
                       </p>
                   </div>

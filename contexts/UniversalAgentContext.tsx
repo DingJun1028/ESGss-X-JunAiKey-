@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useToast } from './ToastContext';
 import { JOURNEY_TEMPLATES } from '../constants';
 import { UserJourney, JourneyStep, View } from '../types';
@@ -10,7 +10,7 @@ export type SystemStatus = 'STABLE' | 'UNSTABLE' | 'CRITICAL' | 'REBOOTING';
 export interface AgentLog {
     id: string;
     timestamp: number;
-    source: 'Matrix' | 'Chat' | 'System' | 'Assistant' | 'Kernel' | 'Evolution' | 'Insight';
+    source: 'Matrix' | 'Chat' | 'System' | 'Assistant' | 'Kernel' | 'Evolution' | 'Insight' | 'Tool';
     message: string;
     type: 'info' | 'success' | 'error' | 'thinking' | 'warning';
 }
@@ -76,6 +76,10 @@ interface UniversalAgentContextType {
     advanceJourney: () => void;
     completeJourney: () => void;
     currentInstruction: string | null;
+
+    // Notifications
+    isMuted: boolean;
+    toggleMute: () => void;
 }
 
 const UniversalAgentContext = createContext<UniversalAgentContextType | undefined>(undefined);
@@ -95,6 +99,7 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
     const [subAgentsActive, setSubAgentsActive] = useState<string[]>([]);
     const [systemStatus, setSystemStatus] = useState<SystemStatus>('STABLE');
     const [detectedActions, setDetectedActions] = useState<ActionItem[]>([]);
+    const [isMuted, setIsMuted] = useState(false);
     
     // Journey State
     const [activeJourney, setActiveJourney] = useState<UserJourney | null>(null);
@@ -108,22 +113,24 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
 
     const { addToast } = useToast();
 
+    // Use useCallback to ensure addLog is stable and doesn't cause re-renders
+    const addLog = useCallback((message: string, type: AgentLog['type'] = 'info', source: AgentLog['source'] = 'System') => {
+        const newLog = { id: Date.now().toString() + Math.random(), timestamp: Date.now(), source, message, type };
+        setLogs(prev => [...prev, newLog]);
+    }, []);
+
     useEffect(() => {
         addLog('Universal Neural Link Established.', 'info', 'System');
         addLog('Evolution Module: Active. Monitoring system entropy...', 'info', 'Kernel');
-    }, []);
-
-    const addLog = (message: string, type: AgentLog['type'] = 'info', source: AgentLog['source'] = 'System') => {
-        const newLog = { id: Date.now().toString() + Math.random(), timestamp: Date.now(), source, message, type };
-        setLogs(prev => [...prev, newLog]);
-    };
+    }, [addLog]);
 
     // Separated lists
-    const chatHistory = logs.filter(l => l.source === 'Chat' || l.source === 'Assistant');
+    const chatHistory = logs.filter(l => l.source === 'Chat' || l.source === 'Assistant' || l.source === 'Tool');
     // Insights now go to system logs
-    const systemLogs = logs.filter(l => l.source !== 'Chat' && l.source !== 'Assistant');
+    const systemLogs = logs.filter(l => l.source !== 'Chat' && l.source !== 'Assistant' && l.source !== 'Tool');
 
-    const extractActionFromText = (text: string): ActionItem | null => {
+    const extractActionFromText = useCallback((text: string): ActionItem | null => {
+        if (!text) return null;
         // Simple keyword heuristic for demo purposes
         const keywords = ['建議', '需', '檢查', '排程', 'recommend', 'suggest', 'check', 'schedule', 'review'];
         const hasKeyword = keywords.some(k => text.toLowerCase().includes(k));
@@ -140,24 +147,24 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
             return newItem;
         }
         return null;
-    };
+    }, []);
 
-    const markActionSynced = (id: string) => {
+    const markActionSynced = useCallback((id: string) => {
         setDetectedActions(prev => prev.map(a => a.id === id ? { ...a, status: 'synced' } : a));
-    };
+    }, []);
 
-    const clearLogs = () => {
+    const clearLogs = useCallback(() => {
         setLogs([]);
         addToast('info', 'Memory buffer flushed.', 'System');
-    };
+    }, [addToast]);
 
-    const archiveLogs = () => {
+    const archiveLogs = useCallback(() => {
         setArchivedLogs(prev => [...prev, ...logs]);
         setLogs([]);
         addToast('success', 'Logs archived to secure storage.', 'System');
-    };
+    }, [logs, addToast]);
 
-    const exportLogs = () => {
+    const exportLogs = useCallback(() => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -166,16 +173,26 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
         addToast('success', 'Logs exported successfully.', 'System');
-    };
+    }, [logs, addToast]);
 
-    const generateEvolutionReport = () => {
+    const generateEvolutionReport = useCallback(() => {
         addLog('Initiating Self-Diagnostic Evolution Scan...', 'thinking', 'Evolution');
         setTimeout(() => {
             addLog('Optimization vectors identified. Generating report...', 'success', 'Evolution');
         }, 1500);
-    };
+    }, [addLog]);
 
-    const triggerSystemCrash = () => {
+    const initiateSelfHealing = useCallback(() => {
+        addLog('AI AGENT: Intercepting Crash Protocol. Rerouting Neural Pathways...', 'thinking', 'Assistant');
+        setSystemStatus('REBOOTING');
+        setTimeout(() => {
+            setSystemStatus('STABLE');
+            addLog('System Fully Restored. Zero Hallucination Protocol Active.', 'success', 'System');
+            addToast('success', 'AI Self-Healing Complete.', 'System Restored');
+        }, 8000);
+    }, [addLog, addToast]);
+
+    const triggerSystemCrash = useCallback(() => {
         if (systemStatus !== 'STABLE') return;
         setSystemStatus('UNSTABLE');
         addLog('WARNING: Integrity Breach Detected. Cascade Failure Imminent.', 'error', 'Kernel');
@@ -187,20 +204,9 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         setTimeout(() => {
             initiateSelfHealing();
         }, 4000);
-    };
+    }, [systemStatus, addLog, addToast, initiateSelfHealing]);
 
-    const initiateSelfHealing = () => {
-        if (systemStatus === 'REBOOTING') return;
-        addLog('AI AGENT: Intercepting Crash Protocol. Rerouting Neural Pathways...', 'thinking', 'Assistant');
-        setSystemStatus('REBOOTING');
-        setTimeout(() => {
-            setSystemStatus('STABLE');
-            addLog('System Fully Restored. Zero Hallucination Protocol Active.', 'success', 'System');
-            addToast('success', 'AI Self-Healing Complete.', 'System Restored');
-        }, 8000);
-    };
-
-    const executeMatrixProtocol = async (keyId: string, label: string) => {
+    const executeMatrixProtocol = useCallback(async (keyId: string, label: string) => {
         if (isProcessing || systemStatus !== 'STABLE') return;
         setIsProcessing(true);
         setActiveKeyId(keyId);
@@ -241,19 +247,26 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         setSubAgentsActive([]);
         setIsProcessing(false);
         setActiveKeyId(null);
-    };
+    }, [isProcessing, systemStatus, activeFace, addLog, addToast]);
 
     // --- User Journey Logic ---
-    const startJourney = (journeyId: string) => {
+    const startJourney = useCallback((journeyId: string) => {
         const template = (JOURNEY_TEMPLATES as any)[journeyId];
         if (template) {
             setActiveJourney({ ...template, currentStepIndex: 0, isCompleted: false });
             addLog(`Journey Started: ${template.name}`, 'info', 'Assistant');
             addToast('info', template.description, template.name);
         }
-    };
+    }, [addLog, addToast]);
 
-    const advanceJourney = () => {
+    const completeJourney = useCallback(() => {
+        if (!activeJourney) return;
+        setActiveJourney(null);
+        addLog(`Journey Completed: ${activeJourney.name}`, 'success', 'Assistant');
+        addToast('reward', 'Journey Complete! +200 XP', 'System');
+    }, [activeJourney, addLog, addToast]);
+
+    const advanceJourney = useCallback(() => {
         if (!activeJourney) return;
         const nextIndex = activeJourney.currentStepIndex + 1;
         if (nextIndex < activeJourney.steps.length) {
@@ -265,14 +278,15 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         } else {
             completeJourney();
         }
-    };
+    }, [activeJourney, completeJourney]);
 
-    const completeJourney = () => {
-        if (!activeJourney) return;
-        setActiveJourney(null);
-        addLog(`Journey Completed: ${activeJourney.name}`, 'success', 'Assistant');
-        addToast('reward', 'Journey Complete! +200 XP', 'System');
-    };
+    const toggleMute = useCallback(() => {
+        setIsMuted(prev => {
+            const newState = !prev;
+            addToast(newState ? 'info' : 'success', newState ? 'AI Assistant Muted' : 'AI Assistant Active', 'System');
+            return newState;
+        });
+    }, [addToast]);
 
     const currentInstruction = activeJourney ? activeJourney.steps[activeJourney.currentStepIndex].instruction : null;
 
@@ -287,7 +301,8 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
             systemStatus, triggerSystemCrash, initiateSelfHealing,
             evolutionPlan, generateEvolutionReport,
             detectedActions, extractActionFromText, markActionSynced,
-            activeJourney, startJourney, advanceJourney, completeJourney, currentInstruction
+            activeJourney, startJourney, advanceJourney, completeJourney, currentInstruction,
+            isMuted, toggleMute
         }}>
             {children}
         </UniversalAgentContext.Provider>

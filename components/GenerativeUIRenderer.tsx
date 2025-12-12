@@ -125,7 +125,7 @@ const ChartRenderer = React.memo(({ data }: { data: UIBlock }) => {
       <div className="flex items-center gap-2 p-3 bg-white/5 border-b border-white/10">
           {getIcon()}
           <div>
-              <h4 className="text-sm font-bold text-white leading-tight">{data.title}</h4>
+              <h4 className="text-sm font-bold text-white leading-tight" aria-label={data.title}>{data.title}</h4>
               {data.description && <p className="text-[10px] text-gray-400">{data.description}</p>}
           </div>
       </div>
@@ -142,7 +142,7 @@ const TableRenderer = React.memo(({ data }: { data: UIBlock }) => (
   <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-slate-900/30 backdrop-blur-md shadow-lg">
     <div className="p-3 bg-white/5 border-b border-white/10 flex items-center gap-2">
         <FileSpreadsheet className="w-4 h-4 text-blue-400" />
-        <h4 className="text-sm font-bold text-white">{data.title}</h4>
+        <h4 className="text-sm font-bold text-white" aria-label={data.title}>{data.title}</h4>
     </div>
     <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-slate-300">

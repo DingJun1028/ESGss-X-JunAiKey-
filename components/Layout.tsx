@@ -220,7 +220,7 @@ const NavItem: React.FC<NavItemProps> = React.memo(({ active, onClick, icon, lab
         
         {!collapsed && (
             <div className={`flex flex-col items-start leading-none transition-opacity duration-300 ${active ? 'font-bold tracking-wide' : ''}`}>
-               <span className="text-xs">{zh}</span>
+               <span className="text-xs whitespace-nowrap">{zh}</span>
                {en && <span className="text-[9px] font-light opacity-60 font-sans tracking-normal mt-0.5">{en}</span>}
             </div>
         )}
@@ -328,6 +328,10 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
       }
   ], [language, t.nav]);
 
+  const flatNavItems = useMemo(() => {
+      return navGroups.flatMap(g => g.items);
+  }, [navGroups]);
+
   return (
     <div className={`min-h-screen bg-celestial-900 text-gray-200 relative overflow-hidden font-sans selection:bg-celestial-emerald/30 
         ${isCritical ? 'ring-4 ring-inset ring-red-900/50' : ''}
@@ -361,7 +365,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
 
       <div className={`relative z-10 flex h-screen transition-all duration-500 ${isZenMode ? 'p-0' : ''}`}>
         
-        {/* Sidebar */}
+        {/* Sidebar (Desktop) */}
         <aside 
             className={`
                 hidden md:flex flex-col border-r border-white/5 bg-slate-900/60 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out
@@ -573,25 +577,27 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, languag
           </main>
         </div>
 
-        {/* Mobile Nav */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 z-40 safe-pb">
-            <div className="flex items-center justify-around h-full px-2">
-                {navGroups[0].items.slice(0, 4).map(item => (
-                    <button 
-                        key={item.id} 
-                        onClick={() => onNavigate(item.id)}
-                        className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all ${currentView === item.id ? 'text-white' : 'text-gray-500'}`}
-                    >
-                        <div className={`p-1 rounded-lg ${currentView === item.id ? 'bg-white/10' : ''}`}>
-                            <item.icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-[9px] mt-1 font-medium">{item.label.split(' ')[0]}</span>
-                    </button>
-                ))}
-                <button onClick={() => setIsCommandOpen(true)} className="flex flex-col items-center justify-center w-16 text-gray-500">
+        {/* Mobile Nav - Scrollable Horizontal List */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 z-40 safe-pb overflow-x-auto no-scrollbar">
+            <div className="flex items-center h-full px-4 gap-4 min-w-max">
+                <button onClick={() => setIsCommandOpen(true)} className="flex flex-col items-center justify-center min-w-[3rem] text-gray-500 border-r border-white/10 pr-4 mr-2">
                     <Menu className="w-5 h-5" />
                     <span className="text-[9px] mt-1">Menu</span>
                 </button>
+                {flatNavItems.map(item => (
+                    <button 
+                        key={item.id} 
+                        onClick={() => onNavigate(item.id)}
+                        className={`flex flex-col items-center justify-center min-w-[3.5rem] py-1 rounded-xl transition-all ${currentView === item.id ? 'text-white' : 'text-gray-500'}`}
+                    >
+                        <div className={`p-1.5 rounded-lg ${currentView === item.id ? 'bg-white/10' : ''}`}>
+                            <item.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-[9px] mt-1 font-medium truncate max-w-[4rem] text-center">
+                            {item.label.split(' ')[0]}
+                        </span>
+                    </button>
+                ))}
             </div>
         </div>
 

@@ -467,7 +467,16 @@ export const ResearchHub: React.FC<ResearchHubProps> = ({ language }) => {
                                   <div className="p-3 bg-white/5 rounded-xl group-hover:bg-celestial-gold/20 transition-colors">
                                       <Database className="w-6 h-6 text-gray-300 group-hover:text-celestial-gold" />
                                   </div>
-                                  {isInstalled && <CheckCircle className="w-5 h-5 text-emerald-400" />}
+                                  <div className="flex flex-col items-end gap-2">
+                                      <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-bold tracking-wider ${
+                                          mod.status === 'beta' 
+                                            ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' 
+                                            : 'bg-blue-500/10 text-blue-300 border-blue-500/20'
+                                      }`}>
+                                          {mod.status}
+                                      </span>
+                                      {isInstalled && <CheckCircle className="w-5 h-5 text-emerald-400" />}
+                                  </div>
                               </div>
                               <h4 className="font-bold text-white mb-2">{mod.name}</h4>
                               <p className="text-xs text-gray-400 leading-relaxed mb-4">{mod.description}</p>

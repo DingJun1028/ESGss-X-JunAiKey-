@@ -7,7 +7,7 @@ import {
     Briefcase, Activity, CheckCircle, ExternalLink, RefreshCw,
     PlayCircle, Upload, PenTool, BarChart, DollarSign, Handshake, 
     Megaphone, Wand2, Image as ImageIcon, Type, Move, Save, 
-    LayoutTemplate, MousePointer2, X, ChevronRight
+    LayoutTemplate, MousePointer2, X, ChevronRight, ZoomIn, ZoomOut, Grid as GridIcon, Layers, Sparkles
 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { OmniEsgCell } from './OmniEsgCell';
@@ -52,12 +52,15 @@ interface CanvasElement {
 
 const PartnerCanvas: React.FC<{ isZh: boolean, onClose: () => void }> = ({ isZh, onClose }) => {
     const { addToast } = useToast();
+    // Centered initial elements for the new Artboard layout
     const [elements, setElements] = useState<CanvasElement[]>([
-        { id: 'el-1', type: 'text', content: isZh ? '在此輸入您的品牌標語...' : 'Insert Brand Slogan Here...', x: 50, y: 50, width: 300, height: 60, style: { fontSize: '24px', fontWeight: 'bold', color: '#fbbf24' } }
+        { id: 'el-1', type: 'text', content: isZh ? '在此輸入您的品牌標語...' : 'Insert Brand Slogan Here...', x: 150, y: 200, width: 300, height: 60, style: { fontSize: '24px', fontWeight: 'bold', color: '#fbbf24', textAlign: 'center' } }
     ]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [prompt, setPrompt] = useState('');
+    const [zoom, setZoom] = useState(100);
+    const [showGrid, setShowGrid] = useState(true);
 
     const handleDragStart = (e: React.DragEvent, id: string) => {
         e.dataTransfer.setData("id", id);
@@ -65,9 +68,11 @@ const PartnerCanvas: React.FC<{ isZh: boolean, onClose: () => void }> = ({ isZh,
 
     const handleDrop = (e: React.DragEvent) => {
         const id = e.dataTransfer.getData("id");
+        // Simple drop logic relative to container for demo
+        // In a real app, we'd calculate offset relative to the artboard div
         const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const x = (e.clientX - rect.left) / (zoom / 100);
+        const y = (e.clientY - rect.top) / (zoom / 100);
 
         setElements(prev => prev.map(el => el.id === id ? { ...el, x: x - el.width / 2, y: y - el.height / 2 } : el));
     };
@@ -80,12 +85,12 @@ const PartnerCanvas: React.FC<{ isZh: boolean, onClose: () => void }> = ({ isZh,
         // Simulate AI Generation
         setTimeout(() => {
             const newElements: CanvasElement[] = [
-                { id: `gen-title-${Date.now()}`, type: 'text', content: prompt.toUpperCase(), x: 40, y: 40, width: 400, height: 50, style: { fontSize: '32px', fontWeight: 'bold', color: '#ffffff' } },
-                { id: `gen-sub-${Date.now()}`, type: 'text', content: "Sustainable Innovation Partner", x: 40, y: 100, width: 300, height: 30, style: { fontSize: '16px', color: '#10b981' } },
-                { id: `gen-img-${Date.now()}`, type: 'image', content: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80', x: 40, y: 150, width: 300, height: 200, style: { borderRadius: '12px' } },
-                { id: `gen-badge-${Date.now()}`, type: 'shape', content: 'Verified Partner', x: 360, y: 150, width: 120, height: 40, style: { backgroundColor: '#8b5cf6', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' } }
+                { id: `gen-title-${Date.now()}`, type: 'text', content: prompt.toUpperCase(), x: 100, y: 100, width: 400, height: 50, style: { fontSize: '32px', fontWeight: 'bold', color: '#ffffff', textAlign: 'center' } },
+                { id: `gen-sub-${Date.now()}`, type: 'text', content: "Sustainable Innovation Partner", x: 150, y: 160, width: 300, height: 30, style: { fontSize: '16px', color: '#10b981', textAlign: 'center' } },
+                { id: `gen-img-${Date.now()}`, type: 'image', content: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80', x: 50, y: 220, width: 500, height: 300, style: { borderRadius: '12px', objectFit: 'cover' } },
+                { id: `gen-badge-${Date.now()}`, type: 'shape', content: 'Verified Partner', x: 400, y: 480, width: 120, height: 40, style: { backgroundColor: '#8b5cf6', color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' } }
             ];
-            setElements(prev => [...prev, ...newElements]);
+            setElements(newElements); // Replace for cleaner demo
             setIsGenerating(false);
             addToast('success', isZh ? '內容生成完畢' : 'Content Generated', 'AI Canvas');
         }, 2000);
@@ -105,6 +110,19 @@ const PartnerCanvas: React.FC<{ isZh: boolean, onClose: () => void }> = ({ isZh,
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
+                    <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/10">
+                        <button onClick={() => setZoom(z => Math.max(50, z - 10))} className="p-1.5 hover:bg-white/10 rounded text-gray-400"><ZoomOut className="w-4 h-4"/></button>
+                        <span className="text-xs font-mono w-12 text-center text-gray-300">{zoom}%</span>
+                        <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="p-1.5 hover:bg-white/10 rounded text-gray-400"><ZoomIn className="w-4 h-4"/></button>
+                    </div>
+                    <button 
+                        onClick={() => setShowGrid(!showGrid)} 
+                        className={`p-2 rounded-lg border transition-colors ${showGrid ? 'bg-celestial-purple/20 text-celestial-purple border-celestial-purple/30' : 'bg-transparent text-gray-400 border-transparent hover:bg-white/5'}`}
+                        title="Toggle Grid"
+                    >
+                        <GridIcon className="w-4 h-4" />
+                    </button>
+                    <div className="h-6 w-[1px] bg-white/10 mx-2" />
                     <button onClick={() => addToast('success', 'Saved to Cloud', 'System')} className="flex items-center gap-2 text-xs font-bold text-emerald-400 hover:text-emerald-300">
                         <Save className="w-4 h-4" /> {isZh ? '保存設計' : 'Save Design'}
                     </button>
@@ -116,41 +134,43 @@ const PartnerCanvas: React.FC<{ isZh: boolean, onClose: () => void }> = ({ isZh,
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Tools Sidebar */}
-                <div className="w-64 bg-slate-900 border-r border-white/10 p-4 flex flex-col gap-6">
+                <div className="w-64 bg-slate-900 border-r border-white/10 p-4 flex flex-col gap-6 z-10">
                     <div>
-                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{isZh ? 'AI 生成器' : 'AI Generator'}</h4>
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <Wand2 className="w-3 h-3" /> {isZh ? 'AI 生成器' : 'AI Generator'}
+                        </h4>
                         <textarea 
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             placeholder={isZh ? "描述您的品牌與需求..." : "Describe your brand..."}
-                            className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-xs text-white mb-3 h-24 focus:outline-none focus:border-celestial-purple/50"
+                            className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-xs text-white mb-3 h-24 focus:outline-none focus:border-celestial-purple/50 resize-none"
                         />
                         <button 
                             onClick={handleAiGenerate}
                             disabled={isGenerating}
                             className="w-full py-2 bg-gradient-to-r from-celestial-purple to-blue-500 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                         >
-                            {isGenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                            {isGenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                             {isZh ? '一鍵生成素材' : 'Generate Assets'}
                         </button>
                     </div>
 
-                    <div>
-                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{isZh ? '工具箱' : 'Toolbox'}</h4>
+                    <div className="border-t border-white/10 pt-4">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{isZh ? '組件工具箱' : 'Toolbox'}</h4>
                         <div className="grid grid-cols-2 gap-2">
-                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors border border-white/5 hover:border-white/20">
                                 <Type className="w-5 h-5" />
                                 <span className="text-[10px]">Text</span>
                             </button>
-                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors border border-white/5 hover:border-white/20">
                                 <ImageIcon className="w-5 h-5" />
                                 <span className="text-[10px]">Image</span>
                             </button>
-                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors border border-white/5 hover:border-white/20">
                                 <Layout className="w-5 h-5" />
                                 <span className="text-[10px]">Layout</span>
                             </button>
-                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors">
+                            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-lg flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors border border-white/5 hover:border-white/20">
                                 <MousePointer2 className="w-5 h-5" />
                                 <span className="text-[10px]">Select</span>
                             </button>
@@ -158,72 +178,108 @@ const PartnerCanvas: React.FC<{ isZh: boolean, onClose: () => void }> = ({ isZh,
                     </div>
                 </div>
 
-                {/* Canvas Area */}
-                <div 
-                    className="flex-1 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-slate-950 relative overflow-hidden"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleDrop}
-                >
-                    <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:40px_40px]" />
+                {/* Canvas Area - The "Artboard" */}
+                <div className="flex-1 bg-slate-950 relative overflow-hidden flex items-center justify-center p-8">
+                    {/* Workspace Background */}
+                    <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:20px_20px]" />
                     
-                    {elements.map(el => (
-                        <div
-                            key={el.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, el.id)}
-                            onClick={() => setSelectedId(el.id)}
-                            className={`absolute cursor-move group ${selectedId === el.id ? 'ring-1 ring-celestial-purple' : ''}`}
-                            style={{ 
-                                left: el.x, 
-                                top: el.y, 
-                                width: el.width, 
-                                height: el.height,
-                                ...el.style 
-                            }}
-                        >
-                            {el.type === 'text' && (
-                                <div className="w-full h-full flex items-center">{el.content}</div>
-                            )}
-                            {el.type === 'image' && (
-                                <img src={el.content} alt="" className="w-full h-full object-cover" />
-                            )}
-                            {el.type === 'shape' && (
-                                <div className="w-full h-full flex items-center justify-center font-bold">
-                                    {el.content}
-                                </div>
-                            )}
-                            {/* Resize Handles (Visual Only for Demo) */}
-                            {selectedId === el.id && (
-                                <>
-                                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-white rounded-full" />
-                                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white rounded-full" />
-                                </>
-                            )}
-                        </div>
-                    ))}
+                    {/* The Artboard */}
+                    <div 
+                        className={`relative bg-white shadow-2xl transition-transform duration-200 ease-out ${showGrid ? 'bg-[linear-gradient(rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.05)_1px,transparent_1px)] bg-[length:20px_20px]' : ''}`}
+                        style={{ 
+                            width: '600px', 
+                            height: '800px', 
+                            transform: `scale(${zoom / 100})`,
+                            backgroundColor: '#1e293b', // Slate 800
+                            boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleDrop}
+                    >
+                        {/* Artboard Content */}
+                        {elements.map(el => (
+                            <div
+                                key={el.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, el.id)}
+                                onClick={() => setSelectedId(el.id)}
+                                className={`absolute cursor-move group ${selectedId === el.id ? 'ring-2 ring-celestial-purple ring-offset-2 ring-offset-slate-800' : 'hover:ring-1 hover:ring-white/30'}`}
+                                style={{ 
+                                    left: el.x, 
+                                    top: el.y, 
+                                    width: el.width, 
+                                    height: el.height,
+                                    ...el.style 
+                                }}
+                            >
+                                {el.type === 'text' && (
+                                    <div className="w-full h-full flex items-center justify-center">{el.content}</div>
+                                )}
+                                {el.type === 'image' && (
+                                    <img src={el.content} alt="" className="w-full h-full object-cover" />
+                                )}
+                                {el.type === 'shape' && (
+                                    <div className="w-full h-full flex items-center justify-center font-bold shadow-lg">
+                                        {el.content}
+                                    </div>
+                                )}
+                                {/* Resize Handles (Visual) */}
+                                {selectedId === el.id && (
+                                    <>
+                                        <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-celestial-purple" />
+                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-celestial-purple" />
+                                        <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-celestial-purple" />
+                                        <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-celestial-purple" />
+                                    </>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Properties Panel */}
-                <div className="w-64 bg-slate-900 border-l border-white/10 p-4">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">{isZh ? '屬性' : 'Properties'}</h4>
-                    {selectedId ? (
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-xs text-gray-400">Position X</label>
-                                <input type="number" className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                {/* Properties Panel (Layers & Settings) */}
+                <div className="w-64 bg-slate-900 border-l border-white/10 p-4 z-10">
+                    <div className="mb-6">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <Settings className="w-3 h-3" /> {isZh ? '屬性' : 'Properties'}
+                        </h4>
+                        {selectedId ? (
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-400">Position X / Y</label>
+                                    <div className="flex gap-2">
+                                        <input type="number" className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs text-white text-center" placeholder="X" />
+                                        <input type="number" className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs text-white text-center" placeholder="Y" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-gray-400">Opacity</label>
+                                    <input type="range" className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-gray-400">Position Y</label>
-                                <input type="number" className="w-full bg-black/30 border border-white/10 rounded px-2 py-1 text-xs text-white" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-gray-400">Opacity</label>
-                                <input type="range" className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
-                            </div>
+                        ) : (
+                            <div className="text-xs text-gray-600 text-center py-4 bg-white/5 rounded-lg border border-dashed border-white/10">Select an element</div>
+                        )}
+                    </div>
+
+                    <div className="border-t border-white/10 pt-4">
+                        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <Layers className="w-3 h-3" /> {isZh ? '圖層' : 'Layers'}
+                        </h4>
+                        <div className="space-y-1">
+                            {elements.slice().reverse().map((el, i) => (
+                                <div 
+                                    key={el.id} 
+                                    className={`flex items-center gap-2 p-2 rounded text-xs cursor-pointer ${selectedId === el.id ? 'bg-celestial-purple/20 text-white' : 'text-gray-400 hover:bg-white/5'}`}
+                                    onClick={() => setSelectedId(el.id)}
+                                >
+                                    {el.type === 'text' ? <Type className="w-3 h-3" /> : el.type === 'image' ? <ImageIcon className="w-3 h-3" /> : <Layout className="w-3 h-3" />}
+                                    <span className="truncate">{el.content}</span>
+                                </div>
+                            ))}
                         </div>
-                    ) : (
-                        <div className="text-xs text-gray-600 text-center mt-10">Select an element to edit</div>
-                    )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -241,7 +297,9 @@ export const AlumniZone: React.FC<AlumniZoneProps> = ({ language }) => {
   
   // Collaboration State
   const [collabForm, setCollabForm] = useState({ company: '', contact: '', proposal: '' });
+  const [collabFile, setCollabFile] = useState<File | null>(null);
   const [showCanvas, setShowCanvas] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const pageData = {
       title: { zh: '校友專區 & LMS', en: 'Alumni & LMS Zone' },
@@ -267,10 +325,18 @@ export const AlumniZone: React.FC<AlumniZoneProps> = ({ language }) => {
       }, 1500);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          setCollabFile(e.target.files[0]);
+          addToast('success', isZh ? '檔案已選取' : 'File Selected', 'System');
+      }
+  };
+
   const handleApplyCollab = (e: React.FormEvent) => {
       e.preventDefault();
       addToast('success', isZh ? '申請已提交！請等待審核。' : 'Application submitted! Pending review.', 'Collaboration');
       setCollabForm({ company: '', contact: '', proposal: '' });
+      setCollabFile(null);
   };
 
   // --- RENDER SECTIONS ---
@@ -384,6 +450,36 @@ export const AlumniZone: React.FC<AlumniZoneProps> = ({ language }) => {
                               required
                           />
                       </div>
+                      
+                      {/* File Upload Section */}
+                      <div className="border border-dashed border-white/20 rounded-lg p-4 bg-white/5 text-center">
+                          <input 
+                              type="file" 
+                              ref={fileInputRef}
+                              onChange={handleFileSelect}
+                              className="hidden"
+                              accept=".pdf,.ppt,.pptx,.doc,.docx"
+                          />
+                          <div 
+                              className="flex flex-col items-center justify-center cursor-pointer"
+                              onClick={() => fileInputRef.current?.click()}
+                          >
+                              {collabFile ? (
+                                  <>
+                                      <FileText className="w-6 h-6 text-emerald-400 mb-2" />
+                                      <span className="text-sm text-emerald-300 font-bold break-all">{collabFile.name}</span>
+                                      <span className="text-xs text-gray-500 mt-1">{(collabFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                                  </>
+                              ) : (
+                                  <>
+                                      <Upload className="w-6 h-6 text-gray-400 mb-2" />
+                                      <span className="text-sm text-gray-300 font-bold">{isZh ? '上傳提案簡報 / Logo' : 'Upload Pitch Deck / Logo'}</span>
+                                      <span className="text-xs text-gray-500 mt-1">PDF, PPT, DOC (Max 10MB)</span>
+                                  </>
+                              )}
+                          </div>
+                      </div>
+
                       <button type="submit" className="w-full py-2 bg-celestial-gold text-black font-bold rounded-lg hover:bg-amber-400 transition-colors">
                           {isZh ? '提交申請' : 'Submit Application'}
                       </button>

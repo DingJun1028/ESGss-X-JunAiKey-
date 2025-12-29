@@ -1,608 +1,261 @@
-
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  LayoutDashboard, GraduationCap, Search, Settings, Activity, Sun, Bell, Languages,
-  Target, UserCheck, Leaf, FileText, Network, Bot, Calculator, ShieldCheck, Coins, Trophy, X, Zap, Star, Home, Radio, Command, Briefcase, Stethoscope, Wrench, Crown, BookOpen, Layers, Heart, Info, Megaphone, Calendar, Lock, Code, Database, UserPlus,
-  Maximize, Minimize, Menu, ChevronLeft, ChevronRight, Library, Book, Hexagon, Swords, AlertOctagon, Terminal
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Language } from '../types';
-import { TRANSLATIONS } from '../constants';
-import { useCompany } from './providers/CompanyProvider';
-import { useToast } from '../contexts/ToastContext';
-import { CommandPalette } from './CommandPalette';
+import { 
+  Home, Layers, Bot, Leaf, FileText, Network, BookOpen, GraduationCap, Crown, Hammer, Coins, Library,
+  ChevronLeft, ChevronRight, Zap, ShieldCheck, Command, Info, User, Star, Heart, Target, TrendingUp,
+  Globe, Briefcase, Stethoscope, Database, Activity, Trophy, Shield, Fingerprint, Sparkles, Box, Users, Archive, Menu, Share2, Compass, X, Gem, ArrowRight
+} from 'lucide-react';
 import { AiAssistant } from './AiAssistant';
-import { SubscriptionModal } from './SubscriptionModal';
+import { CommandPalette } from './CommandPalette';
 import { OnboardingTour } from './OnboardingTour';
+import { useCompany } from './providers/CompanyProvider';
 import { useUniversalAgent } from '../contexts/UniversalAgentContext';
 
 interface LayoutProps {
   currentView: View;
   onNavigate: (view: View) => void;
+  children: React.ReactNode;
   language: Language;
   onToggleLanguage: () => void;
-  children: React.ReactNode;
 }
 
-// Updated Logo: Enhanced Depth
-export const LogoIcon = React.memo(({ className }: { className?: string }) => (
-  <div className={`relative overflow-hidden rounded-2xl shadow-[inset_0_2px_6px_rgba(255,255,255,0.1)] border border-white/10 bg-black/40 ${className}`}>
-    <div className="absolute inset-0 bg-gradient-to-br from-celestial-gold/20 via-transparent to-celestial-purple/20 opacity-50" />
+export const LogoIcon = ({ className, id }: { className?: string; id?: string }) => (
+  <div id={id} className={`flex items-center justify-center overflow-hidden rounded-md transition-all duration-500 ${className}`}>
     <img 
-      src="https://thumbs4.imagebam.com/7f/89/20/ME18KXN8_t.png" 
-      alt="ESGss Logo" 
-      className="w-full h-full object-cover opacity-90 relative z-10"
-      loading="lazy"
+        src="https://thumbs4.imagebam.com/a0/c1/da/ME18W0T0_t.PNG" 
+        alt="ESGss JAK Official Logo" 
+        className="w-full h-full object-contain"
     />
   </div>
-));
+);
 
-// --- Neural Fabric Component ---
-const NeuralFabric: React.FC = React.memo(() => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d', { alpha: false });
-        if (!ctx) return;
-
-        let animationFrameId: number;
-        let particles: { x: number, y: number, vx: number, vy: number, size: number, phase: number }[] = [];
-        
-        const isMobile = window.innerWidth < 768;
-        const PARTICLE_COUNT = isMobile ? 30 : 60;
-        const CONNECT_DISTANCE = 200;
-
-        const initParticles = () => {
-            particles = [];
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    vx: (Math.random() - 0.5) * 0.2,
-                    vy: (Math.random() - 0.5) * 0.2,
-                    size: Math.random() * 1.5 + 0.5,
-                    phase: Math.random() * Math.PI * 2
-                });
-            }
-        };
-
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initParticles();
-        };
-
-        const draw = () => {
-            ctx.fillStyle = '#020617';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            for (let i = 0; i < particles.length; i++) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.phase += 0.01;
-
-                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-                const currentSize = p.size + Math.sin(p.phase) * 0.3;
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, Math.max(0.1, currentSize), 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(139, 92, 246, ${0.1 + Math.sin(p.phase) * 0.05})`;
-                ctx.fill();
-
-                for (let j = i + 1; j < particles.length; j++) {
-                    const p2 = particles[j];
-                    const dx = p.x - p2.x;
-                    const dy = p.y - p2.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < CONNECT_DISTANCE) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(59, 130, 246, ${0.03 * (1 - dist / CONNECT_DISTANCE)})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
-                    }
-                }
-            }
-            animationFrameId = requestAnimationFrame(draw);
-        };
-
-        window.addEventListener('resize', resize);
-        resize();
-        draw();
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            cancelAnimationFrame(animationFrameId);
-        };
-    }, []);
-
-    return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
-});
-
-// --- System Crash Overlay ---
-const SystemCrashOverlay: React.FC = () => {
-    const { systemStatus, logs } = useUniversalAgent();
-    
-    if (systemStatus === 'STABLE') return null;
-
-    const isCritical = systemStatus === 'CRITICAL';
-    const isRebooting = systemStatus === 'REBOOTING';
-
-    return (
-        <div className={`fixed inset-0 z-[200] flex items-center justify-center font-mono pointer-events-none transition-all duration-300
-            ${isCritical ? 'bg-red-900/40 backdrop-blur-sm' : isRebooting ? 'bg-black' : 'bg-transparent'}
-        `}>
-            {/* CRT Scanline Effect */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[201] bg-[length:100%_2px,3px_100%] pointer-events-none" />
-            
-            <div className="relative z-20 w-full max-w-2xl p-8">
-                {systemStatus === 'UNSTABLE' && (
-                    <div className="text-amber-400 text-center animate-pulse">
-                        <AlertOctagon className="w-24 h-24 mx-auto mb-4" />
-                        <h1 className="text-4xl font-bold mb-2">SYSTEM INSTABILITY DETECTED</h1>
-                        <p>Neural coherence dropping below 40%...</p>
-                    </div>
-                )}
-
-                {systemStatus === 'CRITICAL' && (
-                    <div className="text-red-500 text-center animate-[shake_0.5s_infinite]">
-                        <h1 className="text-6xl font-bold mb-4 tracking-tighter">CRITICAL FAILURE</h1>
-                        <div className="text-2xl mb-8">MEMORY HEAP OVERFLOW 0x8849F2</div>
-                        <div className="space-y-1 text-sm font-mono text-left bg-black/50 p-4 rounded border border-red-500">
-                            {Array.from({length: 5}).map((_, i) => (
-                                <div key={i} className="truncate">Error: Segmentation fault at core_module_{Math.floor(Math.random()*100)}...</div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {systemStatus === 'REBOOTING' && (
-                    <div className="text-emerald-500 w-full">
-                        <div className="flex items-center gap-3 mb-6">
-                            <Terminal className="w-8 h-8 animate-pulse" />
-                            <h2 className="text-2xl font-bold">JunAiKey AIOS KERNEL v15.0 - SAFE MODE</h2>
-                        </div>
-                        <div className="h-64 overflow-hidden border border-emerald-500/30 rounded-lg p-4 bg-black/90 font-mono text-xs flex flex-col justify-end">
-                            {logs.slice(-8).map((log, i) => (
-                                <div key={i} className="mb-1">
-                                    <span className="text-gray-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-                                    <span className="text-emerald-400 ml-2">{log.message}</span>
-                                </div>
-                            ))}
-                            <div className="animate-pulse">_</div>
-                        </div>
-                        <div className="mt-4 w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 animate-[width_8s_ease-in-out_forwards] w-0" />
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-interface NavItemProps {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  highlight?: boolean;
-  collapsed?: boolean;
-}
-
-const NavItem: React.FC<NavItemProps> = React.memo(({ active, onClick, icon, label, highlight, collapsed }) => {
-    // Bilingual Splitting logic
-    const parts = label.split(' (');
-    const zh = parts[0];
-    const en = parts.length > 1 ? parts[1].replace(')', '') : '';
-
-    return (
-      <button
-        onClick={onClick}
-        className={`
-          relative flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 group w-full
-          ${active 
-            ? 'bg-gradient-to-r from-celestial-purple/90 to-celestial-purple/70 text-white shadow-lg shadow-purple-500/20' 
-            : 'text-gray-400 hover:text-white hover:bg-white/5'}
-          ${collapsed ? 'justify-center w-12 mx-auto' : ''}
-        `}
-        title={collapsed ? label : undefined}
-      >
-        <div className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
-          {icon}
-        </div>
-        
-        {!collapsed && (
-            <div className={`flex flex-col items-start leading-none transition-opacity duration-300 ${active ? 'font-bold tracking-wide' : ''}`}>
-               <span className="text-xs whitespace-nowrap">{zh}</span>
-               {en && <span className="text-[9px] font-light opacity-60 font-sans tracking-normal mt-0.5">{en}</span>}
-            </div>
-        )}
-        
-        {highlight && !collapsed && (
-            <span className="absolute right-2 w-1.5 h-1.5 rounded-full bg-celestial-gold animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-        )}
-        {highlight && collapsed && (
-            <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-celestial-gold animate-pulse" />
-        )}
-      </button>
-    );
-});
-
-export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, language, onToggleLanguage, children }) => {
-  const t = TRANSLATIONS[language];
-  const { userName, level, xp, totalScore, tier } = useCompany();
-  const { notifications, clearNotifications } = useToast();
-  const { systemStatus } = useUniversalAgent();
-  
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, children, language, onToggleLanguage }) => {
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
-  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isZenMode, setIsZenMode] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showVaultBrief, setShowVaultBrief] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const vaultRef = useRef<HTMLDivElement>(null);
   
-  const mainRef = useRef<HTMLElement>(null);
-
-  const currentLevelBaseXp = (level - 1) * 1000;
-  const xpProgress = Math.min(100, Math.max(0, ((xp - currentLevelBaseXp) / 1000) * 100));
-  const isCritical = totalScore < 60 || systemStatus === 'CRITICAL';
-
-  // Better Avatar Seed
-  const avatarUrl = `https://api.dicebear.com/9.x/notionists/svg?seed=${userName}&backgroundColor=b6e3f4`;
+  const { userName, xp, level, goodwillBalance, activeTitle } = useCompany();
+  const { soul, forgedSouls, cardInventory } = useUniversalAgent();
+  const isZh = language === 'zh-TW';
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsCommandOpen(prev => !prev);
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === '.') {
-          e.preventDefault();
-          setIsZenMode(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
-    if (mainRef.current) {
-        mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [currentView]);
-
-  // MECE Reorganization - Reorganized per user request
-  const navGroups = useMemo(() => [
-      {
-          title: language === 'zh-TW' ? '核心' : 'Core',
-          items: [
-              { id: View.MY_ESG, icon: Home, label: t.nav.myEsg }, 
-              { id: View.YANG_BO, icon: Crown, label: t.nav.yangBo }, 
-              { id: View.USER_JOURNAL, icon: Book, label: t.nav.userJournal },
-              { id: View.RESTORATION, icon: Hexagon, label: t.nav.restoration, highlight: true },
-              { id: View.CARD_GAME_ARENA, icon: Swords, label: t.nav.cardGameArena },
-          ]
-      },
-      {
-          title: language === 'zh-TW' ? '運營' : 'Ops',
-          items: [
-              { id: View.DASHBOARD, icon: LayoutDashboard, label: t.nav.dashboard },
-              { id: View.CARBON, icon: Leaf, label: t.nav.carbon },
-              { id: View.STRATEGY, icon: Target, label: t.nav.strategy },
-              { id: View.REPORT, icon: FileText, label: t.nav.report },
-              { id: View.INTEGRATION, icon: Network, label: t.nav.integration },
-          ]
-      },
-      {
-          title: language === 'zh-TW' ? '洞察' : 'Intel',
-          items: [
-              { id: View.BUSINESS_INTEL, icon: Briefcase, label: language === 'zh-TW' ? '商情分析 (Market Analysis)' : 'Market Analysis' },
-              { id: View.RESEARCH_HUB, icon: Search, label: language === 'zh-TW' ? '研究中心 (Research Center)' : 'Research Center' },
-              { id: View.ACADEMY, icon: GraduationCap, label: t.nav.academy },
-              { id: View.LIBRARY, icon: Library, label: t.nav.library },
-          ]
-      },
-      {
-          title: language === 'zh-TW' ? '生態' : 'Eco',
-          items: [
-              { id: View.GOODWILL, icon: Coins, label: t.nav.goodwill },
-              { id: View.FUNDRAISING, icon: Heart, label: t.nav.fundraising },
-              { id: View.ALUMNI_ZONE, icon: UserPlus, label: t.nav.alumniZone },
-              { id: View.TALENT, icon: Star, label: t.nav.talent },
-          ]
-      },
-      {
-          title: language === 'zh-TW' ? '系統' : 'Sys',
-          items: [
-              { id: View.SETTINGS, icon: Settings, label: t.nav.settings },
-              { id: View.DIAGNOSTICS, icon: Activity, label: t.nav.diagnostics },
-              { id: View.API_ZONE, icon: Code, label: t.nav.apiZone },
-              { id: View.UNIVERSAL_BACKEND, icon: Database, label: t.nav.universalBackend },
-          ]
+    const handleClickOutside = (event: MouseEvent) => {
+      if (vaultRef.current && !vaultRef.current.contains(event.target as Node)) {
+        setShowVaultBrief(false);
       }
-  ], [language, t.nav]);
+    };
+    if (showVaultBrief) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showVaultBrief]);
 
-  const flatNavItems = useMemo(() => {
-      return navGroups.flatMap(g => g.items);
-  }, [navGroups]);
+  const navSectors = [
+    { title: 'CMD', items: [
+      { id: View.MY_ESG, icon: Home, label: isZh ? '北極星' : 'Cockpit' },
+      { id: View.BUSINESS_INTEL, icon: Globe, label: isZh ? 'AMICE' : 'AMICE' },
+      { id: View.STRATEGY, icon: Layers, label: isZh ? '顧問' : 'Advisory' },
+      { id: View.THINK_TANK, icon: Archive, label: isZh ? '智庫' : 'Tank' },
+    ]},
+    { title: 'ECO', items: [
+      { id: View.PARTNER_PORTAL, icon: Compass, label: isZh ? '生態' : 'Ecosystem' },
+      { id: View.AFFILIATE, icon: Share2, label: isZh ? '聯盟' : 'Affiliate' },
+      { id: View.ACADEMY, icon: GraduationCap, label: isZh ? '學院' : 'Academy' },
+    ]},
+    { title: 'SYS', items: [
+      { id: View.REPORT, icon: FileText, label: isZh ? '報告' : 'Report' },
+      { id: View.YANG_BO, icon: Crown, label: isZh ? '楊博' : 'CEO' },
+      { id: View.HEALTH_CHECK, icon: Stethoscope, label: isZh ? '健檢' : 'Health' },
+    ]}
+  ];
+
+  const allNavItems = navSectors.flatMap(s => s.items);
+
+  const scrollMenu = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const amt = direction === 'left' ? -200 : 200;
+      scrollRef.current.scrollBy({ left: amt, behavior: 'smooth' });
+    }
+  };
 
   return (
-    <div className={`min-h-screen bg-celestial-900 text-gray-200 relative overflow-hidden font-sans selection:bg-celestial-emerald/30 
-        ${isCritical ? 'ring-4 ring-inset ring-red-900/50' : ''}
-        ${systemStatus !== 'STABLE' ? 'filter hue-rotate-15 contrast-125' : ''}
-    `}>
-      <SystemCrashOverlay />
-      
-      {/* Dynamic Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <NeuralFabric />
-        <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-10 animate-blob mix-blend-screen ${isCritical ? 'bg-red-900' : 'bg-celestial-purple'}`} />
-        <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[100px] opacity-10 animate-blob animation-delay-2000 mix-blend-screen ${isCritical ? 'bg-orange-900' : 'bg-celestial-emerald'}`} />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] brightness-100 contrast-150 mix-blend-overlay" />
-      </div>
-
-      <CommandPalette 
-        isOpen={isCommandOpen} 
-        onClose={() => setIsCommandOpen(false)} 
-        onNavigate={onNavigate} 
-        language={language}
-        toggleLanguage={onToggleLanguage}
-      />
-
-      <SubscriptionModal 
-        isOpen={isSubModalOpen}
-        onClose={() => setIsSubModalOpen(false)}
-        language={language}
-      />
-
-      <OnboardingTour language={language} />
-
-      <div className={`relative z-10 flex h-screen transition-all duration-500 ${isZenMode ? 'p-0' : ''}`}>
-        
-        {/* Sidebar (Desktop) */}
-        <aside 
-            className={`
-                hidden md:flex flex-col border-r border-white/5 bg-slate-900/60 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out
-                ${isZenMode ? '-ml-80 opacity-0' : ''}
-                ${isSidebarCollapsed ? 'w-16' : 'w-60'}
-            `}
-        >
-          {/* Brand */}
-          <div className={`h-20 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between px-4'} border-b border-white/5 relative group cursor-pointer`} onClick={() => onNavigate(View.MY_ESG)}>
-            <div className={`flex items-center gap-2 transition-all ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                <div className="relative z-10 transition-transform duration-300 group-hover:scale-110">
-                   <LogoIcon className="w-8 h-8 shadow-lg shadow-celestial-gold/10" />
-                </div>
-                
-                <div className={`flex flex-col transition-all duration-300 overflow-hidden ${isSidebarCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
-                    <span className="font-bold text-base tracking-tight text-white font-sans whitespace-nowrap">
-                      ESGss
-                    </span>
-                    <span className="text-[8px] text-celestial-emerald tracking-[0.2em] uppercase font-bold whitespace-nowrap">
-                      JunAiKey
-                    </span>
-                </div>
-            </div>
-
-            <button 
-                onClick={(e) => { e.stopPropagation(); setIsSidebarCollapsed(!isSidebarCollapsed); }}
-                className={`p-1 rounded-lg bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 transition-all ${isSidebarCollapsed ? 'hidden' : 'block'}`}
-            >
-                <ChevronLeft className="w-3 h-3" />
-            </button>
-          </div>
-          
-          {isSidebarCollapsed && (
-             <button 
-                onClick={() => setIsSidebarCollapsed(false)}
-                className="w-full py-2 flex justify-center text-gray-500 hover:text-white"
-             >
-                 <ChevronRight className="w-3 h-3" />
-             </button>
-          )}
-
-          {/* Navigation - Optimized spacing */}
-          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4 custom-scrollbar scroll-smooth">
-            {navGroups.map((group, idx) => (
-                <div key={idx}>
-                    {!isSidebarCollapsed && (
-                        <div className="text-[9px] uppercase text-gray-500 px-3 mb-1.5 font-bold tracking-wider opacity-60">
-                            {group.title}
-                        </div>
-                    )}
-                    {isSidebarCollapsed && (
-                        <div className="text-[8px] text-center text-gray-600 mb-1 font-bold">{group.title.substring(0,2)}</div>
-                    )}
-                    <div className="space-y-0.5">
-                        {group.items.map(item => (
-                            <NavItem 
-                                key={item.id}
-                                active={currentView === item.id} 
-                                onClick={() => onNavigate(item.id)} 
-                                icon={<item.icon className={`w-4 h-4 ${item.highlight ? 'text-celestial-gold animate-pulse' : ''}`} />} 
-                                label={item.label} 
-                                highlight={item.highlight}
-                                collapsed={isSidebarCollapsed}
-                            />
-                        ))}
-                    </div>
-                    {isSidebarCollapsed && idx < navGroups.length - 1 && <div className="mx-auto w-6 h-[1px] bg-white/5 my-2" />}
-                </div>
-            ))}
-          </nav>
-
-          {/* User Profile (Compact/Full) */}
-          <div className="p-3 border-t border-white/5 bg-black/10">
-              <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                  <div className="relative group cursor-pointer" onClick={() => onNavigate(View.RESTORATION)}>
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-celestial-purple to-blue-600 p-[1.5px]">
-                          <img src={avatarUrl} alt="Profile" className="w-full h-full rounded-full bg-slate-900 object-cover" />
-                      </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 bg-slate-900 rounded-full p-0.5 border border-white/10 ${isCritical ? 'animate-ping' : ''}`}>
-                          <div className={`w-2.5 h-2.5 rounded-full ${isCritical ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                      </div>
-                  </div>
-                  
-                  {!isSidebarCollapsed && (
-                      <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-white truncate">{userName}</div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[9px] text-celestial-purple font-mono bg-celestial-purple/10 px-1 py-0 rounded">Lv.{level}</span>
-                              <div className="h-1 flex-1 bg-gray-800 rounded-full overflow-hidden">
-                                  <div className="h-full bg-celestial-purple w-[60%]" style={{ width: `${xpProgress}%` }} />
-                              </div>
-                          </div>
-                      </div>
-                  )}
+    <div className="flex h-screen w-screen bg-[#020617] text-white overflow-hidden select-none">
+        {/* PC Sidebar */}
+        {!isMobile && (
+          <aside className={`flex flex-col flex-shrink-0 transition-all duration-500 border-r border-white/5 bg-slate-950/95 backdrop-blur-3xl z-[160] ${isSidebarCollapsed ? 'w-[52px]' : 'w-[180px]'}`}>
+              <div className={`flex items-center h-[var(--header-h)] shrink-0 ${isSidebarCollapsed ? 'justify-center' : 'px-4 gap-3'}`}>
+                  <LogoIcon id="system-logo-pc" className="w-7 h-7" />
+                  {!isSidebarCollapsed && <span className="font-black text-[14px] tracking-tighter uppercase whitespace-nowrap">ESGss <span className="text-celestial-gold">JAK</span></span>}
               </div>
-          </div>
-        </aside>
+              <nav className="flex-1 overflow-y-auto no-scrollbar py-4">
+                  {navSectors.map((sector, idx) => (
+                      <div key={idx} className="mb-6">
+                          {!isSidebarCollapsed && <div className="px-4 mb-2 text-[9px] font-black text-gray-600 tracking-[0.3em] uppercase">{sector.title}</div>}
+                          {sector.items.map(item => (
+                              <button key={item.id} onClick={() => onNavigate(item.id)} className={`w-full flex items-center transition-all duration-300 relative group ${isSidebarCollapsed ? 'justify-center py-3' : 'px-4 py-2.5 gap-4'} ${currentView === item.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}>
+                                  {currentView === item.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-celestial-gold shadow-[0_0_15px_#fbbf24]" />}
+                                  <item.icon className={`shrink-0 w-5 h-5 ${currentView === item.id ? 'text-celestial-gold scale-110' : 'group-hover:scale-110'}`} />
+                                  {!isSidebarCollapsed && <span className={`text-[13px] font-bold truncate ${currentView === item.id ? 'text-white' : ''}`}>{item.label}</span>}
+                              </button>
+                          ))}
+                      </div>
+                  ))}
+              </nav>
+              <button onClick={() => setSidebarCollapsed(!isSidebarCollapsed)} className="py-4 flex justify-center border-t border-white/5 text-gray-700 hover:text-white transition-colors">
+                  <ChevronRight className={`w-5 h-5 transition-transform duration-500 ${isSidebarCollapsed ? '' : 'rotate-180'}`} />
+              </button>
+          </aside>
+        )}
 
-        <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-          {/* Header */}
-          <header 
-            className={`
-                h-20 flex items-center justify-between px-6 shrink-0 z-30 transition-all duration-500 border-b border-white/5
-                ${isZenMode ? '-mt-20 opacity-0' : 'bg-slate-900/40 backdrop-blur-md'}
-            `}
-          >
-            {/* Left: Mobile Toggle & Breadcrumbs/Status */}
-            <div className="flex items-center gap-4">
-                <div className="md:hidden">
-                     <LogoIcon className="w-8 h-8" />
-                </div>
-                
-                <div className="hidden lg:flex items-center gap-3 text-xs">
-                    <button onClick={() => setIsSubModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-celestial-gold/20 to-transparent rounded-full border border-celestial-gold/30 text-celestial-gold hover:bg-celestial-gold/30 transition-all">
-                        <Crown className="w-3 h-3" />
-                        <span className="font-bold">{tier} Plan</span>
-                    </button>
-                </div>
-            </div>
-            
-            {/* Center: Search (Optional, prominent) */}
-            <button 
-                onClick={() => setIsCommandOpen(true)}
-                className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-gray-400 hover:text-white transition-all w-64 group"
-            >
-                <Search className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span className="text-xs">Search or type command...</span>
-                <div className="ml-auto flex gap-1">
-                    <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded border border-white/5">⌘K</span>
-                </div>
-            </button>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-3">
-                <button 
-                    onClick={() => onNavigate(View.ABOUT_US)}
-                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
-                    title={language === 'zh-TW' ? "關於我們" : "About Us"}
-                >
-                    <Info className="w-4 h-4" />
-                </button>
-
-                <button 
-                    onClick={() => setIsZenMode(true)}
-                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
-                    title="Enter Zen Mode (⌘.)"
-                >
-                    <Maximize className="w-4 h-4" />
-                </button>
-
-                <div className="h-6 w-[1px] bg-white/10 mx-1" />
-
-                <button 
-                  onClick={onToggleLanguage}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs font-bold text-gray-300 transition-colors"
-                >
-                  <Languages className="w-4 h-4" />
-                  <span>{language === 'zh-TW' ? 'EN' : '中'}</span>
-                </button>
-
-                <div className="relative">
-                    <button 
-                        onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                        className={`p-2 rounded-lg transition-all ${isNotificationsOpen ? 'bg-white/10 text-white' : 'hover:bg-white/5 text-gray-400'}`}
-                    >
-                        <Bell className="w-5 h-5" />
-                        {notifications.length > 0 && (
-                            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-celestial-gold animate-ping" />
-                        )}
-                        {notifications.length > 0 && (
-                            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-celestial-gold" />
-                        )}
-                    </button>
-                    {/* Notifications Dropdown (Simplified for layout brevity) */}
-                    {isNotificationsOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-2 z-50 animate-fade-in">
-                            <div className="text-xs font-bold text-gray-500 px-3 py-2 uppercase tracking-wider">Notifications</div>
-                            <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-1">
-                                {notifications.length === 0 ? <div className="p-4 text-center text-xs text-gray-500">No new alerts</div> : 
-                                    notifications.map(n => (
-                                        <div key={n.id} className="p-3 hover:bg-white/5 rounded-lg cursor-pointer">
-                                            <div className={`text-xs font-bold ${n.type === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{n.title}</div>
-                                            <div className="text-[10px] text-gray-300 mt-1 line-clamp-2">{n.message}</div>
-                                        </div>
-                                    ))
-                                }
-                            </div>
-                            {notifications.length > 0 && <button onClick={clearNotifications} className="w-full text-center text-[10px] py-2 text-gray-500 hover:text-white border-t border-white/5 mt-2">Clear All</button>}
-                        </div>
+        <main className="flex-1 flex flex-col min-w-0 h-screen relative">
+            <header className="h-[var(--header-h)] border-b border-white/5 flex items-center justify-between px-4 bg-slate-900/40 backdrop-blur-2xl shrink-0 z-[150]">
+                <div className="flex items-center gap-3">
+                    {isMobile && <LogoIcon id="system-logo-mobile" className="w-6 h-6" />}
+                    <div className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 rounded-lg">
+                        <Zap className="w-3 h-3 text-celestial-gold animate-pulse" />
+                        <span className="text-[9px] font-black text-white tracking-[0.2em] uppercase">JAK_v16</span>
+                    </div>
+                    {!isMobile && (
+                      <button 
+                        onClick={() => onNavigate(View.VAULT)} 
+                        className="ml-2 flex items-center gap-2 px-3 py-1 bg-celestial-gold/10 border border-celestial-gold/20 rounded-lg text-celestial-gold hover:bg-celestial-gold hover:text-black transition-all group shadow-xl"
+                      >
+                        <Crown className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">{isZh ? '個人寶庫' : 'Vault'}</span>
+                      </button>
                     )}
                 </div>
-            </div>
-          </header>
 
-          <main ref={mainRef} className="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar scroll-smooth">
-            {/* Zen Mode Exit Button */}
-            {isZenMode && (
-                <button 
-                    onClick={() => setIsZenMode(false)}
-                    className="fixed top-4 right-4 z-50 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-all opacity-20 hover:opacity-100"
-                >
-                    <Minimize className="w-5 h-5" />
-                </button>
-            )}
-            
-            <div className="max-w-7xl mx-auto pb-24 min-h-full">
-                {children}
-            </div>
-          </main>
-        </div>
-
-        {/* Mobile Nav - Scrollable Horizontal List */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 z-40 safe-pb overflow-x-auto no-scrollbar">
-            <div className="flex items-center h-full px-4 gap-4 min-w-max">
-                <button onClick={() => setIsCommandOpen(true)} className="flex flex-col items-center justify-center min-w-[3rem] text-gray-500 border-r border-white/10 pr-4 mr-2">
-                    <Menu className="w-5 h-5" />
-                    <span className="text-[9px] mt-1">Menu</span>
-                </button>
-                {flatNavItems.map(item => (
-                    <button 
-                        key={item.id} 
-                        onClick={() => onNavigate(item.id)}
-                        className={`flex flex-col items-center justify-center min-w-[3.5rem] py-1 rounded-xl transition-all ${currentView === item.id ? 'text-white' : 'text-gray-500'}`}
-                    >
-                        <div className={`p-1.5 rounded-lg ${currentView === item.id ? 'bg-white/10' : ''}`}>
-                            <item.icon className="w-5 h-5" />
+                <div className="hidden xl:flex items-center gap-8">
+                    {[
+                        { label: 'GWC', val: goodwillBalance, icon: Coins, color: 'text-celestial-gold' },
+                        { label: 'LEVEL', val: level, icon: Star, color: 'text-emerald-500' }
+                    ].map((hud, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                            <hud.icon className={`w-3 h-3 ${hud.color}`} /> 
+                            <span className="text-[11px] font-mono font-bold text-white uppercase tracking-tighter">{hud.label}: {hud.val}</span>
                         </div>
-                        <span className="text-[9px] mt-1 font-medium truncate max-w-[4rem] text-center">
-                            {item.label.split(' ')[0]}
-                        </span>
-                    </button>
-                ))}
-            </div>
-        </div>
+                    ))}
+                </div>
 
-        {/* AI Assistant */}
-        <AiAssistant language={language} onNavigate={onNavigate} currentView={currentView} />
+                <div className="flex gap-2 items-center relative">
+                    <button onClick={() => setIsCommandOpen(true)} className="p-2 bg-white/5 rounded-lg border border-white/10 text-gray-500 hover:text-white transition-all"><Command className="w-4 h-4" /></button>
+                    <div 
+                      className={`w-8 h-8 rounded-xl border border-white/10 overflow-hidden cursor-pointer hover:border-celestial-gold transition-all shadow-xl relative ${showVaultBrief ? 'ring-2 ring-celestial-gold scale-110' : ''}`} 
+                      onClick={() => setShowVaultBrief(!showVaultBrief)}
+                    >
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=masculine_${xp}`} className="w-full h-full object-cover" alt="Avatar" />
+                        {showVaultBrief && <div className="absolute inset-0 bg-black/40 flex items-center justify-center animate-fade-in"><X className="w-3 h-3 text-white" /></div>}
+                    </div>
+
+                    {/* Floating Vault Briefing Menu */}
+                    {showVaultBrief && (
+                      <div 
+                        ref={vaultRef}
+                        className="absolute right-0 top-12 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-[250] overflow-hidden animate-slide-up backdrop-blur-3xl ring-1 ring-white/10"
+                      >
+                        <div className="p-5 bg-gradient-to-br from-white/10 to-transparent border-b border-white/5 flex flex-col items-center text-center">
+                          <div className="w-14 h-14 rounded-full border-2 border-celestial-gold p-0.5 mb-2 shadow-2xl relative">
+                            <div className="absolute inset-0 bg-celestial-gold/20 blur-xl animate-pulse rounded-full" />
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=masculine_${xp}`} className="w-full h-full rounded-full bg-slate-900 relative z-10" alt="" />
+                          </div>
+                          <div className="zh-main text-base text-white">{userName}</div>
+                          <div className="text-[10px] font-black text-celestial-gold uppercase tracking-widest mt-0.5">{activeTitle?.text || 'Novice Architect'}</div>
+                        </div>
+                        
+                        <div className="p-4 space-y-4">
+                          <div className="grid grid-cols-2 gap-2">
+                             <div className="p-3 bg-black/60 rounded-xl border border-white/5 flex flex-col items-center">
+                               <Coins className="w-4 h-4 text-celestial-gold mb-1" />
+                               <span className="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">Balance</span>
+                               <span className="text-sm font-mono font-bold text-white">{goodwillBalance}</span>
+                             </div>
+                             <div className="p-3 bg-black/60 rounded-xl border border-white/5 flex flex-col items-center">
+                               <TrendingUp className="w-4 h-4 text-emerald-400 mb-1" />
+                               <span className="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">Level</span>
+                               <span className="text-sm font-mono font-bold text-white">{level}</span>
+                             </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-[10px] font-black uppercase text-gray-600 tracking-widest px-1">
+                              <span>Asset Inventory</span>
+                              <span className="text-white">Active</span>
+                            </div>
+                            <div className="flex gap-1">
+                               <div className="flex-1 p-2 bg-white/5 rounded-lg flex items-center justify-center gap-2 border border-white/5 hover:bg-white/10 transition-colors">
+                                  <Gem className="w-3 h-3 text-purple-400" />
+                                  <span className="text-[10px] text-white font-bold">{forgedSouls.length}</span>
+                               </div>
+                               <div className="flex-1 p-2 bg-white/5 rounded-lg flex items-center justify-center gap-2 border border-white/5 hover:bg-white/10 transition-colors">
+                                  <Box className="w-3 h-3 text-blue-400" />
+                                  <span className="text-[10px] text-white font-bold">{cardInventory.length}</span>
+                               </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button 
+                          onClick={() => { setShowVaultBrief(false); onNavigate(View.VAULT); }}
+                          className="w-full py-4 bg-white text-black font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-celestial-gold transition-all"
+                        >
+                          {isZh ? '進入個人寶庫' : 'OPEN VAULT'} <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                </div>
+            </header>
+
+            <div className="flex-1 overflow-hidden relative bg-black main-content-area">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(15,23,42,0.8)_0%,rgba(2,6,23,1)_100%)] pointer-events-none" />
+                <div className="relative z-10 p-2 lg:p-4 min-h-full">
+                    {children}
+                </div>
+            </div>
+
+            {isMobile && (
+              <div className="fixed bottom-4 left-4 right-4 z-[200] flex items-center gap-2">
+                <button onClick={() => scrollMenu('left')} className="p-3 glass-liquid rounded-2xl text-white active:scale-90 transition-transform"><ChevronLeft className="w-5 h-5"/></button>
+                <div className="flex-1 glass-liquid rounded-[2rem] overflow-hidden p-1 flex items-center relative">
+                  <div ref={scrollRef} className="flex-1 flex overflow-x-auto no-scrollbar gap-2 px-2 scroll-smooth">
+                    {allNavItems.map(item => (
+                      <button key={item.id} onClick={() => onNavigate(item.id)} className={`flex flex-col items-center justify-center min-w-[72px] h-16 rounded-2xl transition-all ${currentView === item.id ? 'bg-white/20 text-celestial-gold shadow-lg' : 'text-gray-400'}`}>
+                        <item.icon className="w-5 h-5 mb-1" />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={() => scrollMenu('right')} className="p-3 glass-liquid rounded-2xl text-white active:scale-90 transition-transform"><ChevronRight className="w-5 h-5"/></button>
+              </div>
+            )}
+
+            {!isMobile && (
+              <footer className="h-[var(--footer-h)] border-t border-white/5 bg-slate-950/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-[50]">
+                  <div className="text-[9px] font-mono text-gray-600 uppercase tracking-widest flex items-center gap-3">
+                      <span>KERNEL_OK</span>
+                      <div className="w-px h-2 bg-white/10" />
+                      <span>ORCHESTRATOR_ACTIVE: {currentView}</span>
+                  </div>
+                  <div className="text-[9px] font-mono text-gray-700 uppercase">© 2025 JAK_V16_RWD</div>
+              </footer>
+            )}
+        </main>
+
+        <AiAssistant language={language} onNavigate={onNavigate} currentView={currentView} isMobile={isMobile} />
+        <CommandPalette isOpen={isCommandOpen} onClose={() => setIsCommandOpen(false)} onNavigate={onNavigate} language={language} toggleLanguage={onToggleLanguage} />
+        <OnboardingTour isOpen={isTourOpen} onClose={() => setIsTourOpen(false)} language={language} />
     </div>
   );
 };

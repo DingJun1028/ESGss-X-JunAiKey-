@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Language } from '../types';
 import { LucideIcon } from 'lucide-react';
@@ -8,7 +7,7 @@ interface UniversalPageHeaderProps {
     title: { zh: string; en: string };
     description: { zh: string; en: string };
     language: Language;
-    tag?: { zh: string; en: string }; // The "Universal Tag" content
+    tag?: { zh: string; en: string };
 }
 
 export const UniversalPageHeader: React.FC<UniversalPageHeaderProps> = ({ 
@@ -19,43 +18,31 @@ export const UniversalPageHeader: React.FC<UniversalPageHeaderProps> = ({
     tag 
 }) => {
     const isZh = language === 'zh-TW';
-    
-    // Logic: Main Title + (50% Thin Alt Title)
-    const mainTitle = isZh ? title.zh : title.en;
-    const altTitle = isZh ? title.en : title.zh;
-
-    // Logic: Universal Tag (Show EN tag if ZH mode, ZH tag if EN mode)
-    // If no specific tag provided, fallback to title logic or generic
-    const tagLabel = tag 
-        ? (isZh ? tag.en : tag.zh) 
-        : (isZh ? title.en : title.zh);
-
     return (
-        <div className="flex flex-col gap-4 mb-8 animate-fade-in border-b border-white/5 pb-6">
-            <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-gradient-to-br from-white/10 to-transparent rounded-xl border border-white/20 shadow-lg backdrop-blur-sm">
-                        <Icon className="w-8 h-8 text-celestial-gold" />
-                    </div>
-                    <div>
-                        <h2 className="text-3xl font-bold text-white tracking-tight flex items-baseline gap-3 flex-wrap">
-                            {mainTitle}
-                            <span className="text-lg font-light text-gray-500 font-sans opacity-80" style={{ fontWeight: 300 }}>
-                                {altTitle}
-                            </span>
-                        </h2>
-                        <p className="text-gray-400 mt-1 text-sm font-light tracking-wide">
-                            {isZh ? description.zh : description.en}
-                        </p>
-                    </div>
+        <div className="flex items-start gap-4 animate-fade-in mb-2 shrink-0">
+            <div className="p-2 bg-gradient-to-br from-white/10 to-transparent rounded-xl border border-white/10 shadow-xl shrink-0">
+                <Icon className="w-5 h-5 text-celestial-gold" />
+            </div>
+            <div className="min-w-0">
+                <div className="flex items-center gap-3">
+                    <h2 
+                        className={`text-xl tracking-tight uppercase ${isZh ? 'font-black text-white' : 'font-light text-white/90'}`}
+                        lang={isZh ? 'zh' : 'en'}
+                    >
+                        {isZh ? title.zh : title.en}
+                    </h2>
+                    {tag && (
+                        <span className="text-[7px] font-mono font-black text-celestial-purple px-1.5 py-0.5 rounded border border-celestial-purple/20 bg-celestial-purple/5 tracking-[0.2em] hidden sm:inline">
+                            {isZh ? tag.en : tag.zh}
+                        </span>
+                    )}
                 </div>
-
-                {/* Universal Tag Badge */}
-                <div className="hidden md:flex items-center">
-                    <div className="px-3 py-1 rounded-full border border-celestial-purple/30 bg-celestial-purple/10 text-celestial-purple text-[10px] font-mono uppercase tracking-widest shadow-[0_0_10px_rgba(139,92,246,0.2)]">
-                        {tagLabel}
-                    </div>
-                </div>
+                <p 
+                    className={`text-[9px] uppercase tracking-[0.15em] mt-0.5 opacity-60 ${isZh ? 'font-bold text-gray-300' : 'font-light text-gray-500'}`}
+                    lang={isZh ? 'zh' : 'en'}
+                >
+                    {isZh ? description.zh : description.en}
+                </p>
             </div>
         </div>
     );

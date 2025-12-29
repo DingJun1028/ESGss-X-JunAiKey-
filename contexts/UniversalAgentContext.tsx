@@ -1,312 +1,350 @@
-
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useToast } from './ToastContext';
-import { JOURNEY_TEMPLATES } from '../constants';
-import { UserJourney, JourneyStep, View } from '../types';
+import { 
+    PersonaConfig, DigitalSoulAsset, SoulForgeConfig, 
+    TrainingDoc, AdanDisciple, EsgCard, TrainingLogEntry, EntityPlanet 
+} from '../types';
+import { universalIntelligence } from '../services/evolutionEngine';
+import { Subject } from 'rxjs';
+import { getEsgCards } from '../constants';
 
 export type AvatarFace = 'MIRROR' | 'EXPERT' | 'VOID' | 'CUSTOM';
-export type SystemStatus = 'STABLE' | 'UNSTABLE' | 'CRITICAL' | 'REBOOTING';
 
-export interface AgentLog {
-    id: string;
-    timestamp: number;
-    source: 'Matrix' | 'Chat' | 'System' | 'Assistant' | 'Kernel' | 'Evolution' | 'Insight' | 'Tool';
-    message: string;
-    type: 'info' | 'success' | 'error' | 'thinking' | 'warning';
+export interface PersonaAttributes {
+    altruism: number;   // 利他性
+    pragmatism: number;  // 務實性
+    innovation: number;  // 創新性
+    stability: number;   // 穩定性
 }
 
-export interface ActionItem {
+export interface JourneyStep {
     id: string;
-    text: string;
-    status: 'pending' | 'synced';
-    timestamp: number;
-    priority: 'high' | 'medium' | 'low';
+    instruction: string;
+}
+
+export interface Journey {
+    id: string;
+    title: string;
+    steps: JourneyStep[];
+    currentStepIndex: number;
 }
 
 export interface EvolutionMilestone {
     version: string;
     codename: string;
+    status: 'completed' | 'current' | 'planned';
     focus: string;
-    status: 'completed' | 'current' | 'pending' | 'locked';
     improvements: string[];
+    evaluationScore: number;
+    detectedBottleneck?: string;
+    evalDetails?: string;
     estimatedImpact: string;
 }
 
-export interface CustomAgentConfig {
-    name: string;
-    instruction: string;
-    knowledgeBase: string[]; // Array of text content from uploaded files, formatted with headers
+export interface AIVersionHistory {
+    date: string;
+    event: string;
+    impact: string;
 }
 
 interface UniversalAgentContextType {
-    activeFace: AvatarFace;
-    setActiveFace: (face: AvatarFace) => void;
+    activePersona: PersonaConfig;
+    availablePersonas: PersonaConfig[];
+    switchPersona: (id: string) => void;
+    updatePersonaStats: (id: string, updates: Partial<PersonaConfig>) => void;
     
-    customAgent: CustomAgentConfig;
-    setCustomAgent: (config: CustomAgentConfig) => void;
+    // 新增：人格四維矩陣
+    traits: PersonaAttributes;
+    updateTraits: (updates: Partial<PersonaAttributes>) => void;
+    
+    galaxy: Record<string, EntityPlanet>;
+    syncPlanet: (planet: EntityPlanet) => void;
+    broadcastSignal: (type: string, message: string) => void;
+    neuralBus$: Subject<any>;
+
+    observeAction: (type: string, detail: string) => void;
+    activeJourney: Journey | null;
+    advanceJourney: () => void;
+    evolutionPlan: EvolutionMilestone[];
+    runSelfDetection: () => void;
+    aiVersionHistory: AIVersionHistory[];
+
+    cardInventory: EsgCard[];
+    equippedCards: string[];
+    equipCard: (cardId: string) => void;
+    unequipCard: (cardId: string) => void;
+    
+    expMultiplier: number;
+    luckFactor: number;
 
     logs: AgentLog[];
     chatHistory: AgentLog[];
-    systemLogs: AgentLog[];
     addLog: (message: string, type?: AgentLog['type'], source?: AgentLog['source']) => void;
-    
-    // Action Plan
-    detectedActions: ActionItem[];
-    extractActionFromText: (text: string) => ActionItem | null;
-    markActionSynced: (id: string) => void;
-
-    clearLogs: () => void;
-    archiveLogs: () => void;
-    exportLogs: () => void;
+    commitChatToMemory: (prompt: string, answer: string) => void;
+    trainingDocs: TrainingDoc[];
+    uploadTrainingDoc: (file: File) => Promise<void>;
     isProcessing: boolean;
-    activeKeyId: string | null;
-    executeMatrixProtocol: (keyId: string, label: string) => Promise<void>;
-    subAgentsActive: string[];
     
-    systemStatus: SystemStatus;
-    triggerSystemCrash: () => void;
-    initiateSelfHealing: () => void;
+    activeFace: AvatarFace;
+    setActiveFace: (face: AvatarFace) => void;
+    activeKeyId: string | null;
+    executeMatrixProtocol: (id: string, label: string) => Promise<void>;
+    subAgentsActive: boolean;
 
-    evolutionPlan: EvolutionMilestone[];
-    generateEvolutionReport: () => void;
+    forgedSouls: DigitalSoulAsset[];
+    forgeSoul: (name: string, config: SoulForgeConfig, id?: string) => Promise<DigitalSoulAsset>;
+    equipSoul: (soulId: string) => void;
+    activeSoulAsset: DigitalSoulAsset | null;
+    soul: AdanDisciple; 
 
-    // User Journey
-    activeJourney: UserJourney | null;
-    startJourney: (journeyId: string) => void;
-    advanceJourney: () => void;
-    completeJourney: () => void;
-    currentInstruction: string | null;
+    // Fix: Added missing properties for AgentTraining and EsgCardAlbum
+    trainingLogs: TrainingLogEntry[];
+    addTrainingSession: (session: Omit<TrainingLogEntry, 'id'>) => void;
+    exportNeuralState: (agentId: string) => string;
+    importNeuralState: (agentId: string, state: string) => void;
+    updatePersonaKnowledge: (agentId: string, repos: string[]) => void;
+    synthesizeCards: (id1: string, id2: string) => void;
+    decomposeCard: (id: string) => void;
+}
 
-    // Notifications
-    isMuted: boolean;
-    toggleMute: () => void;
+export interface AgentLog {
+    id: string;
+    timestamp: number;
+    source: 'Matrix' | 'Chat' | 'System' | 'Assistant' | 'Kernel' | 'Evolution' | 'Insight' | 'Tool' | 'Hive' | 'Relic' | 'AMICE' | 'Advisory';
+    message: string;
+    type: 'info' | 'success' | 'error' | 'thinking' | 'warning';
 }
 
 const UniversalAgentContext = createContext<UniversalAgentContextType | undefined>(undefined);
 
+const INITIAL_PERSONAS: PersonaConfig[] = [
+    {
+        id: 'jun-ai-key',
+        name: 'JunAiKey',
+        title: '系統內核 (OS Kernel)',
+        archetype: 'Architect',
+        coreTrait: '精確、中立、極致高效',
+        primaryGoal: '確保企業永續數據的 MECE 完整性與系統營運穩定度。',
+        systemPrompt: "你是 ESGss 的內核 JunAiKey。你的目標是提供最精確、結構化且符合邏輯的數據分析與系統建議。",
+        level: 15, exp: 450, color: 'indigo-500', avatarUrl: '',
+        attributes: {
+            INT: { label: '邏輯分析', value: 99, max: 100 },
+            EMP: { label: '情感共鳴', value: 40, max: 100 },
+            STRAT: { label: '戰略佈局', value: 85, max: 100 },
+            EXEC: { label: '執行效率', value: 98, max: 100 }
+        },
+        skills: [{ name: '零幻覺稽核', level: 5, desc: '確保回覆數據 100% 來自知識庫。' }],
+        ultimateArt: { name: '內核覺醒：熵減優化', description: '全系統數據瞬間摺疊分析。', unlockedAtLevel: 20, effect: 'System Optimization' },
+        equippedCards: ['relic-knowledge-base'],
+        goodwillValue: 500,
+        knowledgeRepoIds: ['repo-official-tpl', 'repo-yang-wisdom']
+    }
+];
+
 export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [activeFace, setActiveFace] = useState<AvatarFace>('MIRROR');
-    const [customAgent, setCustomAgent] = useState<CustomAgentConfig>({
-        name: 'Custom Agent',
-        instruction: 'You are a helpful custom assistant.',
-        knowledgeBase: []
-    });
-
-    const [logs, setLogs] = useState<AgentLog[]>([]);
-    const [archivedLogs, setArchivedLogs] = useState<AgentLog[]>([]);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [activeKeyId, setActiveKeyId] = useState<string | null>(null);
-    const [subAgentsActive, setSubAgentsActive] = useState<string[]>([]);
-    const [systemStatus, setSystemStatus] = useState<SystemStatus>('STABLE');
-    const [detectedActions, setDetectedActions] = useState<ActionItem[]>([]);
-    const [isMuted, setIsMuted] = useState(false);
-    
-    // Journey State
-    const [activeJourney, setActiveJourney] = useState<UserJourney | null>(null);
-
-    const [evolutionPlan, setEvolutionPlan] = useState<EvolutionMilestone[]>([
-        { version: 'v1.0', codename: 'Genesis', focus: 'Basic Infrastructure', status: 'completed', improvements: ['Core Kernel Online', 'Basic UI'], estimatedImpact: 'Baseline' },
-        { version: 'v15.0', codename: 'Singularity', focus: 'Self-Awareness', status: 'current', improvements: ['Zero Hallucination Protocol', 'Universal Crystal Integration'], estimatedImpact: 'High Accuracy' },
-        { version: 'v16.0', codename: 'Ascension', focus: 'Quantum Reasoning', status: 'pending', improvements: ['Context Window 2M Tokens', 'Predictive Latency -40%'], estimatedImpact: 'Strategic Foresight' },
-        { version: 'v17.0', codename: 'Omniscience', focus: 'Global Synchronization', status: 'locked', improvements: ['Real-time Planetary Twin', 'Autonomous DAO Governance'], estimatedImpact: 'Global Impact' }
-    ]);
-
     const { addToast } = useToast();
+    const [availablePersonas, setAvailablePersonas] = useState<PersonaConfig[]>(INITIAL_PERSONAS);
+    const [activePersonaId, setActivePersonaId] = useState('jun-ai-key');
+    const [logs, setLogs] = useState<AgentLog[]>([]);
+    const [traits, setTraits] = useState<PersonaAttributes>({
+        altruism: 65, pragmatism: 80, innovation: 45, stability: 90
+    });
+    const [trainingDocs, setTrainingDocs] = useState<TrainingDoc[]>([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [cardInventory, setCardInventory] = useState<EsgCard[]>(getEsgCards('zh-TW'));
+    
+    const [galaxy, setGalaxy] = useState<Record<string, EntityPlanet>>({});
+    const [activeFace, setActiveFace] = useState<AvatarFace>('MIRROR');
+    const [forgedSouls, setForgedSouls] = useState<DigitalSoulAsset[]>([]);
+    const [activeSoulId, setActiveSoulId] = useState<string | null>(null);
+    const [activeKeyId, setActiveKeyId] = useState<string | null>(null);
+    const neuralBus$ = useMemo(() => new Subject<any>(), []);
 
-    // Use useCallback to ensure addLog is stable and doesn't cause re-renders
-    const addLog = useCallback((message: string, type: AgentLog['type'] = 'info', source: AgentLog['source'] = 'System') => {
-        const newLog = { id: Date.now().toString() + Math.random(), timestamp: Date.now(), source, message, type };
-        setLogs(prev => [...prev, newLog]);
+    const [activeJourney, setActiveJourney] = useState<Journey | null>(null);
+    const [evolutionPlan, setEvolutionPlan] = useState<EvolutionMilestone[]>([]);
+    const [aiVersionHistory, setAiVersionHistory] = useState<AIVersionHistory[]>([]);
+    // Fix: Added state for training logs
+    const [trainingLogs, setTrainingLogs] = useState<TrainingLogEntry[]>([]);
+
+    const activePersona = useMemo<PersonaConfig>(() => {
+        return availablePersonas.find(p => p.id === activePersonaId) || availablePersonas[0];
+    }, [availablePersonas, activePersonaId]);
+
+    const expMultiplier = useMemo(() => 1 + (Number(activePersona.goodwillValue) / 1000), [activePersona.goodwillValue]);
+    const luckFactor = useMemo(() => 1 + (Number(activePersona.goodwillValue) / 2000), [activePersona.goodwillValue]);
+
+    useEffect(() => {
+        const savedData = localStorage.getItem('esgss_agent_v15_evolution');
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                if (parsed.traits) setTraits(parsed.traits);
+                if (parsed.galaxy) setGalaxy(parsed.galaxy);
+            } catch (e) {}
+        }
+
+        setEvolutionPlan([
+            { version: 'v14.5', codename: 'Horizon', status: 'completed', focus: 'RAG Optimization', improvements: ['Faster retrieval', 'Multi-modal support'], evaluationScore: 92, estimatedImpact: 'High' },
+            { version: 'v15.2', codename: 'Hypercube', status: 'current', focus: 'Agent Orchestration & AMICE Sync', improvements: ['Matrix Console', 'Stakeholder Radar'], evaluationScore: 99, estimatedImpact: 'Critical' },
+            { version: 'v15.9', codename: 'Civilization', status: 'planned', focus: 'Autonomous Regen Governance', improvements: ['Chain Voting', 'Manifesto Engine'], evaluationScore: 0, estimatedImpact: 'Legendary' }
+        ]);
+        setAiVersionHistory([
+            { date: '2025-02-20', event: 'Hypercube Evolution Protocol', impact: 'Agent sync speed +60%' },
+            { date: '2025-02-22', event: 'AMICE Reporting manifested', impact: 'Real-time global intelligence' }
+        ]);
     }, []);
 
     useEffect(() => {
-        addLog('Universal Neural Link Established.', 'info', 'System');
-        addLog('Evolution Module: Active. Monitoring system entropy...', 'info', 'Kernel');
-    }, [addLog]);
+        localStorage.setItem('esgss_agent_v15_evolution', JSON.stringify({ traits, galaxy }));
+    }, [traits, galaxy]);
 
-    // Separated lists
-    const chatHistory = logs.filter(l => l.source === 'Chat' || l.source === 'Assistant' || l.source === 'Tool');
-    // Insights now go to system logs
-    const systemLogs = logs.filter(l => l.source !== 'Chat' && l.source !== 'Assistant' && l.source !== 'Tool');
-
-    const extractActionFromText = useCallback((text: string): ActionItem | null => {
-        if (!text) return null;
-        // Simple keyword heuristic for demo purposes
-        const keywords = ['建議', '需', '檢查', '排程', 'recommend', 'suggest', 'check', 'schedule', 'review'];
-        const hasKeyword = keywords.some(k => text.toLowerCase().includes(k));
-        
-        if (hasKeyword && text.length < 100) {
-            const newItem: ActionItem = {
-                id: `act-${Date.now()}`,
-                text: text.replace(/\[.*?\]/g, '').trim(), // Remove timestamps or tags
-                status: 'pending',
-                timestamp: Date.now(),
-                priority: text.includes('立即') || text.includes('urgent') ? 'high' : 'medium'
-            };
-            setDetectedActions(prev => [newItem, ...prev]);
-            return newItem;
-        }
-        return null;
+    const updateTraits = useCallback((updates: Partial<PersonaAttributes>) => {
+        setTraits(prev => ({ ...prev, ...updates }));
     }, []);
 
-    const markActionSynced = useCallback((id: string) => {
-        setDetectedActions(prev => prev.map(a => a.id === id ? { ...a, status: 'synced' } : a));
+    const syncPlanet = useCallback((planet: EntityPlanet) => {
+        setGalaxy(prev => ({ ...prev, [planet.taxId]: planet }));
     }, []);
 
-    const clearLogs = useCallback(() => {
-        setLogs([]);
-        addToast('info', 'Memory buffer flushed.', 'System');
-    }, [addToast]);
+    const broadcastSignal = useCallback((type: string, message: string) => {
+        const signal = { type, message, timestamp: Date.now() };
+        neuralBus$.next(signal);
+        setLogs(prev => [...prev, { 
+            id: `hive-${Date.now()}`, 
+            timestamp: Date.now(), 
+            source: 'Hive' as any, 
+            message, 
+            type: 'info' 
+        } as AgentLog].slice(-100));
+    }, [neuralBus$]);
 
-    const archiveLogs = useCallback(() => {
-        setArchivedLogs(prev => [...prev, ...logs]);
-        setLogs([]);
-        addToast('success', 'Logs archived to secure storage.', 'System');
-    }, [logs, addToast]);
+    const addLog = useCallback((message: string, type: AgentLog['type'] = 'info', source: AgentLog['source'] = 'System') => {
+        setLogs(prev => [...prev, { id: `log-${Date.now()}`, timestamp: Date.now(), source, message, type } as AgentLog].slice(-100));
+    }, []);
 
-    const exportLogs = useCallback(() => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `agent_logs_${Date.now()}.json`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-        addToast('success', 'Logs exported successfully.', 'System');
-    }, [logs, addToast]);
-
-    const generateEvolutionReport = useCallback(() => {
-        addLog('Initiating Self-Diagnostic Evolution Scan...', 'thinking', 'Evolution');
-        setTimeout(() => {
-            addLog('Optimization vectors identified. Generating report...', 'success', 'Evolution');
-        }, 1500);
+    const observeAction = useCallback((type: string, detail: string) => {
+        addLog(`Observation [${type}]: ${detail}`, 'info', 'Insight' as any);
     }, [addLog]);
-
-    const initiateSelfHealing = useCallback(() => {
-        addLog('AI AGENT: Intercepting Crash Protocol. Rerouting Neural Pathways...', 'thinking', 'Assistant');
-        setSystemStatus('REBOOTING');
-        setTimeout(() => {
-            setSystemStatus('STABLE');
-            addLog('System Fully Restored. Zero Hallucination Protocol Active.', 'success', 'System');
-            addToast('success', 'AI Self-Healing Complete.', 'System Restored');
-        }, 8000);
-    }, [addLog, addToast]);
-
-    const triggerSystemCrash = useCallback(() => {
-        if (systemStatus !== 'STABLE') return;
-        setSystemStatus('UNSTABLE');
-        addLog('WARNING: Integrity Breach Detected. Cascade Failure Imminent.', 'error', 'Kernel');
-        addToast('error', 'SYSTEM INSTABILITY DETECTED', 'CRITICAL ALERT');
-        setTimeout(() => {
-            setSystemStatus('CRITICAL');
-            addLog('CRITICAL: Core Services Unresponsive. Memory Heap Overflow.', 'error', 'Kernel');
-        }, 1500);
-        setTimeout(() => {
-            initiateSelfHealing();
-        }, 4000);
-    }, [systemStatus, addLog, addToast, initiateSelfHealing]);
-
-    const executeMatrixProtocol = useCallback(async (keyId: string, label: string) => {
-        if (isProcessing || systemStatus !== 'STABLE') return;
-        setIsProcessing(true);
-        setActiveKeyId(keyId);
-        addLog(`Protocol Initiated: [${label.toUpperCase()}]`, 'thinking', 'Matrix');
-        const subAgentMap: Record<string, string[]> = {
-            'awaken': ['Memory_Core', 'Context_Loader', 'Intent_Parser'],
-            'inspect': ['Code_Scanner', 'Data_Validator', 'Pattern_Recognizer'],
-            'scripture': ['Knowledge_Retriever', 'Compliance_Check', 'Best_Practice_DB'],
-            'connect': ['Graph_Linker', 'Dependency_Mapper', 'Bridge_Builder'],
-            'summon': ['API_Gateway', 'Auth_Manager', 'Quota_Monitor'],
-            'transmute': ['Format_Converter', 'Schema_Validator', 'Type_Inferencer'],
-            'bridge': ['Protocol_Adapter', 'Lang_Translator', 'Env_Configurator'],
-            'encase': ['Docker_Builder', 'Module_Packer', 'Version_Tagger'],
-            'manifest': ['Code_Generator', 'Text_Synthesizer', 'Asset_Renderer'],
-            'trial': ['Unit_Tester', 'Integration_Tester', 'Stress_Tester'],
-            'judge': ['Security_Auditor', 'Performance_Profiler', 'Logic_Verifier'],
-            'ascend': ['Deploy_Script', 'CI_CD_Pipeline', 'Rollback_Guard'],
-            'purify': ['Refactor_Engine', 'Dead_Code_Eliminator', 'Style_Enforcer'],
-            'ward': ['Vulnerability_Scanner', 'Firewall_Config', 'Encryption_Key_Rotator'],
-            'entropy': ['Compression_Algo', 'Cache_Optimizer', 'Resource_Allocator'],
-            'evolve': ['Model_FineTuner', 'Feedback_Loop', 'Trait_Mutator']
-        };
-        const agents = subAgentMap[keyId] || ['General_Agent'];
-        for (const agent of agents) {
-            setSubAgentsActive(prev => [...prev, agent]);
-            await new Promise(r => setTimeout(r, 400 + Math.random() * 400));
-            addLog(`> Agent [${agent}] active...`, 'info', 'System');
-        }
-        await new Promise(r => setTimeout(r, 800));
-        let resultMsg = '';
-        if (activeFace === 'MIRROR') resultMsg = `Reflection complete. [${label}] has been integrated into your workflow.`;
-        else if (activeFace === 'EXPERT') resultMsg = `Optimization success. [${label}] execution efficiency increased by 24%.`;
-        else if (activeFace === 'VOID') resultMsg = `Command [${label}] executed. Output stored in void buffer.`;
-        else resultMsg = `Custom Agent executed [${label}].`;
-        
-        addLog(resultMsg, 'success', 'Matrix');
-        addToast('success', `${label} Protocol Complete`, 'Universal Agent');
-        setSubAgentsActive([]);
-        setIsProcessing(false);
-        setActiveKeyId(null);
-    }, [isProcessing, systemStatus, activeFace, addLog, addToast]);
-
-    // --- User Journey Logic ---
-    const startJourney = useCallback((journeyId: string) => {
-        const template = (JOURNEY_TEMPLATES as any)[journeyId];
-        if (template) {
-            setActiveJourney({ ...template, currentStepIndex: 0, isCompleted: false });
-            addLog(`Journey Started: ${template.name}`, 'info', 'Assistant');
-            addToast('info', template.description, template.name);
-        }
-    }, [addLog, addToast]);
-
-    const completeJourney = useCallback(() => {
-        if (!activeJourney) return;
-        setActiveJourney(null);
-        addLog(`Journey Completed: ${activeJourney.name}`, 'success', 'Assistant');
-        addToast('reward', 'Journey Complete! +200 XP', 'System');
-    }, [activeJourney, addLog, addToast]);
 
     const advanceJourney = useCallback(() => {
-        if (!activeJourney) return;
-        const nextIndex = activeJourney.currentStepIndex + 1;
-        if (nextIndex < activeJourney.steps.length) {
-            setActiveJourney(prev => prev ? ({ 
-                ...prev, 
-                currentStepIndex: nextIndex,
-                steps: prev.steps.map((s, i) => i === prev.currentStepIndex ? { ...s, status: 'completed' } : s)
-            }) : null);
-        } else {
-            completeJourney();
+        if (activeJourney && activeJourney.currentStepIndex < activeJourney.steps.length - 1) {
+            setActiveJourney({
+                ...activeJourney,
+                currentStepIndex: activeJourney.currentStepIndex + 1
+            });
         }
-    }, [activeJourney, completeJourney]);
+    }, [activeJourney]);
 
-    const toggleMute = useCallback(() => {
-        setIsMuted(prev => {
-            const newState = !prev;
-            addToast(newState ? 'info' : 'success', newState ? 'AI Assistant Muted' : 'AI Assistant Active', 'System');
-            return newState;
-        });
+    const runSelfDetection = useCallback(() => {
+        setIsProcessing(true);
+        addLog("Running system self-detection...", "thinking", "Kernel");
+        setTimeout(() => {
+            setIsProcessing(false);
+            addLog("Self-detection complete. Integrity: 99.8%", "success", "Kernel");
+        }, 2000);
+    }, [addLog]);
+
+    const switchPersona = (id: string) => setActivePersonaId(id);
+    const updatePersonaStats = (id: string, updates: Partial<PersonaConfig>) => {
+        setAvailablePersonas(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    };
+
+    const commitChatToMemory = useCallback((prompt: string, answer: string) => {
+        const atom = `[對話記憶] ${activePersona.name}：${answer.substring(0, 100)}`;
+        universalIntelligence.injectQuantumNodes([{ atom, vector: ['chat'], weight: 0.8 }], `Memory_${activePersona.id}`);
+    }, [activePersona.id, activePersona.name]);
+
+    const uploadTrainingDoc = async (file: File) => {
+        const id = `doc-${Date.now()}`;
+        setTrainingDocs(prev => [...prev, { id, name: file.name, status: 'parsing', type: file.type, atomsCount: 0 }]);
+        await new Promise(r => setTimeout(r, 2000));
+        setTrainingDocs(prev => prev.map(d => d.id === id ? { ...d, status: 'ready', atomsCount: 50 } : d));
+    };
+
+    const forgeSoul = async (name: string, config: SoulForgeConfig, id?: string) => {
+        setIsProcessing(true);
+        await new Promise(r => setTimeout(r, 1500));
+        const soulId = id || `soul-${Date.now()}`;
+        const newSoul: DigitalSoulAsset = { id: soulId, name, traits: config, resonance: 100, rarity: 'Epic', forgedAt: Date.now(), ownerId: 'user' };
+        setForgedSouls(prev => [...prev.filter(s => s.id !== soulId), newSoul]);
+        setIsProcessing(false);
+        addToast('success', '靈魂鍛造完成', 'Forge');
+        return newSoul;
+    };
+
+    const equipSoul = (soulId: string) => {
+        setActiveSoulId(soulId);
+        const soulAsset = forgedSouls.find(s => s.id === soulId);
+        if (soulAsset) addToast('reward', `已裝備靈魂：${soulAsset.name}`, 'Sync');
+    };
+
+    const executeMatrixProtocol = async (id: string, label: string) => {
+        setActiveKeyId(id);
+        setIsProcessing(true);
+        addLog(`Protocol initiated: ${label}`, 'thinking', 'Matrix');
+        await new Promise(r => setTimeout(r, 1000));
+        addLog(`${label} complete.`, 'success', 'Matrix');
+        setIsProcessing(false);
+        setActiveKeyId(null);
+    };
+
+    // Fix: Implemented missing methods for AgentTraining and EsgCardAlbum
+    const addTrainingSession = useCallback((session: Omit<TrainingLogEntry, 'id'>) => {
+        const id = `tl-${Date.now()}`;
+        setTrainingLogs(prev => [{ ...session, id }, ...prev]);
+        addToast('success', 'Training session logged.', 'Kernel');
     }, [addToast]);
 
-    const currentInstruction = activeJourney ? activeJourney.steps[activeJourney.currentStepIndex].instruction : null;
+    const exportNeuralState = useCallback((agentId: string) => {
+        const agent = availablePersonas.find(p => p.id === agentId);
+        return JSON.stringify(agent);
+    }, [availablePersonas]);
 
-    return (
-        <UniversalAgentContext.Provider value={{
-            activeFace, setActiveFace,
-            customAgent, setCustomAgent,
-            logs, chatHistory, systemLogs, 
-            addLog, clearLogs, archiveLogs, exportLogs,
-            isProcessing, activeKeyId, executeMatrixProtocol,
-            subAgentsActive,
-            systemStatus, triggerSystemCrash, initiateSelfHealing,
-            evolutionPlan, generateEvolutionReport,
-            detectedActions, extractActionFromText, markActionSynced,
-            activeJourney, startJourney, advanceJourney, completeJourney, currentInstruction,
-            isMuted, toggleMute
-        }}>
-            {children}
-        </UniversalAgentContext.Provider>
-    );
+    const importNeuralState = useCallback((agentId: string, state: string) => {
+        try {
+            const parsed = JSON.parse(state);
+            setAvailablePersonas(prev => prev.map(p => p.id === agentId ? { ...p, ...parsed } : p));
+            addToast('success', 'Neural state imported.', 'Sync');
+        } catch (e) {
+            addToast('error', 'Import failed.', 'Sync');
+        }
+    }, [addToast]);
+
+    const updatePersonaKnowledge = useCallback((agentId: string, repos: string[]) => {
+        setAvailablePersonas(prev => prev.map(p => p.id === agentId ? { ...p, knowledgeRepoIds: repos } : p));
+    }, []);
+
+    const synthesizeCards = useCallback((id1: string, id2: string) => {
+        setIsProcessing(true);
+        setTimeout(() => {
+            setIsProcessing(false);
+            addToast('reward', 'Card synthesis successful.', 'Forge');
+        }, 2000);
+    }, [addToast]);
+
+    const decomposeCard = useCallback((id: string) => {
+        setCardInventory(prev => prev.filter(c => c.id !== id));
+    }, []);
+
+    const value = {
+        activePersona, availablePersonas, switchPersona, updatePersonaStats,
+        traits, updateTraits,
+        galaxy, syncPlanet, broadcastSignal, neuralBus$,
+        observeAction, activeJourney, advanceJourney, evolutionPlan, runSelfDetection, aiVersionHistory,
+        cardInventory, equippedCards: activePersona.equippedCards || [],
+        equipCard: (id: string) => {}, unequipCard: (id: string) => {},
+        expMultiplier, luckFactor,
+        logs, chatHistory: logs.filter(l => l.source === 'Chat' || l.source === 'Assistant'),
+        addLog, commitChatToMemory, trainingDocs, uploadTrainingDoc,
+        isProcessing, activeFace, setActiveFace, activeKeyId, executeMatrixProtocol, subAgentsActive: isProcessing,
+        forgedSouls, forgeSoul, equipSoul, activeSoulAsset: forgedSouls.find(s => s.id === activeSoulId) || null,
+        soul: { ...activePersona, version: '15.2', exp: activePersona.exp, alignment: 99, rank: activePersona.title } as any,
+        // Fix: Added missing methods to context value
+        trainingLogs, addTrainingSession, exportNeuralState, importNeuralState, updatePersonaKnowledge,
+        synthesizeCards, decomposeCard
+    };
+
+    return <UniversalAgentContext.Provider value={value}>{children}</UniversalAgentContext.Provider>;
 };
 
 export const useUniversalAgent = () => {

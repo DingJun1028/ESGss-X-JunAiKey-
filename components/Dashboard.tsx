@@ -1,395 +1,221 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
-import { getMockMetrics, TRANSLATIONS } from '../constants';
-import { Wind, Activity, FileText, Zap, BrainCircuit, LayoutTemplate, Plus, Trash2, Grid, X, Globe, Map as MapIcon, ScanLine, FileCheck, Triangle, Sparkles, Sun, Loader2, ArrowUpRight, LayoutDashboard } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from 'recharts';
-import { Language, DashboardWidget, WidgetType } from '../types';
-import { OmniEsgCell } from './OmniEsgCell';
-import { ChartSkeleton } from './ChartSkeleton';
-import { useToast } from '../contexts/ToastContext';
-import { analyzeDataAnomaly, generateLightInterpretation } from '../services/ai-service';
+    Target, Activity, PieChart, TrendingUp, AlertTriangle, ArrowRight, 
+    ShieldCheck, Zap, Layers, Cpu, Radio, Database, FileUp, ListChecks,
+    History, Bell, CheckCircle2, ChevronRight, BarChart3, Search, RefreshCw, Sparkles,
+    Shield, Fingerprint, Globe
+} from 'lucide-react';
+import { Language, DimensionID } from '../types';
+import { DIMENSION_LABELS } from '../constants';
 import { useCompany } from './providers/CompanyProvider';
-import { GlobalOperations } from './GlobalOperations';
-import { useUniversalAgent } from '../contexts/UniversalAgentContext';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { UniversalPageHeader } from './UniversalPageHeader';
+import { universalIntelligence, SystemVital } from '../services/evolutionEngine';
 
-interface DashboardProps {
-  language: Language;
-}
-
-// Reusable Render Components for Widgets (Keep existing)
-const MainChartWidget: React.FC<{ data: any[] }> = React.memo(({ data }) => (
-  <div style={{ width: '100%', height: 250 }}>
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-        <defs>
-          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-          </linearGradient>
-          <linearGradient id="colorBase" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1}/>
-            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-        <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} dy={10} />
-        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-        <Tooltip 
-          contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.5)' }}
-          itemStyle={{ color: '#e2e8f0', fontSize: '12px' }}
-          cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
-        />
-        <Area type="monotone" dataKey="value" name="Current" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-        <Area type="monotone" dataKey="baseline" name="Baseline" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="5 5" fillOpacity={1} fill="url(#colorBase)" />
-      </AreaChart>
-    </ResponsiveContainer>
-  </div>
-));
-
-const FeedWidget: React.FC<{ handleAiAnalyze: (label: string) => void }> = React.memo(({ handleAiAnalyze }) => (
-  <div className="space-y-2 flex-1 overflow-hidden">
-      <OmniEsgCell id="feed-energy" mode="list" label="Energy Anomaly" value="+15%" color="gold" icon={Zap} traits={['gap-filling']} subValue="Plant B • 2m ago" onAiAnalyze={() => handleAiAnalyze('Energy')} />
-      <OmniEsgCell id="feed-goal" mode="list" label="Q2 Goal Met" value="Done" color="emerald" icon={Activity} traits={['performance']} subValue="Water Reduction" />
-      <OmniEsgCell id="feed-csrd" mode="list" label="EU CSRD Update" value="New" color="purple" icon={FileText} traits={['learning']} subValue="Regulatory Bot" dataLink="ai" onAiAnalyze={() => handleAiAnalyze('CSRD')} />
-  </div>
-));
-
-const IdpScannerWidget: React.FC<{ language: Language, isLoading: boolean }> = ({ language, isLoading }) => {
-    const [scanText, setScanText] = useState('INITIALIZING...');
-    
-    useEffect(() => {
-        if (isLoading) return;
-        const phases = ["SCANNING...", "REFRACTION...", "DETECTING...", "EXTRACTING...", "INTERPRETATION: OK", "Scope 1: 420.5"];
-        let phaseIndex = 0;
-        const interval = setInterval(() => {
-            setScanText(phases[phaseIndex]);
-            phaseIndex = (phaseIndex + 1) % phases.length;
-        }, 1500);
-        return () => clearInterval(interval);
-    }, [isLoading]);
-
-    return (
-        <div className="p-4 bg-slate-900/40 rounded-xl border border-white/5 relative overflow-hidden group/scan h-full flex flex-col justify-between shadow-lg hover:bg-slate-900/60 transition-all">
-            <div className="flex justify-between items-start mb-2 relative z-10">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-celestial-emerald/10 rounded-lg border border-celestial-emerald/20">
-                        <ScanLine className="w-3 h-3 text-celestial-emerald" />
-                    </div>
-                    <div>
-                        <span className="text-xs font-bold text-white block leading-tight">{language === 'zh-TW' ? '智能文檔掃描' : 'IDP Scanner'}</span>
-                        <span className="text-[9px] text-emerald-400 font-mono">v2.5 Active</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="relative flex-1 bg-black/40 rounded-lg border border-dashed border-white/10 flex items-center justify-center overflow-hidden">
-                <FileText className="w-8 h-8 text-gray-800 absolute opacity-50" />
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-celestial-emerald shadow-[0_0_15px_rgba(16,185,129,1)] animate-[scan_2s_linear_infinite]" />
-                <div className="relative z-10 font-mono text-[9px] text-emerald-400 font-bold bg-black/80 px-2 py-0.5 rounded backdrop-blur-md border border-emerald-500/30 flex items-center gap-1">
-                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : <Sparkles className="w-3 h-3 text-celestial-gold animate-pulse"/>}
-                    {isLoading ? 'CALIBRATING...' : scanText}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Main Component ---
-export const Dashboard: React.FC<DashboardProps> = ({ language }) => {
-  const t = TRANSLATIONS[language].dashboard;
-  const metrics = useMemo(() => getMockMetrics(language), [language]);
-  const { addToast } = useToast();
-  const { customWidgets, addCustomWidget, removeCustomWidget, esgScores, totalScore, carbonData } = useCompany();
-  const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'executive' | 'global' | 'custom'>('executive');
-  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
-
-  // Universal Page Data
-  const pageData = {
-      title: { zh: '企業決策儀表板', en: 'Executive Dashboard' },
-      desc: { zh: '即時監控關鍵 ESG 指標與全域運營狀態', en: 'Real-time monitoring of key ESG metrics and global operations.' },
-      tag: { zh: '戰情核心', en: 'Ops Core' }
-  };
+export const Dashboard: React.FC<{ language: Language }> = ({ language }) => {
+  const isZh = language === 'zh-TW';
+  const { totalScore, activeTitle, companyName } = useCompany();
+  const [vitals, setVitals] = useState<SystemVital | null>(null);
+  const [activeAimsTab, setActiveAimsTab] = useState<'detection' | 'analytics' | 'governance'>('detection');
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200); 
-    return () => clearTimeout(timer);
+    const sub = universalIntelligence.vitals$.subscribe(setVitals);
+    return () => sub.unsubscribe();
   }, []);
 
-  const getIcon = (color: string) => {
-      switch(color) {
-          case 'emerald': return Wind;
-          case 'gold': return Activity;
-          case 'purple': return FileText;
-          case 'blue': return Zap;
-          default: return Activity;
-      }
-  }
+  const radarData = (Object.keys(DIMENSION_LABELS) as DimensionID[]).slice(0, 6).map(id => ({
+      subject: DIMENSION_LABELS[id][isZh ? 'zh' : 'en'],
+      A: 70 + Math.random() * 30,
+      fullMark: 100
+  }));
 
-  const handleAiAnalyze = async (metricLabel: string) => {
-      addToast('info', `AI Analyzing ${metricLabel}...`, 'Intelligence Orchestrator');
-      setTimeout(() => addToast('success', 'Analysis Complete. Insights updated.', 'AI Analysis Finished'), 1500);
-  };
-
-  const handleAddWidget = (type: WidgetType, title: string, config?: any, gridSize: 'small' | 'medium' | 'large' = 'small') => {
-      addCustomWidget({ type, title, config, gridSize });
-      addToast('success', `${title} added`, 'Customization');
-      setIsCatalogOpen(false);
-  };
-
-  const liveMetrics = useMemo(() => metrics.map(m => {
-      const labelText = typeof m.label === 'string' ? m.label : m.label.text;
-      if (labelText.includes('ESG Score') || labelText.includes('ESG 評分')) return { ...m, value: totalScore.toString() };
-      if (labelText.includes('Governance') || labelText.includes('治理')) return { ...m, value: esgScores.governance.toString() };
-      if (labelText.includes('Scope 1')) return { ...m, value: carbonData.scope1.toString() };
-      return m;
-  }), [metrics, totalScore, esgScores, carbonData]);
-
-  const dynamicChartData = useMemo(() => {
-      const base = carbonData.scope1 + carbonData.scope2;
-      return [
-          { name: 'Jan', value: base * 1.1, baseline: 450 },
-          { name: 'Feb', value: base * 1.05, baseline: 440 },
-          { name: 'Mar', value: base * 1.15, baseline: 460 },
-          { name: 'Apr', value: base * 0.95, baseline: 430 },
-          { name: 'May', value: base * 0.9, baseline: 420 },
-          { name: 'Jun', value: base * 0.85, baseline: 410 },
-          { name: 'Jul', value: base * 0.8, baseline: 400 },
-      ];
-  }, [carbonData]);
-
-  const renderExecutiveView = () => (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        {isLoading 
-          ? Array.from({ length: 4 }).map((_, i) => <OmniEsgCell key={i} mode="card" loading={true} />)
-          : liveMetrics.map((metric) => (
-              <OmniEsgCell
-                key={metric.id}
-                id={metric.id}
-                mode="card"
-                label={metric.label}
-                value={metric.value}
-                subValue={t.vsLastMonth}
-                color={metric.color}
-                icon={getIcon(metric.color)}
-                trend={{ value: metric.change, direction: metric.trend }}
-                confidence="high"
-                verified={true}
-                traits={metric.traits}
-                tags={metric.tags}
-                dataLink={metric.dataLink}
-                onAiAnalyze={() => handleAiAnalyze(typeof metric.label === 'string' ? metric.label : metric.label.text)}
-              />
-            ))
-        }
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div className="lg:col-span-2 glass-panel p-5 rounded-2xl border border-white/5 relative group overflow-hidden min-h-[300px] flex flex-col hover:border-white/10 transition-colors">
-          {isLoading ? (
-            <ChartSkeleton />
-          ) : (
-            <>
-              <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      {t.chartTitle}
-                  </h3>
-                  <div className="flex gap-2">
-                      <button className="p-1.5 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><BrainCircuit className="w-4 h-4" /></button>
-                      <button className="p-1.5 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors"><ArrowUpRight className="w-4 h-4" /></button>
-                  </div>
-              </div>
-              <div className="flex-1 w-full min-h-[220px]">
-                 <MainChartWidget data={dynamicChartData} />
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-4 h-full">
-            {/* Feed Widget */}
-            <div className="glass-panel p-4 rounded-2xl relative flex flex-col border-white/5 flex-1 hover:bg-slate-900/60 transition-colors">
-                <h3 className="text-xs font-bold text-white mb-2 uppercase tracking-wider text-gray-400">{t.feedTitle}</h3>
-                {isLoading ? <OmniEsgCell mode="list" loading={true} /> : <FeedWidget handleAiAnalyze={handleAiAnalyze} />}
-            </div>
-
-            {/* IDP Scanner - Optimized Height */}
-            <div className="h-32 shrink-0">
-               <IdpScannerWidget language={language} isLoading={isLoading} />
-            </div>
-        </div>
-      </div>
-    </>
-  );
+  const chartData = [
+    { name: 'Jan', value: 400 }, { name: 'Feb', value: 300 }, { name: 'Mar', value: 500 }, { name: 'Apr', value: 450 }, { name: 'May', value: 600 }, { name: 'Jun', value: 550 }
+  ];
 
   return (
-    <div className="space-y-4 animate-fade-in relative">
-      <UniversalPageHeader 
-          icon={LayoutDashboard}
-          title={pageData.title}
-          description={pageData.desc}
-          language={language}
-          tag={pageData.tag}
-      />
-
-      {/* Header & Toggle */}
-      <div className="flex flex-col md:flex-row justify-end items-end gap-4 mb-4 -mt-16 relative z-10">
-        <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 backdrop-blur-md">
+    <div className="h-full flex flex-col space-y-4 animate-fade-in overflow-hidden">
+        <UniversalPageHeader 
+            icon={Database} 
+            title={{ zh: 'ESG 資訊管理系統 (AIMS)', en: 'ESG AIMS Control' }} 
+            description={{ zh: '即時數據映射與異常偵測：全自動化永續治理底座', en: 'Real-time Data Mapping & Anomaly Detection' }} 
+            language={language} 
+            tag={{ zh: '數據內核 v16.1', en: 'AIMS_CORE_V16.1' }} 
+        />
+        
+        <div className="flex bg-slate-950/80 p-1 rounded-2xl border border-white/5 w-fit backdrop-blur-xl shrink-0 shadow-2xl">
             {[
-                { id: 'executive', icon: LayoutTemplate, label: language === 'zh-TW' ? '企業' : 'Exec' },
-                { id: 'global', icon: Globe, label: language === 'zh-TW' ? '全球' : 'Global' },
-                { id: 'custom', icon: Grid, label: language === 'zh-TW' ? '自訂' : 'Custom' },
-            ].map(m => (
-                <button 
-                    key={m.id}
-                    onClick={() => setViewMode(m.id as any)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 ${viewMode === m.id ? 'bg-white/10 text-white shadow-lg shadow-white/5' : 'text-gray-500 hover:text-white'}`}
+                { id: 'detection', label: isZh ? 'AI 異常偵測' : 'Detection', icon: Zap },
+                { id: 'analytics', label: isZh ? '績效指標' : 'Metrics', icon: BarChart3 },
+                { id: 'governance', label: isZh ? '治理見證' : 'Governance', icon: ShieldCheck },
+            ].map(tab => (
+                <button
+                    key={tab.id}
+                    onClick={() => setActiveAimsTab(tab.id as any)}
+                    className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeAimsTab === tab.id ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
                 >
-                    <m.icon className="w-3.5 h-3.5" />
-                    {m.label}
+                    <tab.icon className="w-3.5 h-3.5" />
+                    {tab.label}
                 </button>
             ))}
         </div>
-      </div>
 
-      {viewMode === 'executive' && renderExecutiveView()}
-      
-      {viewMode === 'global' && (
-          <div className="animate-fade-in">
-              <GlobalOperations />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                  <OmniEsgCell mode="card" label="Total Facilities" value="12" subValue="Across 3 Regions" icon={MapIcon} color="blue" />
-                  <OmniEsgCell mode="card" label="Global Efficiency" value="94.2%" trend={{value: 2.1, direction: 'up'}} icon={Zap} color="emerald" traits={['optimization']} />
-                  <div className="glass-panel p-5 rounded-2xl border-white/5 flex flex-col justify-center items-center text-center">
-                      <div className="text-sm text-gray-400 mb-2">Next Audit</div>
-                      <div className="text-2xl font-bold text-white">12 Days</div>
-                      <div className="text-xs text-celestial-gold mt-1">Berlin Plant</div>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {viewMode === 'custom' && (
-        <div className="space-y-4 animate-fade-in">
-            {customWidgets.length === 0 ? (
-                <div className="p-12 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center text-gray-500">
-                    <LayoutTemplate className="w-16 h-16 mb-4 opacity-50" />
-                    <p className="text-lg">Your dashboard is empty.</p>
-                    <button onClick={() => setIsCatalogOpen(true)} className="mt-6 px-6 py-3 bg-celestial-emerald/20 text-celestial-emerald rounded-xl hover:bg-celestial-emerald/30 transition-colors font-bold">
-                        Add Your First Widget
-                    </button>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {customWidgets.map((widget) => {
-                        let content = null;
-                        const colSpan = widget.gridSize === 'medium' ? 'lg:col-span-2' : widget.gridSize === 'large' ? 'lg:col-span-3' : 'lg:col-span-1';
+        <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 overflow-hidden">
+            <div className="col-span-12 lg:col-span-8 flex flex-col gap-4 min-h-0 overflow-hidden">
+                {activeAimsTab === 'detection' && (
+                    <div className="flex-1 glass-bento p-8 flex flex-col bg-slate-900/40 relative overflow-hidden shadow-2xl rounded-[3rem]">
+                        <div className="absolute top-0 right-0 p-10 opacity-[0.03]"><Globe className="w-64 h-64 text-celestial-blue" /></div>
                         
-                        if (widget.type === 'kpi_card') {
-                            const m = liveMetrics.find(x => x.id === widget.config?.metricId) || liveMetrics[0];
-                            content = m ? (
-                                <OmniEsgCell
-                                    id={m.id}
-                                    mode="card"
-                                    label={m.label}
-                                    value={m.value}
-                                    color={m.color}
-                                    icon={getIcon(m.color)}
-                                    traits={m.traits}
-                                    confidence="high"
-                                />
-                            ) : <div className="p-4 text-xs text-gray-500 border border-white/5 rounded-xl h-full">Metric Unavailable</div>;
-                        } else if (widget.type === 'chart_area') {
-                            content = (
-                                <div className="glass-panel p-5 rounded-2xl h-full border-white/5 flex flex-col">
-                                    <h3 className="text-base font-semibold text-white mb-4">{widget.title}</h3>
-                                    <div className="flex-1 w-full min-h-[200px]">
-                                        <MainChartWidget data={dynamicChartData} />
+                        <div className="flex justify-between items-center mb-8 shrink-0 relative z-10">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-400 border border-rose-500/20 animate-pulse">
+                                    <Bell className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="zh-main text-xl text-white">實時異常監測 (Live Detection)</h3>
+                                    <span className="en-sub !mt-0 text-rose-500 opacity-100 font-black tracking-widest">SCAN_PROTOCOL_ACTIVE</span>
+                                </div>
+                            </div>
+                            <button className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black border border-white/10 transition-all flex items-center gap-2">
+                                <RefreshCw className="w-3.5 h-3.5" /> Trigger_Scan
+                            </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1 relative z-10">
+                            {[
+                                { title: "排放強度數據異常偏移", level: "Critical", desc: "偵測到本月 Scope 1 數據相較上季度同期異常增加 12.4%。", sugg: "建議檢查 Sector B 之燃料抄表紀錄。", color: "rose" },
+                                { title: "缺失關鍵佐證文件：Q3 PPA", level: "Warning", desc: "2024 Q3 綠電購買憑證尚未完成映射。", sugg: "請於 48 小時內完成文件補傳。", color: "amber" },
+                            ].map((alert, i) => (
+                                <div key={i} className="p-6 bg-black/60 border border-white/5 rounded-[2.5rem] hover:border-white/20 transition-all group relative overflow-hidden">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`px-3 py-0.5 rounded-lg bg-${alert.color}-500/20 text-${alert.color}-400 text-[9px] font-black uppercase border border-${alert.color}-500/30`}>{alert.level}</div>
+                                            <h4 className="zh-main text-lg text-white group-hover:text-celestial-gold transition-colors">{alert.title}</h4>
+                                        </div>
+                                        <span className="text-[10px] font-mono text-gray-700">SIG_0x{8+i}B3</span>
+                                    </div>
+                                    <p className="text-sm text-gray-400 mb-4 font-light leading-relaxed">{alert.desc}</p>
+                                    <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5 flex items-start gap-4">
+                                        <Sparkles className="w-5 h-5 text-celestial-gold shrink-0 mt-0.5" />
+                                        <div className="text-[11px] text-gray-300 italic">
+                                            <b className="text-white not-italic uppercase text-[8px] block mb-1">AI_Correction:</b>
+                                            {alert.sugg}
+                                        </div>
                                     </div>
                                 </div>
-                            );
-                        } else if (widget.type === 'feed_list') {
-                            content = (
-                                <div className="glass-panel p-5 rounded-2xl h-full border-white/5">
-                                    <h3 className="text-base font-semibold text-white mb-4">{widget.title}</h3>
-                                    <FeedWidget handleAiAnalyze={handleAiAnalyze} />
-                                </div>
-                            );
-                        }
+                            ))}
+                        </div>
+                    </div>
+                )}
 
-                        return (
-                            <div key={widget.id} className={`${colSpan} relative group`}>
-                                 {content}
-                                 <button 
-                                    onClick={() => removeCustomWidget(widget.id)}
-                                    className="absolute top-2 right-2 p-1.5 bg-red-500/20 text-red-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/40 z-20"
-                                 >
-                                    <Trash2 className="w-3 h-3" />
-                                 </button>
-                            </div>
-                        );
-                    })}
-                     <button 
-                        onClick={() => setIsCatalogOpen(true)}
-                        className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/5 rounded-2xl text-gray-500 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all min-h-[150px]"
-                    >
-                        <Plus className="w-8 h-8 mb-2" />
-                        <span>Add Widget</span>
-                    </button>
-                </div>
-            )}
-        </div>
-      )}
-
-      {/* Widget Catalog Modal */}
-      {isCatalogOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-              <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
-                  <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                          <Grid className="w-5 h-5 text-celestial-gold" />
-                          {language === 'zh-TW' ? '小工具目錄' : 'Widget Catalog'}
-                      </h3>
-                      <button onClick={() => setIsCatalogOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors"><X className="w-5 h-5"/></button>
-                  </div>
-                  <div className="p-6 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {liveMetrics.map(m => (
-                          <button 
-                            key={`add-${m.id}`} 
-                            onClick={() => handleAddWidget('kpi_card', typeof m.label === 'string' ? m.label : m.label.text, { metricId: m.id }, 'small')}
-                            className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-celestial-purple/10 hover:border-celestial-purple/30 transition-all text-left group"
-                          >
-                             <div className={`p-2.5 rounded-lg ${m.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
-                                 {React.createElement(getIcon(m.color), { className: "w-5 h-5" })}
-                             </div>
+                {activeAimsTab === 'analytics' && (
+                    <div className="flex-1 glass-bento p-8 flex flex-col bg-slate-900/40 shadow-2xl rounded-[3rem] min-h-[400px] overflow-hidden">
+                         <div className="flex justify-between items-center mb-10 shrink-0">
                              <div>
-                                 <div className="font-bold text-white">{typeof m.label === 'string' ? m.label : m.label.text}</div>
-                                 <div className="text-xs text-gray-400">KPI Card • Small</div>
+                                <h3 className="zh-main text-2xl text-white">ESG 績效演進分析</h3>
+                                <span className="en-sub text-celestial-purple opacity-100 font-black">PERFORMANCE_V16_DYNAMICS</span>
                              </div>
-                             <Plus className="w-5 h-5 text-gray-500 group-hover:text-white ml-auto" />
-                          </button>
+                         </div>
+                         <div className="flex-1 min-h-[300px] w-full relative">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
+                                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }} />
+                                    <Area type="monotone" dataKey="value" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorVal)" strokeWidth={3} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                         </div>
+                    </div>
+                )}
+
+                {activeAimsTab === 'governance' && (
+                  <div className="flex-1 glass-bento p-8 flex flex-col bg-slate-900/40 shadow-2xl rounded-[3rem] min-h-[400px] overflow-hidden">
+                    <div className="flex justify-between items-center mb-8 shrink-0">
+                      <div>
+                        <h3 className="zh-main text-2xl text-white">治理見證與區塊鏈存證</h3>
+                        <span className="en-sub text-emerald-500 opacity-100 font-black">GOVERNANCE_WITNESS_CHAIN</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} className="p-4 bg-black/40 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
+                           <div className="flex items-center gap-4">
+                             <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><ShieldCheck className="w-5 h-5" /></div>
+                             <div>
+                               <div className="text-sm font-bold text-white uppercase tracking-tight">Entry_Verified_0x{i}F2</div>
+                               <div className="text-[10px] text-gray-500 font-mono">Timestamp: {new Date().toLocaleTimeString()}</div>
+                             </div>
+                           </div>
+                           <div className="text-right">
+                             <div className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">WITNESSED</div>
+                           </div>
+                        </div>
                       ))}
-                      <button 
-                        onClick={() => handleAddWidget('chart_area', 'Emissions Trend', {}, 'medium')}
-                        className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-celestial-emerald/10 hover:border-celestial-emerald/30 transition-all text-left group md:col-span-2"
-                      >
-                             <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-                                 <Activity className="w-5 h-5" />
-                             </div>
-                             <div>
-                                 <div className="font-bold text-white">Main Area Chart</div>
-                                 <div className="text-xs text-gray-400">Graph • Medium (2 cols)</div>
-                             </div>
-                             <Plus className="w-5 h-5 text-gray-500 group-hover:text-white ml-auto" />
-                      </button>
+                    </div>
                   </div>
-              </div>
-          </div>
-      )}
+                )}
+            </div>
+
+            <div className="col-span-12 lg:col-span-4 flex flex-col gap-4 overflow-hidden">
+                <div className="glass-bento p-8 flex flex-col bg-slate-950 border-white/10 rounded-[3rem] shadow-2xl relative overflow-hidden shrink-0 min-h-[420px]">
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.02]"><Fingerprint className="w-56 h-56" /></div>
+                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 flex items-center gap-2 relative z-10">
+                        <Activity className="w-4 h-4" /> ENTITY_DNA_VERIFY
+                    </h4>
+                    <div className="flex-1 min-h-[260px] relative z-10 w-full overflow-hidden">
+                        <ResponsiveContainer width="100%" height="100%" minHeight={260}>
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 900 }} />
+                                <Radar dataKey="A" stroke="#fbbf24" fill="#fbbf24" fillOpacity={0.4} />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="mt-6 p-6 bg-white/[0.02] rounded-[2.5rem] border border-white/5 flex items-center justify-between relative z-10 shadow-inner shrink-0">
+                        <div>
+                            <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Holistic_Mastery</div>
+                            <div className="text-4xl font-mono font-bold text-white tracking-tighter">{totalScore}</div>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 shadow-2xl animate-pulse">
+                            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass-bento p-8 flex-1 flex flex-col bg-slate-900/60 border-white/5 rounded-[2.5rem] shadow-xl overflow-hidden min-h-[300px]">
+                    <div className="flex justify-between items-center mb-6 shrink-0">
+                        <div className="flex flex-col">
+                            <span className="zh-main text-lg text-white tracking-widest uppercase">Action_Relay</span>
+                            <span className="en-sub !mt-0.5">Task_Orchestrator</span>
+                        </div>
+                        <ListChecks className="w-6 h-6 text-celestial-purple" />
+                    </div>
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1">
+                        {[
+                            { task: "更新 Q4 溫室氣體排放量", owner: "DingJun", status: "80%", color: "blue" },
+                            { task: "執行供應商 ESG 二次審核", owner: "Linda", status: "Pending", color: "rose" },
+                            { task: "完成 2025 淨零路徑校準", owner: "Strategist", status: "Done", color: "emerald" },
+                        ].map((t, i) => (
+                            <div key={i} className="flex justify-between items-center p-5 bg-white/5 rounded-2xl border border-white/5 group hover:border-celestial-gold transition-all cursor-pointer">
+                                <div>
+                                    <div className="text-[13px] font-black text-white uppercase tracking-tight group-hover:text-celestial-gold">{t.task}</div>
+                                    <div className="text-[10px] text-gray-500 mt-1 font-mono uppercase">Owner: {t.owner}</div>
+                                </div>
+                                <span className={`text-[10px] font-black uppercase text-${t.color}-400 bg-${t.color}-500/10 px-3 py-1 rounded-lg border border-${t.color}-500/20`}>{t.status}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
   );
 };

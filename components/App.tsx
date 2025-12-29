@@ -50,8 +50,7 @@ import { ProxyMarketplace } from './components/ProxyMarketplace';
 import { DigitalSoulForge } from './components/DigitalSoulForge';
 import { RegenerativeModel } from './components/RegenerativeModel';
 import { PersonalVault } from './components/PersonalVault';
-// Corrected import path for AffiliateZone
-import { AffiliateZone } from './components/AffiliateZone';
+import { AffiliateZone } from './components/AffiliateNexus'; // Fix: 應為 AffiliateZone 但依照結構可直接匯入
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

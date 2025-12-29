@@ -40,17 +40,20 @@ export const withUniversalProxy = <P extends object>(
         // Load initial state
         const node = universalIntelligence.getNode(componentId);
         if (node) {
-            setAdaptiveTraits(node.traits);
+            // Fix: Cast string[] from kernel node to OmniEsgTrait[] to match state type
+            setAdaptiveTraits(node.traits as OmniEsgTrait[]);
             setIsAgentActive(node.traits.includes('learning'));
         }
 
         // Optimized: Subscribe ONLY to this component's ID
         const unsubscribe = universalIntelligence.subscribe(componentId, (updatedNode) => {
-            setAdaptiveTraits(updatedNode.traits);
+            // Fix: Cast string[] from kernel node to OmniEsgTrait[] to match state type
+            setAdaptiveTraits(updatedNode.traits as OmniEsgTrait[]);
             setIsAgentActive(updatedNode.traits.includes('learning'));
         });
 
-        return () => unsubscribe();
+        /* Fix: Ensure the cleanup function returns void by wrapping the unsubscribe call to satisfy EffectCallback return type */
+        return () => { unsubscribe(); };
       }
     }, [componentId]); // Depend only on stable ID
 

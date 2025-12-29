@@ -1,264 +1,153 @@
-
 import React, { useMemo } from 'react';
 import { 
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, 
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis 
 } from 'recharts';
-import { AlertCircle, CheckCircle2, FileSpreadsheet, Activity, PieChart as PieIcon, BarChart3 } from 'lucide-react';
+import { 
+    AlertCircle, CheckCircle2, FileSpreadsheet, Activity, PieChart as PieIcon, 
+    BarChart3, Info, Star, ShieldCheck, ArrowRight, Zap, AlertTriangle,
+    MousePointer2, Globe, Target, Layers, FileText
+} from 'lucide-react';
+import { marked } from 'marked';
 
-// Definition of JSON UI Structure
 interface UIBlock {
-  type: 'chart' | 'table' | 'status';
+  type: 'chart' | 'table' | 'status' | 'matrix' | 'report_summary' | 'talent_matrix' | 'advisory_card';
   chartType?: 'area' | 'bar' | 'pie' | 'radar';
   title?: string;
   description?: string;
-  data: any[];
-  config?: {
-    xKey?: string;
-    dataKeys?: { key: string; color?: string; name?: string }[];
-  };
-  columns?: string[];
-  message?: string;
-  status?: 'success' | 'error';
-  details?: string;
-  meta?: Record<string, string | number>;
+  data: any;
+  config?: any;
 }
 
-const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f43f5e', '#fbbf24'];
+interface GenerativeUIRendererProps {
+    content: string;
+    onSelectResult?: (result: any) => void;
+}
 
-// --- Sub-Components (Memoized for Performance) ---
+const COLORS = ['#10b981', '#fbbf24', '#8b5cf6', '#3b82f6', '#f43f5e'];
 
-const ChartRenderer = React.memo(({ data }: { data: UIBlock }) => {
-  const renderChart = () => {
-    switch (data.chartType) {
-      case 'pie':
-        return (
-          <PieChart>
-            <Pie
-              data={data.data}
-              innerRadius={60}
-              outerRadius={80}
-              paddingAngle={5}
-              dataKey="value"
-            >
-              {data.data.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', fontSize: '12px' }} itemStyle={{ color: '#fff' }} />
-            <Legend wrapperStyle={{ fontSize: '10px' }} />
-          </PieChart>
-        );
-      case 'radar':
-        return (
-          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data.data}>
-            <PolarGrid stroke="rgba(255,255,255,0.1)" />
-            <PolarAngleAxis dataKey={data.config?.xKey} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-            <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
-            {data.config?.dataKeys?.map((k, i) => (
-              <Radar
-                key={k.key}
-                name={k.name}
-                dataKey={k.key}
-                stroke={k.color || COLORS[i % COLORS.length]}
-                fill={k.color || COLORS[i % COLORS.length]}
-                fillOpacity={0.4}
-              />
-            ))}
-            <Legend wrapperStyle={{ fontSize: '10px' }} />
-            <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }} />
-          </RadarChart>
-        );
-      case 'bar':
-        return (
-          <BarChart data={data.data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey={data.config?.xKey} stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-            <Tooltip cursor={{fill: '#1e293b'}} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }} />
-            <Legend wrapperStyle={{ fontSize: '10px' }} />
-            {data.config?.dataKeys?.map((k, i) => (
-              <Bar key={k.key} dataKey={k.key} name={k.name} fill={k.color || COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
-            ))}
-          </BarChart>
-        );
-      case 'area':
-      default:
-        return (
-          <AreaChart data={data.data}>
-            <defs>
-              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey={data.config?.xKey} stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-            <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', fontSize: '12px' }} itemStyle={{ color: '#fff' }} />
-            <Legend wrapperStyle={{ fontSize: '10px' }} />
-            {data.config?.dataKeys?.map((k, i) => (
-              <Area 
-                key={k.key} 
-                type="monotone" 
-                dataKey={k.key} 
-                name={k.name}
-                stroke={k.color || COLORS[i % COLORS.length]} 
-                fillOpacity={1} 
-                fill={i === 0 ? "url(#colorValue)" : (k.color || COLORS[i % COLORS.length])} 
-              />
-            ))}
-          </AreaChart>
-        );
-    }
-  };
-
-  const getIcon = () => {
-    switch(data.chartType) {
-      case 'pie': return <PieIcon className="w-4 h-4 text-celestial-purple" />;
-      case 'radar': return <Activity className="w-4 h-4 text-celestial-gold" />;
-      default: return <BarChart3 className="w-4 h-4 text-emerald-400" />;
-    }
-  };
-
-  return (
-    <div className="w-full bg-slate-900/80 border border-white/10 rounded-xl overflow-hidden shadow-lg backdrop-blur-md">
-      <div className="flex items-center gap-2 p-3 bg-white/5 border-b border-white/10">
-          {getIcon()}
-          <div>
-              <h4 className="text-sm font-bold text-white leading-tight" aria-label={data.title}>{data.title}</h4>
-              {data.description && <p className="text-[10px] text-gray-400">{data.description}</p>}
-          </div>
-      </div>
-      <div className="p-4 h-[250px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {renderChart()}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-});
-
-const TableRenderer = React.memo(({ data }: { data: UIBlock }) => (
-  <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-slate-900/30 backdrop-blur-md shadow-lg">
-    <div className="p-3 bg-white/5 border-b border-white/10 flex items-center gap-2">
-        <FileSpreadsheet className="w-4 h-4 text-blue-400" />
-        <h4 className="text-sm font-bold text-white" aria-label={data.title}>{data.title}</h4>
-    </div>
-    <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left text-slate-300">
-        <thead className="text-xs text-slate-400 uppercase bg-slate-800/50">
-            <tr>
-            {data.columns?.map((h, i) => (
-                <th key={i} className="px-4 py-3 font-medium tracking-wider">{h}</th>
-            ))}
-            </tr>
-        </thead>
-        <tbody className="divide-y divide-white/5">
-            {data.data.map((row, i) => (
-            <tr key={i} className="hover:bg-white/5 transition-colors">
-                {data.columns?.map((col, j) => (
-                <td key={j} className="px-4 py-3 whitespace-nowrap text-xs">{row[col] || row[j]}</td>
-                ))}
-            </tr>
-            ))}
-        </tbody>
-        </table>
-    </div>
-  </div>
-));
-
-const StatusCard = React.memo(({ data }: { data: UIBlock }) => {
-  const isSuccess = data.status === 'success';
-  return (
-    <div className={`flex gap-4 p-4 rounded-xl border shadow-lg ${
-      isSuccess 
-       ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-400' 
-        : 'bg-rose-950/30 border-rose-500/30 text-rose-400'
-    }`}>
-      <div className="mt-1">
-        {isSuccess ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-      </div>
-      <div>
-        <h5 className="font-bold text-sm mb-1">{data.message || data.title}</h5>
-        <p className="text-xs opacity-80 leading-relaxed">{data.details}</p>
-        {data.meta && (
-          <div className="mt-3 flex gap-2 flex-wrap">
-            {Object.entries(data.meta).map(([k, v]) => (
-              <span key={k} className="px-2 py-1 bg-black/20 rounded text-[10px] font-mono">
-                {k}: {v}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-});
-
-// --- Main Component ---
-
-const GenerativeUIRenderer: React.FC<{ content: string }> = React.memo(({ content }) => {
-  const renderedParts = useMemo(() => {
-    const jsonBlockRegex = /```json_ui\n([\s\S]*?)\n```/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = jsonBlockRegex.exec(content)) !== null) {
-      // 1. Text segment
-      if (match.index > lastIndex) {
-        const textSegment = content.substring(lastIndex, match.index);
-        if (textSegment.trim()) {
-          parts.push(
-            <div key={`text-${lastIndex}`} className="prose prose-invert max-w-none mb-4 text-slate-300 whitespace-pre-wrap leading-relaxed text-sm">
-              {textSegment}
+const AdvisoryCardRenderer: React.FC<{ data: any }> = ({ data }) => (
+    <div className="w-full my-6 glass-panel p-6 rounded-[2rem] border border-celestial-gold/30 bg-celestial-gold/[0.03] animate-fade-in group">
+        <div className="flex justify-between items-start mb-6">
+            <div className="flex items-center gap-4">
+                <div className="p-3 bg-celestial-gold/20 rounded-2xl text-celestial-gold"><Target className="w-6 h-6" /></div>
+                <div>
+                    <h4 className="zh-main text-lg text-white">{data.tool_name}</h4>
+                    <span className="en-sub">ADVISORY_OUTPUT_v15</span>
+                </div>
             </div>
-          );
-        }
-      }
-
-      // 2. UI Component segment
-      try {
-        const uiData: UIBlock = JSON.parse(match[1]);
-        let Component;
-        switch (uiData.type) {
-          case 'chart': Component = ChartRenderer; break;
-          case 'table': Component = TableRenderer; break;
-          case 'status': Component = StatusCard; break;
-          default: Component = null;
-        }
-
-        if (Component) {
-          parts.push(
-            <div key={`ui-${match.index}`} className="my-6 animate-fade-in w-full">
-              <Component data={uiData} />
-            </div>
-          );
-        }
-      } catch (e) {
-        parts.push(
-          <div key={`err-${match.index}`} className="p-4 bg-red-900/20 border border-red-500/30 rounded text-red-400 text-xs">
-            UI Render Error: Invalid JSON
-          </div>
-        );
-      }
-
-      lastIndex = jsonBlockRegex.lastIndex;
-    }
-
-    // 3. Remaining text
-    if (lastIndex < content.length) {
-      parts.push(
-        <div key="text-end" className="prose prose-invert max-w-none text-slate-300 whitespace-pre-wrap leading-relaxed text-sm">
-          {content.substring(lastIndex)}
+            <div className="uni-mini bg-black/40 text-celestial-gold border-celestial-gold/20">CONFIDENCE: {data.confidence}%</div>
         </div>
-      );
-    }
+        <p className="text-[11px] text-gray-300 leading-relaxed mb-6 italic">"{data.executive_summary}"</p>
+        <div className="grid grid-cols-2 gap-4">
+            {data.recommendations.map((rec: string, i: number) => (
+                <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/5 flex items-start gap-3">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span className="text-[10px] text-gray-400">{rec}</span>
+                </div>
+            ))}
+        </div>
+    </div>
+);
 
-    return parts;
-  }, [content]);
+const TalentMatrixRenderer: React.FC<{ data: any, onSelect?: (res: any) => void }> = ({ data, onSelect }) => {
+    const matrix = data?.Talent_Sustainability_Matrix || data;
+    if (!matrix) return null;
 
-  return <div className="w-full">{renderedParts}</div>;
+    const radarData = Object.entries(matrix.Global_Average_Alignment || {}).map(([key, value]) => ({
+        subject: key,
+        A: typeof value === 'string' ? parseInt(value.replace('%', '')) : value,
+        fullMark: 100,
+    }));
+
+    return (
+        <div className="w-full my-8 space-y-6 animate-fade-in relative group">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-slate-950/50">
+                    <h4 className="text-[10px] font-black text-celestial-gold uppercase tracking-[0.2em] mb-4">Global Alignment Radar</h4>
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
+                                <Radar name="Average" dataKey="A" stroke="#fbbf24" fill="#fbbf24" fillOpacity={0.5} />
+                                <Tooltip contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)' }} />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-slate-950/50 flex flex-col justify-center">
+                    <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-6">Alignment Summary</h4>
+                    <div className="space-y-4">
+                        {Object.entries(matrix.Global_Average_Alignment || {}).map(([key, val]: [string, any]) => (
+                            <div key={key}>
+                                <div className="flex justify-between text-[11px] mb-1">
+                                    <span className="text-gray-400">{key}</span>
+                                    <span className="text-white font-mono">{val}</span>
+                                </div>
+                                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500" style={{ width: val }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = React.memo(({ content, onSelectResult }) => {
+    const renderedParts = useMemo(() => {
+        const suggestionsRegex = /<suggestions>[\s\S]*?<\/suggestions>/g;
+        const strippedContent = content.replace(suggestionsRegex, '');
+        
+        const jsonBlockRegex = /```json_ui\n([\s\S]*?)\n```/g;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = jsonBlockRegex.exec(strippedContent)) !== null) {
+            if (match.index > lastIndex) {
+                const textSegment = strippedContent.substring(lastIndex, match.index);
+                if (textSegment.trim()) {
+                    parts.push(
+                        <div 
+                            key={`text-${lastIndex}`} 
+                            className="markdown-body prose prose-invert prose-sm max-w-none mb-6" 
+                            dangerouslySetInnerHTML={{ __html: marked.parse(textSegment) as string }} 
+                        />
+                    );
+                }
+            }
+            try {
+                const uiData = JSON.parse(match[1]);
+                if (uiData?.type === 'advisory_card') {
+                    parts.push(<AdvisoryCardRenderer key={`advisory-${match.index}`} data={uiData} />);
+                } else if (uiData?.type === 'talent_matrix') {
+                    parts.push(<TalentMatrixRenderer key={`talent-${match.index}`} data={uiData} />);
+                }
+            } catch (e) { console.error("UI Parsing Error", e); }
+            lastIndex = jsonBlockRegex.lastIndex;
+        }
+
+        if (lastIndex < strippedContent.length) {
+            const remaining = strippedContent.substring(lastIndex);
+            if (remaining.trim()) {
+                parts.push(
+                    <div 
+                        key="text-end" 
+                        className="markdown-body prose prose-invert prose-sm max-w-none mt-4" 
+                        dangerouslySetInnerHTML={{ __html: marked.parse(remaining) as string }} 
+                    />
+                );
+            }
+        }
+        return parts;
+    }, [content]);
+
+    return <div className="w-full space-y-4">{renderedParts}</div>;
 });
 
 export default GenerativeUIRenderer;

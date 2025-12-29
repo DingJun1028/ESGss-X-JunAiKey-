@@ -1,471 +1,550 @@
+export type Language = 'zh-TW' | 'en-US';
 
-/**
- * Defines the available views/modules within the application.
- */
 export enum View {
-  // Core (Personal & Gamification)
-  MY_ESG = 'MY_ESG', 
-  YANG_BO = 'YANG_BO', // Moved to Core
-  USER_JOURNAL = 'USER_JOURNAL',
-  RESTORATION = 'RESTORATION', // Universal Restoration (Crystals)
-  CARD_GAME_ARENA = 'CARD_GAME_ARENA', // Goodwill Era
-
-  // Ops (Enterprise Operations)
-  DASHBOARD = 'DASHBOARD',
-  STRATEGY = 'STRATEGY',
-  CARBON = 'CARBON',
-  REPORT = 'REPORT',
-  INTEGRATION = 'INTEGRATION',
-  FINANCE = 'FINANCE',
-  AUDIT = 'AUDIT',
-  HEALTH_CHECK = 'HEALTH_CHECK',
-
-  // Intel (Knowledge & Growth)
-  BUSINESS_INTEL = 'BUSINESS_INTEL',
-  RESEARCH_HUB = 'RESEARCH_HUB', 
-  ACADEMY = 'ACADEMY', 
-  LIBRARY = 'LIBRARY',
-
-  // Eco (Community & Ecosystem)
-  GOODWILL = 'GOODWILL',
-  FUNDRAISING = 'FUNDRAISING',
-  ALUMNI_ZONE = 'ALUMNI_ZONE',
-  TALENT = 'TALENT',
-  CULTURE = 'CULTURE',
-  
-  // Sys (System & Tools)
-  SETTINGS = 'SETTINGS',
-  DIAGNOSTICS = 'DIAGNOSTICS', 
-  API_ZONE = 'API_ZONE',
-  UNIVERSAL_BACKEND = 'UNIVERSAL_BACKEND',
-  UNIVERSAL_TOOLS = 'UNIVERSAL_TOOLS',
-  ABOUT_US = 'ABOUT_US',
-  
-  // Deprecated/Mapped
-  CARD_GAME = 'RESTORATION', 
+    MY_ESG = 'MY_ESG',
+    DASHBOARD = 'DASHBOARD',
+    BUSINESS_INTEL = 'BUSINESS_INTEL',
+    STRATEGY = 'STRATEGY',
+    REGENERATIVE = 'REGENERATIVE',
+    CARBON = 'CARBON',
+    REPORT = 'REPORT',
+    INTEGRATION = 'INTEGRATION',
+    ADAN_ZONE = 'ADAN_ZONE',
+    YANG_BO = 'YANG_BO',
+    ACADEMY = 'ACADEMY',
+    DIAGNOSTICS = 'DIAGNOSTICS',
+    TALENT = 'TALENT',
+    CULTURE = 'CULTURE',
+    FINANCE = 'FINANCE',
+    AUDIT = 'AUDIT',
+    GOODWILL = 'GOODWILL',
+    SETTINGS = 'SETTINGS',
+    UNIVERSAL_TOOLS = 'UNIVERSAL_TOOLS',
+    UNIVERSAL_SYSTEM = 'UNIVERSAL_SYSTEM',
+    THINK_TANK = 'THINK_TANK',
+    ALUMNI_ZONE = 'ALUMNI_ZONE',
+    LIBRARY = 'LIBRARY',
+    SOUL_FORGE = 'SOUL_FORGE',
+    AGENT_ARENA = 'AGENT_ARENA',
+    AGENT_TRAINING = 'AGENT_TRAINING',
+    PROXY_MARKET = 'PROXY_MARKET',
+    PALACE = 'PALACE',
+    RESTORATION = 'RESTORATION',
+    CARD_GAME_ARENA = 'CARD_GAME_ARENA',
+    USER_JOURNAL = 'USER_JOURNAL',
+    PARTNER_PORTAL = 'PARTNER_PORTAL',
+    ABOUT_US = 'ABOUT_US',
+    API_ZONE = 'API_ZONE',
+    UNIVERSAL_BACKEND = 'UNIVERSAL_BACKEND',
+    RESEARCH_HUB = 'RESEARCH_HUB',
+    HEALTH_CHECK = 'HEALTH_CHECK',
+    VAULT = 'VAULT',
+    AFFILIATE = 'AFFILIATE'
 }
 
-export type Language = 'zh-TW' | 'en-US';
-export type UserTier = 'Free' | 'Pro' | 'Enterprise';
+// Added missing dimension ID type
+export type DimensionID = 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'A7' | 'A8' | 'A9' | 'A10' | 'A11' | 'A12';
 
-// --- UNIVERSAL CRYSTAL ARCHITECTURE (萬能水晶架構) ---
+// Added missing course interface
+export interface Course {
+    id: string;
+    title: string;
+    thumbnail: string;
+    level: string;
+    category: string;
+    progress: number;
+}
 
-export type CrystalType = 'Perception' | 'Cognition' | 'Memory' | 'Expression' | 'Nexus';
-export type CrystalState = 'Fragmented' | 'Crystallizing' | 'Restored' | 'Perfected';
-
+// Added missing universal crystal interface
 export interface UniversalCrystal {
     id: string;
     name: string;
-    type: CrystalType;
+    type: 'Perception' | 'Cognition' | 'Memory' | 'Expression' | 'Nexus';
     description: string;
-    state: CrystalState;
-    integrity: number; // 0-100% (Zero Hallucination Metric)
+    state: 'Restored' | 'Crystallizing' | 'Fragmented' | 'Perfected';
+    integrity: number;
     fragmentsCollected: number;
     fragmentsRequired: number;
-    linkedModule: View; // The functional module this crystal wraps
-    abilities: string[]; // Unlocked capabilities
 }
 
-// --- USER JOURNEY SYSTEM ---
-export type JourneyStepStatus = 'pending' | 'active' | 'completed';
-
-export interface JourneyStep {
+// Added missing user title interface
+export interface UserTitle {
     id: string;
-    label: string;
-    targetView: View;
-    instruction: string; // Message from AI
-    status: JourneyStepStatus;
-    triggerCondition?: string; // e.g., "carbon_calculated"
+    text: string;
+    rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
+    bonusEffect?: string;
 }
 
-export interface UserJourney {
+// Added missing badge interface
+export interface Badge {
     id: string;
     name: string;
     description: string;
-    steps: JourneyStep[];
-    currentStepIndex: number;
-    isCompleted: boolean;
+    category: 'Milestone' | 'Achievement' | 'Social';
+    unlockedAt?: number;
 }
 
-// --- USER JOURNAL & INSIGHTS ---
+// Added missing official event interface
+export interface OfficialEvent {
+    id: string;
+    title: string;
+    date: string;
+    status: 'Upcoming' | 'Participating' | 'Completed';
+    xpReward: number;
+}
+
+// Added missing report section interface
+export interface ReportSection {
+    id: string;
+    title: string;
+    template?: string;
+    example?: string;
+    griStandards: string;
+    subSections?: ReportSection[];
+}
+
+// Added missing ESG card interface
+export interface EsgCard {
+    id: string;
+    title: string;
+    term: string;
+    definition: string;
+    description: string;
+    rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
+    attribute: string;
+    collectionSet: string;
+    stats: {
+        defense: number;
+        offense: number;
+    };
+    imageUrl?: string;
+}
+
+// Added missing scripture node interface
+export interface ScriptureNode {
+    id: string;
+    code: string;
+    title: string;
+    en: string;
+    content: string;
+    category: string;
+    tags: { zh: string; en: string }[];
+}
+
+// Added missing dimension protocol interface
+export interface DimensionProtocol {
+    id: DimensionID;
+    name: string;
+    description: string;
+    status: 'stable' | 'unstable';
+    integrity: number;
+}
+
+// Added missing unit test result interface
+export interface UnitTestResult {
+    id: string;
+    name: string;
+    module: string;
+    lastRun: number;
+    witnessHash: string;
+    assertionLog: string[];
+}
+
+// Added missing toast type
+export type ToastType = 'success' | 'error' | 'warning' | 'info' | 'reward';
+
+// Added missing toast interface
+export interface Toast {
+    id: string;
+    type: ToastType;
+    message: string;
+    title?: string;
+    duration?: number;
+}
+
+// Added missing OmniEsg types
+export type OmniEsgTrait = 'learning' | 'optimization' | 'performance' | 'evolution' | 'gap-filling' | 'seamless' | 'bridging' | 'stability' | 'altruism' | 'innovation';
+export type OmniEsgDataLink = 'live' | 'ai' | 'blockchain';
+export type OmniEsgMode = 'card' | 'list';
+export type OmniEsgConfidence = 'high' | 'medium' | 'low';
+export type OmniEsgColor = 'emerald' | 'gold' | 'purple' | 'blue' | 'slate' | 'cyan' | 'rose';
+
+export interface UniversalLabel {
+    id?: string;
+    text: string;
+    definition?: string;
+    formula?: string;
+    rationale?: string;
+}
+
+export interface LogicWitness {
+    witnessHash: string;
+}
+
+// Added missing dashboard widget types
+export type WidgetType = 'carbon' | 'performance' | 'tasks' | 'news';
+
+export interface DashboardWidget {
+    id: string;
+    type: WidgetType;
+    title: string;
+    config?: any;
+    gridSize?: 'small' | 'medium' | 'large' | 'full';
+}
+
+// Added missing audit log entry interface
+export interface AuditLogEntry {
+    id: string;
+    timestamp: number;
+    action: string;
+    user: string;
+    details: string;
+    hash: string;
+}
+
+// Added missing quest interface
+export interface Quest {
+    id: string;
+    title: string;
+    desc: string;
+    xp: number;
+    type: 'Challenge' | 'Daily' | 'Task';
+    rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
+    status: 'active' | 'verifying' | 'completed';
+}
+
+// Added missing to-do item interface
+export interface ToDoItem {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
+// Added missing note item interface
+export interface NoteItem {
+    id: string;
+    title?: string;
+    content: string;
+    tags?: string[];
+    timestamp: number;
+}
+
+// Added missing bookmark item interface
+export interface BookmarkItem {
+    id: string;
+    type: 'article' | 'video' | 'news';
+    title: string;
+    link?: string;
+}
+
+// Added missing user tier type
+export type UserTier = 'Free' | 'Pro' | 'Enterprise';
+
+// Added missing carbon data interface
+export interface CarbonData {
+    fuelConsumption: number;
+    electricityConsumption: number;
+    scope1: number;
+    scope2: number;
+    scope3: number;
+    lastUpdated: number;
+}
+
+// Added missing mastery level type
+export type MasteryLevel = 'Novice' | 'Apprentice' | 'Master';
+
+// Added missing app file interface
+export interface AppFile {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    uploadedAt: number;
+    sourceModule: string;
+}
+
+// Added missing intelligence item interface
+export interface IntelligenceItem {
+    id: string;
+    content: string;
+    source: string;
+    timestamp: number;
+}
+
+// Added missing user journal entry interface
 export interface UserJournalEntry {
     id: string;
     timestamp: number;
     title: string;
-    impact: string; // e.g., "Reduced Carbon Calculation time by 40%"
+    impact: string;
     xpGained: number;
-    tags: string[]; // e.g., ["Learning", "Operation", "Community"]
     type: 'milestone' | 'action' | 'insight';
+    tags: string[];
 }
 
-// --- CHANGELOG SYSTEM ---
-export interface ChangelogEntry {
-    version: string;
+// Added missing external api keys interface
+export interface ExternalApiKeys {
+    openai?: string;
+    straico?: string;
+}
+
+// Added missing vocation types
+export type VocationType = 'Architect' | 'Alchemist' | 'Scribe' | 'Envoy' | 'Seeker' | 'Guardian';
+
+export interface VocationInfo {
+    type: VocationType;
+    level: number;
+    exp: number;
+    nextLevelExp: number;
+    perks: string[];
+}
+
+// Added missing activity pulse node interface
+export interface ActivityPulseNode {
     date: string;
+    intensity: number;
+}
+
+// Added missing webhook interfaces
+export interface WebhookConfig {
+    id: string;
+    eventType: string;
+    url: string;
+    status: 'active' | 'inactive';
+    secret: string;
+    lastTriggered?: number;
+    lastStatus?: 'success' | 'failure';
+}
+
+export interface WebhookDelivery {
+    id: string;
+    webhookId: string;
+    timestamp: number;
+    payload: any;
+    responseCode: number;
+    status: 'success' | 'failure';
+}
+
+// Added missing semantic context interface
+export interface SemanticContext {
+    keywords: string[];
+}
+
+// Added missing soul evolution feedback interface
+export interface SoulEvolutionFeedback {
+    suggestedPromptTweak: string;
+    performanceSummary: string;
+    suggestedTitle?: UserTitle;
+}
+
+// Added missing persona config interface
+export interface PersonaConfig {
+    id: string;
+    name: string;
     title: string;
-    changes: string[];
-    category: 'Core' | 'Feature' | 'UI' | 'Fix';
+    archetype: string;
+    coreTrait: string;
+    primaryGoal: string;
+    systemPrompt: string;
+    level: number;
+    exp: number;
+    color: string;
+    avatarUrl: string;
+    attributes: {
+        [key: string]: { label: string; value: number; max: number };
+    };
+    skills: { name: string; level: number; desc: string }[];
+    ultimateArt: { name: string; description: string; unlockedAtLevel: number; effect: string };
+    equippedCards?: string[];
+    goodwillValue?: number;
+    knowledgeRepoIds?: string[];
+    usageHistory?: any[];
 }
 
-// --- MCP (Model Context Protocol) Definitions ---
-
-export interface MCPTool {
-    name: string;
-    description: string;
-    inputSchema: any; // JSON Schema
-    requiresApproval?: boolean; // For HITL
+// Added missing universal knowledge node interface
+export interface UniversalKnowledgeNode {
+    id: string;
+    type: string;
+    label: UniversalLabel;
+    currentValue: any;
+    traits: string[];
+    confidence: OmniEsgConfidence;
+    lastInteraction: number;
+    interactionCount: number;
+    memory: {
+        history: any[];
+        aiInsights: any[];
+    };
 }
 
-export interface MCPResource {
-    uri: string;
-    name: string;
-    mimeType: string;
-    description?: string;
-}
-
-export interface MCPPrompt {
-    name: string; // e.g., "summarize-pdf"
-    description: string;
-    arguments: {
-        name: string;
-        description: string;
-        required: boolean;
-    }[];
-}
-
-export interface MCPMessage {
-    role: 'user' | 'assistant' | 'system' | 'tool';
-    content: string | { type: 'text' | 'image' | 'resource', data: any }[];
-    toolCallId?: string;
-    name?: string; // For tool outputs
-}
-
-// --- End MCP Definitions ---
-
-export interface UserProfile {
-  name: string;
-  role: string;
-  tier: UserTier;
-  avatarSeed: string;
-}
-
-export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'reward';
-
-export interface Toast {
-  id: string;
-  type: ToastType;
-  title?: string;
-  message: string;
-  duration?: number;
-  rewardData?: { xp?: number; coins?: number; card?: EsgCard; };
-}
-
-// --- Universal File System & Compliance ---
-export interface ComplianceData {
-    standard: string; // e.g., ISO 14064
-    certId: string;
-    issuer: string;
-    expiryDate: string;
-}
-
-export interface AppFile {
-  id: string;
-  name: string;
-  type: string;
-  size: string;
-  uploadDate: number;
-  sourceModule: string;
-  status: 'scanning' | 'processed' | 'error';
-  tags: string[];
-  aiSummary?: string;
-  confidence: number;
-  complianceData?: ComplianceData; // Linked compliance info
-}
-
-// --- Universal Intelligence System ---
-export interface IntelligenceItem {
-  id: string;
-  type: 'report' | 'news' | 'competitor' | 'regulation' | 'note';
-  title: string;
-  source: string;
-  date: string;
-  summary: string;
-  tags: string[];
-  isRead: boolean;
-}
-
-export interface AuditLogEntry {
-  id: string;
-  timestamp: number;
-  action: string;
-  user: string;
-  details: string;
-  hash: string;
-  verified: boolean;
-}
-
-// --- QUANTUM KNOWLEDGE ENGINE ---
+// Added missing quantum node interface
 export interface QuantumNode {
     id: string;
     atom: string;
     vector: string[];
     weight: number;
-    connections: string[];
     source: string;
 }
 
-export interface SemanticContext {
-    intent: string;
-    keywords: string[];
-    requiredConfidence: number;
+// Added missing neural signal interface
+export interface NeuralSignal {
+    id: string;
+    origin: string;
+    type: 'DATA_COLLISION' | 'LOGIC_RESONANCE' | 'ENTROPY_PURGE' | 'RUNE_ACTIVATION';
+    intensity: number;
+    payload: any;
+    timestamp: number;
 }
 
-// --- ESG Universal Card Architecture (MECE) ---
-export type ESGAttribute = 'Environmental' | 'Social' | 'Governance';
-export type ESGCategory = 'Green_Ops' | 'Eco_System' | 'Human_Capital' | 'Social_Impact' | 'Foundation' | 'Partnership';
-export type CardRarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
-export type MasteryLevel = 'Novice' | 'Apprentice' | 'Master';
-
-export interface EsgCard {
-  id: string;
-  title: string;
-  description: string;
-  attribute: ESGAttribute;
-  category: ESGCategory;
-  rarity: CardRarity;
-  term: string;
-  definition: string;
-  imageUrl?: string;
-  stats: {
-    defense: number;
-    offense: number;
-  };
-  isPurified?: boolean;
-  collectionSet: string;
-}
-
-// --- Synergy System ---
-export interface SynergyEffect {
-    type: 'score_boost' | 'resource_gen' | 'discount';
-    target: 'environmental' | 'social' | 'governance' | 'credits' | 'budget';
-    value: number;
-}
-
-export interface CardSynergy {
+// Added missing MCP registry item interface
+export interface MCPRegistryItem {
     id: string;
     name: string;
+    type: 'tool' | 'resource';
     description: string;
-    requiredCards: string[];
-    effect: SynergyEffect;
+    latency: number;
 }
 
-export interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  condition: string;
-  isUnlocked: boolean;
-  unlockedAt?: number;
+// Added missing trinity state interface
+export interface TrinityState {
+    perception: number;
+    cognition: number;
+    action: number;
 }
 
-export interface CarbonData {
-  fuelConsumption: number;
-  electricityConsumption: number;
-  scope1: number;
-  scope2: number;
-  scope3: number;
-  lastUpdated: number;
-}
+// Added missing life ESG quest types
+export type LifeCategory = 'NetZero' | 'Altruism' | 'Governance' | 'Innovation';
 
-export type QuestRarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
-export type QuestType = 'Daily' | 'Weekly' | 'Challenge';
-export type QuestRequirement = 'manual' | 'image_upload';
-
-export interface Quest {
-  id: string;
-  title: string;
-  desc: string;
-  type: QuestType;
-  rarity: QuestRarity;
-  xp: number;
-  status: 'active' | 'verifying' | 'completed';
-  requirement: QuestRequirement;
-}
-
-export interface ToDoItem {
-  id: number;
-  text: string;
-  done: boolean;
-}
-
-export interface NoteItem {
-  id: string;
-  title: string; // New: Auto-generated Title
-  content: string;
-  tags: string[];
-  createdAt: number;
-  source?: 'manual' | 'voice' | 'ai';
-  backlinks?: string[]; // New: Reverse Links
-  isOptimized?: boolean;
-}
-
-export interface BookmarkItem {
-  id: string;
-  type: 'article' | 'video' | 'news';
-  title: string;
-  link?: string;
-  addedAt: number;
-}
-
-/**
- * Universal Agent Traits
- */
-export type OmniEsgTrait = 
-  | 'optimization' 
-  | 'gap-filling' 
-  | 'tagging'
-  | 'performance'
-  | 'learning'
-  | 'evolution'
-  | 'bridging'
-  | 'seamless';
-
-export type OmniEsgDataLink = 'live' | 'ai' | 'blockchain';
-export type OmniEsgMode = 'card' | 'list' | 'cell' | 'badge';
-export type OmniEsgConfidence = 'high' | 'medium' | 'low';
-export type OmniEsgColor = 'emerald' | 'gold' | 'purple' | 'blue' | 'slate';
-
-export interface UniversalLabel {
-  id?: string;
-  dataType?: string;
-  text: string;
-  description?: string;
-  definition?: string;
-  formula?: string;
-  rationale?: string;
-}
-
-export interface UniversalKnowledgeNode {
-  id: string;
-  type: 'component' | 'concept' | 'metric';
-  label: UniversalLabel;
-  currentValue: any;
-  traits: OmniEsgTrait[];
-  confidence: OmniEsgConfidence;
-  lastInteraction: number;
-  interactionCount: number;
-  memory: {
-    history: any[];
-    aiInsights: string[];
-  };
-}
-
-export interface InteractionEvent {
-  componentId: string;
-  eventType: 'click' | 'hover' | 'edit' | 'ai-trigger';
-  timestamp: number;
-  payload?: any;
-}
-
-export interface Metric {
-  id: string;
-  label: string | UniversalLabel;
-  value: string;
-  change: number;
-  trend: 'up' | 'down' | 'neutral';
-  color: OmniEsgColor;
-  traits?: OmniEsgTrait[];
-  tags?: string[];
-  dataLink?: OmniEsgDataLink;
-}
-
-export interface Course {
-  id: string;
-  title: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  progress: number;
-  thumbnail: string;
-}
-
-// Updated ChatMessage to support structured tool calls/HITL
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'model' | 'system' | 'tool';
-  text: string;
-  timestamp: Date;
-  isThinking?: boolean;
-  toolCall?: {
-      id: string;
-      name: string;
-      args: any;
-      requiresApproval?: boolean;
-      status: 'pending' | 'approved' | 'rejected' | 'completed';
-  };
-  uiComponent?: any; // For Generative UI JSON payload
-  // New: For AI Proactive Suggestions
-  suggestion?: {
-      title: string;
-      reason: string;
-      actionLabel: string;
-      targetView: View;
-  };
-}
-
-export interface SystemHealth {
-  module: string;
-  status: 'Healthy' | 'Warning' | 'Critical';
-  latency: number;
-}
-
-export interface ReportSection {
-  id: string;
-  title: string;
-  subSections?: ReportSection[];
-  template?: string;
-  example?: string;
-  griStandards?: string;
-  guidelines?: string;
-  principles?: string;
-}
-
-// --- Past Reports Archive ---
-export interface PastReport {
-    year: number;
-    title: string;
-    version: string;
-    publishDate: string;
-    status: 'Published' | 'Draft' | 'Archived';
-    metrics: {
-        scope1: number;
-        scope2: number;
-        scope3: number;
-        energyConsumption: number;
-        griCoverage: number; // Percentage
-    };
-    downloadUrl?: string;
-}
-
-export type WidgetType = 'kpi_card' | 'chart_area' | 'feed_list' | 'mini_map' | 'quest_list' | 'intel_feed' | 'quick_note' | 'yang_bo_feed' | 'event_list';
-
-export interface DashboardWidget {
-  id: string;
-  type: WidgetType;
-  title: string;
-  config?: any;
-  gridSize?: 'small' | 'medium' | 'large' | 'full';
-}
-
-export type InsightType = 'next_step' | 'optimization' | 'preparation';
-
-export interface ProactiveInsight {
+export interface LifeEsgQuest {
     id: string;
-    type: InsightType;
+    category: LifeCategory;
     title: string;
+    enTitle: string;
+    impactDesc: string;
+    xpReward: number;
+    gwcReward: number;
+    traitBonus: { trait: string; value: number };
+    status: 'ready' | 'completed' | 'locked';
+    icon: any;
+    verifiedHash?: string;
+}
+
+// Added missing persona attributes interface
+export interface PersonaAttributes {
+    altruism: number;
+    pragmatism: number;
+    innovation: number;
+    stability: number;
+}
+
+// Added missing digital soul asset interface
+export interface DigitalSoulAsset {
+    id: string;
+    name: string;
+    traits: SoulForgeConfig;
+    resonance: number;
+    rarity: string;
+    forgedAt: number;
+    ownerId: string;
+}
+
+// Added missing soul forge config interface
+export interface SoulForgeConfig {
+    altruism: number;
+    pragmatism: number;
+    innovation: number;
+    stability: number;
+}
+
+// Added missing training doc interface
+export interface TrainingDoc {
+    id: string;
+    name: string;
+    status: 'parsing' | 'ready';
+    type: string;
+    atomsCount: number;
+}
+
+// Added missing Adan disciple interface
+export interface AdanDisciple extends PersonaConfig {
+    version: string;
+    alignment: number;
+    rank: string;
+}
+
+// Added missing training log entry interface
+export interface TrainingLogEntry {
+    id: string;
+    agentId: string;
+    timestamp: number;
+    sessionType: string;
+    gainedExp: number;
+    statChanges: any;
+    newKnowledge: string[];
+    isCriticalInsight?: boolean;
+}
+
+// Added missing entity planet interface
+export interface EntityPlanet {
+    taxId: string;
+    name: string;
+    industry: string;
+    riskScore: number;
+    strategy: any;
+    contextDB: any;
+    mmDocs: any[];
+    kpiData: any[];
+    auditTrail: any[];
+    dataHash: string;
+    lastUpdated: string;
+}
+
+// Added missing agent certification interface
+export interface AgentCertification {
+    id: string;
+    title: string;
+    status: 'Certified' | 'In_Progress' | 'Locked';
+    progress: number;
+    skillsUnlocked: string[];
+}
+
+// Added missing proxy product interface
+export interface ProxyProduct {
+    id: string;
+    name: string;
+    category: 'SaaS' | 'Hardware' | 'Consulting';
+    tier: number;
+    basePrice: string;
+    commission: number;
+    knowledgeTags: string[];
+    pitchScript: string;
+}
+
+// Added missing agent soul 5D interface
+export interface AgentSoul5D {
+    id: string;
+    essence: { name: string; tone: string; backstory: string };
+    covenant: { prompt: string; safety: string };
+    memory: { knowledgeBaseIds: string[]; retentionDays: number };
+    authority: { skillIds: string[]; permissions: string[] };
+    foundation: { model: string; temperature: number; tokens: number };
+}
+
+// Added missing skill node interface
+export interface SkillNode {
+    id: string;
+    name: string;
+    type: string;
     description: string;
-    actionLabel?: string;
-    targetView?: View;
+    mastery: number;
+    status: 'Ready' | 'Cooldown';
+}
+
+// Added missing evolution proposal interface
+export interface EvolutionProposal {
+    id: string;
+    pattern: string;
+    suggestedSkill: string;
     confidence: number;
-    impact: 'high' | 'medium' | 'low';
+    status: 'Pending' | 'Approved' | 'Vetoed';
 }

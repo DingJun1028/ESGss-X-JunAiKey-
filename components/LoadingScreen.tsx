@@ -1,66 +1,90 @@
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, BrainCircuit, Zap, Database, Server } from 'lucide-react';
+import { Cpu, Database, ShieldCheck, RefreshCw } from 'lucide-react';
 import { LogoIcon } from './Layout';
 
 const LOADING_MESSAGES = [
-    "Initializing JunAiKey Kernel...",
-    "Syncing Neural Pathways...",
-    "Establishing Secure Handshake...",
-    "Calibrating Zero Hallucination Protocol...",
-    "Optimizing Generative UI Components...",
-    "Allocating Tensor Resources...",
-    "Verifying Integrity Hashes..."
+    "Loading Module Resource...",
+    "Synchronizing Neural Pathways...",
+    "Establishing Quantum Handshake...",
+    "Allocating Tensor Core Resources...",
+    "Verifying Integrity Hashes...",
+    "Manifesting Generative Interface..."
 ];
 
-export const LoadingScreen: React.FC<{ message?: string }> = ({ message }) => {
+export const LoadingScreen: React.FC<{ message?: string; fullScreen?: boolean }> = ({ message, fullScreen = true }) => {
     const [currentMsgIndex, setCurrentMsgIndex] = useState(0);
+    const [showEmergencyButton, setShowEmergencyButton] = useState(false);
 
     useEffect(() => {
-        if (!message) {
-            const interval = setInterval(() => {
-                setCurrentMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-            }, 800);
-            return () => clearInterval(interval);
-        }
-    }, [message]);
+        const timer = setTimeout(() => setShowEmergencyButton(true), 3000);
+        const msgInterval = setInterval(() => {
+            setCurrentMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+        }, 800); 
 
-    const displayMessage = message || LOADING_MESSAGES[currentMsgIndex];
+        return () => {
+            clearTimeout(timer);
+            clearInterval(msgInterval);
+        };
+    }, []);
+
+    const handleEmergencyBoot = () => {
+        // 強制重定向到當前路徑，這能清除所有的動態模組掛載錯誤
+        sessionStorage.clear();
+        localStorage.removeItem('esgss_boot_sequence_v15_final');
+        window.location.href = window.location.origin + window.location.pathname;
+    };
 
     return (
-        <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center p-8 animate-fade-in bg-slate-900/20 backdrop-blur-sm rounded-3xl">
-            <div className="relative mb-8 flex items-center justify-center">
-                {/* Outer Glow Ring */}
-                <div className="absolute inset-0 bg-celestial-gold/20 blur-3xl rounded-full animate-pulse" />
-                
-                {/* Spinner Container */}
-                <div className="relative w-32 h-32 flex items-center justify-center">
-                    {/* Orbitals */}
-                    <div className="absolute inset-0 rounded-full border-t-2 border-celestial-purple/60 animate-[spin_2s_linear_infinite]" />
-                    <div className="absolute inset-3 rounded-full border-r-2 border-celestial-emerald/60 animate-[spin_3s_linear_infinite_reverse]" />
-                    
-                    {/* Logo */}
-                    <div className="relative z-10 animate-pulse">
-                        <LogoIcon className="w-16 h-16 shadow-[0_0_20px_rgba(251,191,36,0.4)]" />
+        <div className={`
+            ${fullScreen ? 'fixed inset-0 z-[1000] bg-[#020617]' : 'w-full h-full min-h-[500px] bg-slate-900/20 rounded-3xl'} 
+            flex flex-col items-center justify-center p-8 overflow-hidden font-mono
+        `}>
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.02)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none" />
+
+            <div className="relative mb-12">
+                <div className="absolute inset-0 bg-celestial-gold/10 blur-[80px] rounded-full animate-pulse" />
+                <div className="relative w-40 h-40 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border border-celestial-purple/30 animate-[spin_4s_linear_infinite]" />
+                    <div className="absolute inset-2 rounded-full border border-celestial-emerald/30 animate-[spin_8s_linear_infinite_reverse]" />
+                    <div className="relative z-10 p-2 bg-slate-900 rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                        <LogoIcon className="w-20 h-20 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]" />
                     </div>
                 </div>
             </div>
 
-            <div className="flex flex-col items-center gap-3 text-center max-w-sm">
-                <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-wide font-mono min-h-[20px] transition-all duration-300">
-                    {displayMessage}
-                </span>
+            <div className="relative z-20 flex flex-col items-center gap-4 text-center">
+                <div className="flex items-center gap-3 mb-2">
+                    <span className="text-2xl font-black text-white tracking-[0.2em] uppercase">
+                        JUNAIKEY<span className="text-celestial-gold">OS</span>
+                    </span>
+                    <div className="h-4 w-[1px] bg-white/20" />
+                    <span className="text-xs text-gray-500 font-mono tracking-widest">BUILD_15.0.4</span>
+                </div>
                 
-                {/* Progress Bar Visual */}
-                <div className="w-48 h-1 bg-slate-800 rounded-full overflow-hidden mt-2 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-celestial-purple via-celestial-blue to-celestial-emerald w-full animate-pulse" />
+                <div className="text-sm font-bold text-celestial-emerald tracking-widest min-h-[20px] mb-4">
+                    {message || LOADING_MESSAGES[currentMsgIndex]}
                 </div>
 
-                <div className="flex gap-4 mt-4 text-gray-600">
-                    <Zap className="w-4 h-4 animate-pulse delay-75" />
-                    <Database className="w-4 h-4 animate-pulse delay-150" />
-                    <Server className="w-4 h-4 animate-pulse delay-300" />
+                <div className="w-64 h-[3px] bg-white/5 rounded-full overflow-hidden relative border border-white/5">
+                    <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-celestial-emerald via-celestial-blue to-celestial-purple w-full animate-[shimmer_2s_infinite]" 
+                         style={{ transform: 'translateX(-70%)' }} />
                 </div>
+
+                {showEmergencyButton && (
+                    <div className="mt-12 animate-fade-in flex flex-col items-center">
+                        <button 
+                            onClick={handleEmergencyBoot}
+                            className="px-8 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl border border-red-500/30 text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 group"
+                        >
+                            <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
+                            重置並強制啟動 (Force Kernel Boot)
+                        </button>
+                        <p className="text-[9px] text-gray-600 mt-4 max-w-xs leading-relaxed uppercase">
+                            Detected loading interruption. Click to clear cache and reboot core logic.
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

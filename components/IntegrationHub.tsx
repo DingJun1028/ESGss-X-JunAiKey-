@@ -13,110 +13,79 @@ interface IntegrationHubProps {
   language: Language;
 }
 
-// ... (Agent Components: PipelineNodeBase, PipelineAgent, CentralHubBase, CentralHubAgent - No changes needed here, keeping logic same) ...
-// Re-declaring interfaces/components for context in this file block replacement
-interface PipelineNodeProps extends InjectedProxyProps {
-    id: string;
-    pipe: any;
-    index: number;
-    total: number;
-    isRefreshing: boolean;
-}
-
-const PipelineNodeBase: React.FC<PipelineNodeProps> = ({ 
-    pipe, index, total, isRefreshing, adaptiveTraits, trackInteraction, isAgentActive 
-}) => {
-    const isStressed = pipe.status === 'warning';
-    const isEvolved = adaptiveTraits?.includes('evolution');
-    const isLearning = adaptiveTraits?.includes('learning') || isAgentActive;
-
-    useEffect(() => {
-        if (isStressed) {
-            universalIntelligence.agentUpdate('Data Lake', { confidence: 'medium' }); 
-        }
-    }, [isStressed]);
-
-    return (
-        <div 
-            className={`absolute w-16 h-16 rounded-2xl border flex items-center justify-center backdrop-blur-md transition-all duration-500 cursor-pointer group
-                ${isStressed 
-                    ? 'bg-amber-500/10 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)] animate-pulse' 
-                    : 'bg-white/5 border-white/10 hover:border-celestial-blue/50'}
-                ${isEvolved ? 'scale-110 ring-1 ring-celestial-blue/30' : ''}
-            `}
-            style={{
-                top: '50%',
-                left: '50%',
-                transform: `translate(-50%, -50%) rotate(${index * (360/total)}deg) translate(140px) rotate(-${index * (360/total)}deg)`
-            }}
-            onClick={() => trackInteraction?.('click')}
-        >
-            {pipe.type === 'Server' && <Server className={`w-6 h-6 ${isStressed ? 'text-amber-400' : 'text-emerald-400'}`} />}
-            {pipe.type === 'Wifi' && <Wifi className="w-6 h-6 text-purple-400" />}
-            {pipe.type === 'Database' && <Database className="w-6 h-6 text-amber-400" />}
-            {pipe.type === 'Network' && <Network className="w-6 h-6 text-blue-400" />}
-            {pipe.type === 'Calendar' && <Calendar className="w-6 h-6 text-pink-400" />}
-            {pipe.type === 'App' && <Box className="w-6 h-6 text-cyan-400" />}
-            
-            <div 
-            className={`absolute h-[1px] w-[100px] origin-left -z-10 transition-colors duration-500 ${isStressed ? 'bg-amber-500/50' : 'bg-gradient-to-r from-transparent via-white/20 to-transparent'}`}
-            style={{
-                top: '50%',
-                left: '50%',
-                transform: `rotate(${index * (360/total) + 180}deg) translate(30px)`,
-                width: '110px'
-            }}
-            />
-            
-            {!isRefreshing && (
-                <div 
-                className={`absolute w-2 h-2 rounded-full top-1/2 left-1/2 -z-10 animate-ping ${isStressed ? 'bg-amber-400' : 'bg-white'}`}
-                style={{
-                    animationDuration: isStressed ? '3s' : '2s',
-                    animationDelay: `${index * 0.5}s`
-                }}
-                />
-            )}
-
-            <div className="absolute top-full mt-2 text-[9px] text-gray-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">
-                {pipe.name}
-            </div>
-        </div>
-    );
-};
-
-const PipelineAgent = withUniversalProxy(PipelineNodeBase);
-
+/* Added: Defined CentralHubAgent component */
 interface CentralHubProps extends InjectedProxyProps {
     isRefreshing: boolean;
     onClick: () => void;
 }
 
-const CentralHubBase: React.FC<CentralHubProps> = ({ isRefreshing, onClick, adaptiveTraits, trackInteraction }) => {
-    const isEvolved = adaptiveTraits?.includes('evolution');
-    const isOptimizing = adaptiveTraits?.includes('optimization');
-
+const CentralHubBase: React.FC<CentralHubProps> = ({ isRefreshing, onClick, adaptiveTraits, isAgentActive, trackInteraction }) => {
     return (
         <div 
             onClick={() => { onClick(); trackInteraction?.('click'); }}
-            className={`relative z-10 w-24 h-24 rounded-full bg-celestial-blue/20 border-2 border-celestial-blue flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.3)] cursor-pointer hover:scale-105 transition-transform
-                ${isRefreshing ? 'animate-spin' : isOptimizing ? 'animate-pulse' : ''}
+            className={`relative z-10 w-24 h-24 rounded-full bg-slate-950 border-2 flex items-center justify-center cursor-pointer transition-all duration-700
+                ${isRefreshing ? 'border-celestial-emerald scale-110 shadow-[0_0_40px_rgba(16,185,129,0.3)]' : 'border-white/20 hover:border-white/40'}
+                ${isAgentActive ? 'shadow-[0_0_20px_rgba(139,92,246,0.3)]' : ''}
             `}
         >
-            <Database className="w-10 h-10 text-celestial-blue" />
-            <div className={`absolute -bottom-8 text-xs font-bold text-celestial-blue whitespace-nowrap ${isRefreshing ? 'hidden' : 'block'}`}>
-                {isEvolved ? 'Hive Mind' : 'Data Lake'}
-            </div>
-            <div className="absolute inset-0 bg-celestial-blue/30 blur-xl rounded-full animate-pulse" />
+            <div className={`absolute inset-0 rounded-full border border-dashed border-celestial-blue/30 animate-[spin_10s_linear_infinite] ${isRefreshing ? 'opacity-100' : 'opacity-0'}`} />
+            <Database className={`w-8 h-8 ${isRefreshing ? 'text-celestial-emerald animate-pulse' : 'text-white'}`} />
+            <div className="absolute -bottom-6 whitespace-nowrap text-[10px] font-bold text-gray-500 uppercase tracking-widest">Enterprise Data Lake</div>
         </div>
     );
 };
 
 const CentralHubAgent = withUniversalProxy(CentralHubBase);
 
-// ----------------------------------------------------------------------
-// Main Component
-// ----------------------------------------------------------------------
+/* Added: Defined PipelineAgent component */
+interface PipelineAgentProps extends InjectedProxyProps {
+    pipe: any;
+    index: number;
+    total: number;
+    isRefreshing: boolean;
+}
+
+const PipelineAgentBase: React.FC<PipelineAgentProps> = ({ pipe, index, total, isRefreshing, adaptiveTraits, isAgentActive, trackInteraction }) => {
+    const angle = (index / total) * 360;
+    const radius = 140;
+    const x = Math.cos((angle * Math.PI) / 180) * radius;
+    const y = Math.sin((angle * Math.PI) / 180) * radius;
+
+    const Icons = { Wifi, Database, Calendar, Server, Network, Box };
+    const Icon = (Icons as any)[pipe.type] || Server;
+
+    return (
+        <div 
+            className="absolute transition-all duration-1000"
+            style={{ transform: `translate(${x}px, ${y}px)` }}
+        >
+            <div 
+                className={`w-12 h-12 rounded-xl bg-slate-900 border flex items-center justify-center relative group/pipe cursor-help
+                    ${pipe.status === 'active' ? 'border-white/10' : 'border-amber-500/50 bg-amber-500/5'}
+                    ${isRefreshing ? 'animate-bounce' : ''}
+                `}
+                onMouseEnter={() => trackInteraction?.('hover')}
+            >
+                <Icon className={`w-5 h-5 ${pipe.status === 'active' ? 'text-gray-400 group-hover/pipe:text-white' : 'text-amber-400'}`} />
+                
+                {/* Connector Line */}
+                <div 
+                    className={`absolute origin-left h-[1px] bg-gradient-to-r from-white/10 to-transparent pointer-events-none transition-all duration-700
+                        ${isRefreshing ? 'opacity-100 from-celestial-emerald/40' : 'opacity-0'}
+                    `}
+                    style={{ 
+                        width: `${radius}px`, 
+                        left: '50%', 
+                        top: '50%', 
+                        transform: `rotate(${angle + 180}deg)` 
+                    }} 
+                />
+            </div>
+        </div>
+    );
+};
+
+const PipelineAgent = withUniversalProxy(PipelineAgentBase);
 
 export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
   const isZh = language === 'zh-TW';
@@ -235,7 +204,7 @@ export const IntegrationHub: React.FC<IntegrationHubProps> = ({ language }) => {
                       <Activity className="w-4 h-4 text-celestial-purple" />
                   </div>
                   <div>
-                      <h4 className="text-xs font-bold text-white mb-1">{isZh ? '系統神經反射報告' : 'Neural Reflex Report'}</h4>
+                      <h4 aria-label="Section Title" className="text-xs font-bold text-white mb-1">{isZh ? '系統神經反射報告' : 'Neural Reflex Report'}</h4>
                       <p className="text-[10px] text-gray-400 leading-relaxed">
                           {isZh ? '集成中心運行穩定。Flowlu API 偶發延遲，已列入觀察名單。' : 'Integration Hub stable. Flowlu API showing sporadic latency, added to watch list.'}
                       </p>

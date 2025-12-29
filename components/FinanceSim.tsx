@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
-import { Calculator, TrendingUp, DollarSign, AlertCircle, LineChart, Activity } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Calculator, TrendingUp, DollarSign, AlertCircle, LineChart, Activity, PieChart as PieChartIcon, Building, ArrowRightLeft, Wallet, Coins } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { QuantumSlider } from './minimal/QuantumSlider';
 import { OmniEsgCell } from './OmniEsgCell';
 import { predictFutureTrends } from '../services/ai-service';
@@ -15,18 +14,14 @@ interface FinanceSimProps {
   language: Language;
 }
 
-// ----------------------------------------------------------------------
-// Agent: Market Oracle (The Forecaster)
-// ----------------------------------------------------------------------
 interface MarketOracleProps extends InjectedProxyProps {
     data: any[];
     isZh: boolean;
 }
 
 const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTraits, isAgentActive, trackInteraction }) => {
-    // Agent Visuals
     const isCalculating = adaptiveTraits?.includes('optimization');
-    const isVolatile = adaptiveTraits?.includes('evolution'); // E.g. High Carbon Price scenario
+    const isVolatile = adaptiveTraits?.includes('evolution'); 
 
     return (
         <div 
@@ -35,7 +30,6 @@ const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTra
             `}
             onClick={() => trackInteraction?.('click')}
         >
-            {/* Scan Line Effect when Calculating */}
             {isCalculating && (
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-celestial-emerald/5 to-transparent animate-[scan_2s_linear_infinite] pointer-events-none" />
             )}
@@ -52,8 +46,8 @@ const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTra
                 )}
             </div>
             
-            <div style={{ width: '100%', height: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="flex-1 min-h-[300px] w-full relative overflow-hidden">
+                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                     <AreaChart data={data}>
                         <defs>
                             <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
@@ -80,8 +74,8 @@ const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTra
             </div>
             
             <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
-                <div className="text-xs text-amber-200">
+                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-200 leading-relaxed">
                     {isZh 
                         ? "注意：當碳價超過 €120/t 時，BAU 情境將出現負現金流。建議加速資本支出。" 
                         : "Insight: BAU scenario turns cash-negative when Carbon Price exceeds €120/t. Acceleration advised."}
@@ -93,50 +87,116 @@ const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTra
 
 const MarketOracleAgent = withUniversalProxy(MarketOracleBase);
 
-// ----------------------------------------------------------------------
-// Main Component
-// ----------------------------------------------------------------------
+const ShadowPricingView: React.FC<{ price: number, emissions: number, isZh: boolean }> = ({ price, emissions, isZh }) => {
+    const totalFund = emissions * price;
+    const deptImpact = [
+        { name: isZh ? '製造部' : 'Manufacturing', value: totalFund * 0.6, color: '#ef4444' },
+        { name: isZh ? '物流部' : 'Logistics', value: totalFund * 0.25, color: '#f59e0b' },
+        { name: isZh ? '行政部' : 'Admin', value: totalFund * 0.15, color: '#10b981' },
+    ];
+
+    return (
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col min-h-[400px]">
+                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <Building className="w-5 h-5 text-celestial-purple" />
+                    {isZh ? '部門內部碳費衝擊' : 'Departmental Carbon Fee Impact'}
+                </h3>
+                <div className="flex-1 w-full min-h-[300px] relative overflow-hidden">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                        <PieChart>
+                            <Pie
+                                data={deptImpact}
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {deptImpact.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip 
+                                formatter={(value: number) => `$${value.toLocaleString()}`}
+                                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                            />
+                            <Legend verticalAlign="bottom" height={36}/>
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-6">
+                <div className="glass-panel p-6 rounded-2xl border border-emerald-500/20 bg-emerald-900/10 flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4 relative z-10">
+                        <Wallet className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    
+                    <div className="text-sm font-bold text-emerald-400 uppercase tracking-widest mb-2 relative z-10">
+                        {isZh ? '可籌集綠色轉型基金' : 'Green Transition Fund Generated'}
+                    </div>
+                    <div className="text-4xl font-mono font-bold text-white mb-2 relative z-10">
+                        ${totalFund.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-emerald-200/70 relative z-10">
+                        {isZh ? '基於當前排放量與影子價格' : 'Based on current emissions & shadow price'}
+                    </div>
+                </div>
+
+                <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400">{isZh ? '最高付費部門' : 'Top Payer'}</span>
+                        <span className="font-bold text-red-400">{isZh ? '製造部' : 'Manufacturing'} (60%)</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400">{isZh ? '對 EPS 影響' : 'EPS Impact'}</span>
+                        <span className="font-bold text-white">-0.12%</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400">{isZh ? '相當於營運成本' : 'Equiv. OpEx'}</span>
+                        <span className="font-bold text-white">1.8%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
-  const { carbonData } = useCompany(); // Get Carbon Data for link
+  const { carbonData } = useCompany(); 
   
-  // Simulation Parameters
-  const [carbonPrice, setCarbonPrice] = useState(85); // EUR
-  const [investment, setInvestment] = useState(5); // Million USD
-  const [timeHorizon, setTimeHorizon] = useState(5); // Years
-  const [efficiency, setEfficiency] = useState(15); // %
+  const [activeTab, setActiveTab] = useState<'roi' | 'shadow'>('roi');
+
+  const [carbonPrice, setCarbonPrice] = useState(85); 
+  const [investment, setInvestment] = useState(5); 
+  const [timeHorizon, setTimeHorizon] = useState(5); 
+  const [efficiency, setEfficiency] = useState(15); 
 
   const [data, setData] = useState<any[]>([]);
 
   const pageData = {
-      title: { zh: '財務模擬器', en: 'ROI Simulator' },
+      title: { zh: '財務模擬器', en: 'Financial Simulator' },
       desc: { zh: '去碳化投資回報與碳稅衝擊預測', en: 'Decarbonization Investment Analysis' },
       tag: { zh: '認知核心', en: 'Cognition Core' }
   };
 
-  // Calculate Projection (Updated with Carbon Link)
   useEffect(() => {
     const newData = [];
-    const baseRevenue = 100; // Base baseline in Millions
-    
-    // Real Carbon Burden Factor
-    const currentCarbon = (carbonData.scope1 + carbonData.scope2) / 1000; // Scale down for millions chart
+    const baseRevenue = 100; 
+    const currentCarbon = (carbonData.scope1 + carbonData.scope2) / 1000; 
     
     for (let i = 0; i <= timeHorizon; i++) {
       const year = 2024 + i;
-      
-      // Business As Usual (BAU): Hit by carbon tax linked to real data
-      // Use currentCarbon as base intensity
       const carbonTaxLoad = (currentCarbon * carbonPrice * 0.05 * i); 
       const bauCost = carbonTaxLoad; 
       const bau = baseRevenue + (i * 2) - bauCost;
-
-      // Green Transition: Upfront cost, then efficiency gains + lower tax
-      const investCost = i === 0 ? investment * 2 : 0; // Simplified
+      const investCost = i === 0 ? investment * 2 : 0; 
       const efficiencyGain = (efficiency * 0.5 * i);
-      const greenTax = (carbonTaxLoad * 0.4); // Assuming 60% reduction in tax due to transition
+      const greenTax = (carbonTaxLoad * 0.4); 
       const green = baseRevenue + (i * 3) + efficiencyGain - greenTax - investCost;
 
       newData.push({
@@ -168,13 +228,29 @@ export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
           tag={pageData.tag}
       />
 
+      <div className="flex justify-center -mt-6 mb-6">
+          <div className="bg-slate-900/50 p-1 rounded-xl border border-white/10 flex">
+              <button 
+                  onClick={() => setActiveTab('roi')}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'roi' ? 'bg-celestial-emerald text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+              >
+                  <LineChart className="w-4 h-4" /> {isZh ? 'ROI 預測' : 'ROI Forecast'}
+              </button>
+              <button 
+                  onClick={() => setActiveTab('shadow')}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'shadow' ? 'bg-celestial-purple text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+              >
+                  <Coins className="w-4 h-4" /> {isZh ? '影子價格模擬' : 'Shadow Pricing'}
+              </button>
+          </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Controls */}
         <div className="glass-panel p-6 rounded-2xl space-y-8 border border-white/5 h-full">
             <div className="flex items-center gap-2 mb-2 p-2 bg-white/5 rounded-lg border border-white/5">
                 <DollarSign className="w-4 h-4 text-emerald-400" />
                 <span className="text-xs text-gray-400">
-                    Linked to Carbon: 
+                    Linked Emissions: 
                     <span className="text-white font-bold ml-1">{(carbonData.scope1 + carbonData.scope2).toFixed(1)} tCO2e</span>
                 </span>
             </div>
@@ -182,57 +258,68 @@ export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
             <h3 className="text-lg font-semibold text-white mb-4">{isZh ? '模擬參數' : 'Parameters'}</h3>
             
             <QuantumSlider 
-                label={isZh ? '預期碳價 (Carbon Price)' : 'Expected Carbon Price'}
+                label={activeTab === 'roi' ? (isZh ? '外部碳稅 (Carbon Tax)' : 'External Carbon Tax') : (isZh ? '內部影子價格 (Shadow Price)' : 'Internal Shadow Price')}
                 value={carbonPrice}
-                min={0} max={300} unit="€"
-                color="gold"
+                min={0} max={300} unit="$/t"
+                color={activeTab === 'roi' ? 'gold' : 'purple'}
                 onChange={setCarbonPrice}
             />
             
-            <QuantumSlider 
-                label={isZh ? '綠色投資額 (Investment)' : 'Green Investment'}
-                value={investment}
-                min={0} max={50} unit="M$"
-                color="emerald"
-                onChange={setInvestment}
-            />
+            {activeTab === 'roi' && (
+                <>
+                    <QuantumSlider 
+                        label={isZh ? '綠色投資額 (Investment)' : 'Green Investment'}
+                        value={investment}
+                        min={0} max={50} unit="M$"
+                        color="emerald"
+                        onChange={setInvestment}
+                    />
 
-            <QuantumSlider 
-                label={isZh ? '時間範疇 (Horizon)' : 'Time Horizon'}
-                value={timeHorizon}
-                min={1} max={15} unit="Yrs"
-                color="purple"
-                onChange={setTimeHorizon}
-            />
+                    <QuantumSlider 
+                        label={isZh ? '時間範疇 (Horizon)' : 'Time Horizon'}
+                        value={timeHorizon}
+                        min={1} max={15} unit="Yrs"
+                        color="blue"
+                        onChange={setTimeHorizon}
+                    />
 
-            <QuantumSlider 
-                label={isZh ? '預期能效提升 (Efficiency)' : 'Efficiency Gain'}
-                value={efficiency}
-                min={0} max={50} unit="%"
-                color="blue"
-                onChange={setEfficiency}
-            />
+                    <QuantumSlider 
+                        label={isZh ? '預期能效提升 (Efficiency)' : 'Efficiency Gain'}
+                        value={efficiency}
+                        min={0} max={50} unit="%"
+                        color="purple"
+                        onChange={setEfficiency}
+                    />
+                </>
+            )}
 
             <div className="pt-6 border-t border-white/10">
                 <OmniEsgCell 
                     mode="list" 
-                    label="Internal Rate of Return (IRR)" 
-                    value="14.2%" 
+                    label={activeTab === 'roi' ? "Internal Rate of Return (IRR)" : "Internal Carbon Fee Potential"}
+                    value={activeTab === 'roi' ? "14.2%" : `$${(carbonPrice * (carbonData.scope1 + carbonData.scope2)).toLocaleString()}`} 
                     confidence="medium" 
                     traits={['gap-filling']}
-                    color="emerald"
+                    color={activeTab === 'roi' ? 'emerald' : 'purple'}
                     onAiAnalyze={handleAiForecast}
                 />
             </div>
         </div>
 
-        {/* Chart (Now Agent) */}
-        <MarketOracleAgent 
-            id="MarketOracle"
-            label="ROI Forecast"
-            data={data}
-            isZh={isZh}
-        />
+        {activeTab === 'roi' ? (
+            <MarketOracleAgent 
+                id="MarketOracle"
+                label="ROI Forecast"
+                data={data}
+                isZh={isZh}
+            />
+        ) : (
+            <ShadowPricingView 
+                price={carbonPrice}
+                emissions={carbonData.scope1 + carbonData.scope2}
+                isZh={isZh}
+            />
+        )}
       </div>
     </div>
   );

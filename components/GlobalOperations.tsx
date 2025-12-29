@@ -129,7 +129,7 @@ export const GlobalOperations: React.FC = () => {
                         <Factory className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h4 className="font-bold text-white">{selectedLoc.name}</h4>
+                        <h4 aria-label="Section Title" className="font-bold text-white">{selectedLoc.name}</h4>
                         <div className="flex items-center gap-1.5 text-xs text-gray-400">
                             <MapPin className="w-3 h-3" />
                             {selectedLoc.region}

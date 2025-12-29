@@ -1,274 +1,211 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Language } from '../types';
-import { Crown, Mic, BookOpen, BrainCircuit, PlayCircle, ArrowRight, Lightbulb, X, Star, Award, Briefcase } from 'lucide-react';
+import { 
+    Crown, BrainCircuit, ArrowRight, Zap, Activity, Sparkles, 
+    ShieldCheck, MessageSquare, Users, TrendingUp, AlertTriangle,
+    CheckCircle, ShieldAlert, Cpu, Gavel
+} from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
-import { UniversalPageHeader } from './UniversalPageHeader';
+import { OmniDimensionAgent } from './OmniDimensionAgent';
+import { universalIntelligence } from '../services/evolutionEngine';
 
-interface YangBoZoneProps {
-  language: Language;
+interface DebateTurn {
+    role: string;
+    text: string;
+    type: 'CSO' | 'CFO' | 'AUDITOR';
 }
 
-export const YangBoZone: React.FC<YangBoZoneProps> = ({ language }) => {
+export const YangBoZone: React.FC<{ language: Language }> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
-  const [activeSimulation, setActiveSimulation] = useState<boolean>(false);
-  const [simulationStep, setSimulationStep] = useState(0);
+  const [activeSim, setActiveSim] = useState(false);
+  const [reflexes, setReflexes] = useState<any[]>([]);
+  const [debateFlow, setDebateFlow] = useState<DebateTurn[]>([]);
+  const [isDebating, setIsDebating] = useState(false);
+  const debateEndRef = useRef<HTMLDivElement>(null);
 
-  const pageData = {
-      title: { zh: '楊博專區', en: 'Yang Bo Zone' },
-      desc: { zh: '創價者的永續智庫與實戰指導', en: 'Sustainability Insights & Practical Guidance from Dr. Yang' },
-      tag: { zh: '策略核心', en: 'Strategy Core' }
-  };
+  useEffect(() => {
+    const sub = universalIntelligence.reflex$.subscribe(r => {
+        setReflexes(prev => [{ ...r, id: Date.now() }, ...prev].slice(0, 10));
+    });
+    return () => sub.unsubscribe();
+  }, []);
 
-  // Profile Data based on PDF
+  useEffect(() => {
+      debateEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [debateFlow]);
+
   const profile = {
-      name: isZh ? '楊博 (Thoth)' : 'Thoth Yang',
-      title: isZh ? '創價型 ESG 策略顧問' : 'Value-Creating ESG Strategy Consultant',
-      subtitle: isZh ? '永續轉型實務家 × 生態系推動者' : 'Sustainability Practitioner × Ecosystem Driver',
-      philosophy: isZh 
-        ? '推動「創價型 ESG」，結合矽谷精實創業與永續商模，協助企業將 ESG 轉化為具體競爭力。'
-        : 'Promoting "Value-Creating ESG", combining Silicon Valley Lean Startup with sustainable business models to transform ESG into competitive advantage.',
-      roles: [
-          isZh ? '善向永續 (ESG Sunshine) 創辦人暨執行長' : 'Founder & CEO, ESG Sunshine',
-          isZh ? '台灣社會創新永續發展協會 理事長' : 'Chairman, Social Innovation & Sustainability Development Association',
-          isZh ? 'Berkeley Haas 國際永續策略長課程 台灣端負責人 / 主責講師' : 'Director / Lead Instructor, Berkeley Haas Global ESG Strategy Program (Taiwan)'
-      ],
-      expertise: [
-          isZh ? '創價型 ESG 策略與轉型' : 'Value-Creating ESG Strategy',
-          isZh ? '矽谷精實創業 × 永續商模' : 'Lean Startup × Sustainable Business Models',
-          isZh ? 'AI × ESG 決策儀表板' : 'AI × ESG Decision Dashboard',
-          isZh ? '企業品牌重塑與國際鏈結' : 'Corporate Rebranding & Global Connection'
-      ]
+      name: isZh ? '善向楊博 (CEO)' : 'Thoth Yang (CEO)',
+      philosophy: isZh ? 'ESG 不應是企業的負擔，而是「創價」的最強武器。' : 'ESG is the ultimate weapon for value creation.',
+      expertise: ['極限創價策略', '國際永續對標', 'AI 決策編排', '再生商模設計']
   };
 
-  const weeklyReport = {
-      title: isZh ? '全球永續觀察周報 #42' : 'Global Sustainability Weekly #42',
-      date: '2024.05.20',
-      summary: isZh 
-        ? '本週重點：歐盟 CBAM 正式進入過渡期，企業應如何調整供應鏈數據盤查策略？同時，TNFD 公布最終框架，生物多樣性將成為下一個 ESG 戰場。'
-        : 'Key Focus: EU CBAM enters transition phase. How should enterprises adjust supply chain data strategies? TNFD releases final framework.',
-      tags: ['CBAM', 'TNFD', 'Supply Chain']
-  };
+  const runSimulation = async () => {
+      setActiveSim(true);
+      setIsDebating(true);
+      setDebateFlow([]);
+      addToast('info', isZh ? '正在啟動多代理人戰略辯論...' : 'Initializing Multi-Agent Strategic Debate...', 'War Room');
 
-  const podcastEp = {
-      title: isZh ? 'EP.24: 碳焦慮時代的生存指南' : 'EP.24: Survival Guide in the Carbon Anxiety Era',
-      guest: 'Dr. Yang',
-      duration: '45 min',
-      desc: isZh ? '深入探討中小企業如何面對來自品牌商的減碳壓力。' : 'Deep dive into how SMEs face decarbonization pressure from big brands.'
-  };
+      const turns: DebateTurn[] = [
+          { role: 'CSO (鼎竣)', type: 'CSO', text: isZh ? "偵測到歐盟 CBAM 規則更新，我們必須立即啟動 A9 級供應鏈透明度計畫，否則將面臨 15% 的隱性關稅衝擊。" : "CBAM update detected. Launch A9 supply chain transparency now or face 15% tariff shock." },
+          { role: 'CFO (財務代理)', type: 'CFO', text: isZh ? "反對。立即啟動 A9 會在 Q3 造成 12% 的毛利壓力。建議採用分階段對標，優先優化高碳排放站點。" : "Object. A9 launch creates 12% margin pressure. Suggest tiered benchmarking focusing on high-emission nodes." },
+          { role: 'Auditor (合規見證)', type: 'AUDITOR', text: isZh ? "從合規角度看，分階段對標可能導致數據完整性缺口 (Gap)。建議在 A11 知識層執行數據摺疊以抵銷成本。" : "From compliance view, tiered approach creates data gaps. Suggest data folding at A11 level to offset costs." }
+      ];
 
-  const simulationData = [
-      {
-          question: isZh ? '您的主要供應商無法提供準確的碳足跡數據，您該怎麼做？' : 'Your key supplier cannot provide accurate carbon footprint data. What do you do?',
-          options: [
-              { text: isZh ? '直接更換供應商' : 'Switch supplier immediately', advice: isZh ? '太激進了。更換供應商成本高昂且可能破壞長期關係。建議先協助輔導。' : 'Too aggressive. Switching is costly. Try assisting them first.' },
-              { text: isZh ? '使用行業平均係數估算' : 'Use industry average factors', advice: isZh ? '可行，但這只是權宜之計。長期仍需實測數據以符合合規要求。' : 'Feasible as a stopgap, but real data is needed for long-term compliance.' },
-              { text: isZh ? '啟動供應商議合計畫' : 'Launch supplier engagement program', advice: isZh ? '正解！這能建立長期韌性並共同成長。' : 'Correct! This builds long-term resilience and mutual growth.' }
-          ]
+      for (const turn of turns) {
+          await new Promise(r => setTimeout(r, 1500));
+          setDebateFlow(prev => [...prev, turn]);
       }
-  ];
-
-  const handleSimOption = (advice: string) => {
-      addToast('info', advice, 'Dr. Yang says:');
-      setTimeout(() => {
-          setActiveSimulation(false);
-          setSimulationStep(0);
-      }, 3000);
+      setIsDebating(false);
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
-        <UniversalPageHeader 
-            icon={Crown}
-            title={pageData.title}
-            description={pageData.desc}
-            language={language}
-            tag={pageData.tag}
-        />
-
-        {/* SPEAKER PROFILE CARD */}
-        <div className="glass-panel p-8 rounded-2xl border border-celestial-gold/30 bg-gradient-to-r from-slate-900 to-slate-900/50 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-celestial-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            
-            <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
-                {/* Avatar / Photo Area */}
-                <div className="w-full md:w-1/3 flex flex-col items-center">
-                    <div className="w-48 h-48 rounded-2xl overflow-hidden border-2 border-celestial-gold/50 shadow-[0_0_20px_rgba(251,191,36,0.2)] mb-4 relative group bg-slate-800">
-                        {/* Placeholder Visual since we can't use the actual image file */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-black flex items-center justify-center">
-                             <Crown className="w-20 h-20 text-celestial-gold opacity-50" />
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-2 text-center text-xs text-celestial-gold font-bold uppercase tracking-widest">
-                            THOTH YANG, PH.D.
-                        </div>
-                    </div>
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold text-white mb-1">{profile.name}</h2>
-                        <div className="text-xs text-celestial-gold font-bold tracking-wider uppercase mb-2">PH.D.</div>
-                        <p className="text-sm text-gray-400">{profile.subtitle}</p>
-                    </div>
-                </div>
-
-                {/* Info Area */}
-                <div className="flex-1 space-y-6">
-                    <div>
-                        <h3 className="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 mb-3 leading-tight">
-                            {profile.title}
-                        </h3>
-                        <div className="p-4 rounded-xl bg-white/5 border-l-4 border-celestial-gold italic text-gray-300 leading-relaxed">
-                            <Lightbulb className="w-4 h-4 text-celestial-gold inline mr-2 mb-1" />
-                            "{profile.philosophy}"
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                        <div>
-                            <h4 className="text-xs font-bold text-celestial-gold uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <Award className="w-4 h-4" />
-                                {isZh ? '現任職務 (Current Roles)' : 'Current Roles'}
-                            </h4>
-                            <ul className="space-y-3">
-                                {profile.roles.map((role, i) => (
-                                    <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-celestial-gold mt-1.5 shrink-0" />
-                                        <span>{role}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <Star className="w-4 h-4" />
-                                {isZh ? '專業領域 (Expertise)' : 'Expertise'}
-                            </h4>
-                            <ul className="space-y-3">
-                                {profile.expertise.map((item, i) => (
-                                    <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                                        <span>{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Weekly Report */}
-            <div className="lg:col-span-2 glass-panel p-8 rounded-2xl border border-celestial-gold/30 bg-gradient-to-br from-celestial-gold/5 to-transparent relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <BookOpen className="w-32 h-32 text-celestial-gold" />
-                </div>
-                <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-4">
-                        <span className="px-2 py-1 bg-celestial-gold text-black text-xs font-bold rounded">Weekly</span>
-                        <span className="text-gray-400 text-sm">{weeklyReport.date}</span>
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-4">{weeklyReport.title}</h3>
-                    <p className="text-gray-300 leading-relaxed mb-6">{weeklyReport.summary}</p>
-                    <div className="flex gap-2 mb-6">
-                        {weeklyReport.tags.map(tag => (
-                            <span key={tag} className="px-3 py-1 rounded-full border border-white/20 text-xs text-gray-400">{tag}</span>
-                        ))}
-                    </div>
-                    <button className="flex items-center gap-2 text-celestial-gold font-bold hover:underline">
-                        {isZh ? '閱讀完整報告' : 'Read Full Report'} <ArrowRight className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-
-            {/* Podcast Player */}
-            <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col relative overflow-hidden">
-                <div className="absolute inset-0 bg-slate-900/80 z-0">
-                    <div className="absolute inset-0 bg-gradient-to-t from-celestial-purple/20 to-transparent" />
-                </div>
-                <div className="relative z-10 flex-1 flex flex-col justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 mb-4 text-celestial-purple">
-                            <Mic className="w-5 h-5" />
-                            <span className="text-xs font-bold tracking-wider">PODCAST</span>
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-2">{podcastEp.title}</h3>
-                        <p className="text-xs text-gray-400 mb-4">{podcastEp.desc}</p>
-                    </div>
-                    <div className="flex items-center gap-4 pt-4 border-t border-white/10">
-                        <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform">
-                            <PlayCircle className="w-6 h-6 fill-current" />
-                        </button>
-                        <div>
-                            <div className="text-xs text-gray-500">{podcastEp.duration}</div>
-                            <div className="text-sm font-bold text-white">Listen Now</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {/* Interactive Simulation: Yang Bo's Week */}
-        <div className="glass-panel p-8 rounded-2xl border border-white/10 bg-slate-800/50">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <BrainCircuit className="w-6 h-6 text-emerald-400" />
-                    {isZh ? '創價者楊博的一周：實戰模擬' : "Yang Bo's Week: Simulation"}
-                </h3>
-                {!activeSimulation && (
-                    <button 
-                        onClick={() => setActiveSimulation(true)} 
-                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-all"
-                    >
-                        {isZh ? '開始模擬' : 'Start Simulation'}
-                    </button>
-                )}
-            </div>
-
-            {activeSimulation ? (
-                <div className="animate-fade-in bg-slate-900 p-6 rounded-xl border border-white/10">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="flex gap-3">
-                            <div className="p-2 bg-emerald-500/20 rounded-lg">
-                                <Lightbulb className="w-6 h-6 text-emerald-400" />
+    <div className="h-full w-full flex flex-col bg-black animate-fade-in overflow-hidden">
+        <div className="flex-1 grid grid-cols-12 gap-2 p-2 h-full">
+            {/* 左側：領袖意志 (5/12) */}
+            <div className="col-span-12 lg:col-span-5 flex flex-col gap-2 h-full overflow-hidden">
+                <div className="glass-bento p-8 flex flex-col justify-center border-white/5 bg-gradient-to-br from-celestial-gold/10 to-transparent relative overflow-hidden rounded-[3rem] shadow-2xl">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 animate-spin-slow"><Crown className="w-48 h-48 text-celestial-gold" /></div>
+                    
+                    <div className="relative z-10 space-y-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-black border-2 border-celestial-gold/40 flex items-center justify-center shadow-[0_0_30px_rgba(251,191,36,0.3)] animate-prism-pulse">
+                                <Crown className="w-8 h-8 text-celestial-gold" />
                             </div>
                             <div>
-                                <div className="text-xs text-emerald-400 font-bold uppercase mb-1">Scenario</div>
-                                <h4 className="text-lg font-bold text-white">{simulationData[simulationStep].question}</h4>
+                                <h3 className="zh-main text-3xl text-white tracking-tighter uppercase">{profile.name}</h3>
+                                <span className="en-sub !mt-0 text-celestial-gold font-black tracking-widest">SOVEREIGN_STRATEGIST_v16.1</span>
                             </div>
                         </div>
-                        <button onClick={() => setActiveSimulation(false)}><X className="w-5 h-5 text-gray-500 hover:text-white" /></button>
+                        
+                        <div className="p-6 bg-white/[0.03] border-l-4 border-celestial-gold rounded-r-2xl">
+                            <p className="text-xl text-gray-100 font-light leading-relaxed italic">"{profile.philosophy}"</p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 pt-4">
+                            {profile.expertise.map((item, i) => (
+                                <span key={i} className="px-4 py-1.5 bg-black/40 border border-white/10 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-widest">{item}</span>
+                            ))}
+                        </div>
+
+                        <div className="pt-8 space-y-4">
+                            <OmniDimensionAgent id="Pillar_Value_MAX" label={isZh ? "ESG 價值極大化創造引擎" : "Value Maximizer"} value="OMNI_LV.MAX" dimensions={['A6', 'A9', 'A12']} color="gold" className="!p-6 !rounded-[2rem] border-celestial-gold/20" />
+                            <OmniDimensionAgent id="Pillar_Regen_MAX" label={isZh ? "利他精神與利益對齊協定" : "Regen Protocol"} value="99.9% SYNC" dimensions={['A8', 'A10', 'A11']} color="purple" className="!p-6 !rounded-[2rem] border-celestial-purple/20" />
+                        </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                        {simulationData[simulationStep].options.map((opt, i) => (
+                </div>
+            </div>
+
+            {/* 右側：決策熔爐戰略室 (7/12) */}
+            <div className="col-span-12 lg:col-span-7 flex flex-col gap-2 h-full overflow-hidden">
+                <div className="flex-1 glass-bento p-10 bg-slate-900/60 border-white/5 rounded-[3.5rem] shadow-2xl flex flex-col relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.05)_0%,transparent_70%)] pointer-events-none" />
+                    
+                    <div className="flex justify-between items-center mb-8 shrink-0 relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-celestial-purple/20 rounded-2xl text-celestial-purple border border-celestial-purple/30">
+                                <BrainCircuit className="w-7 h-7" />
+                            </div>
+                            <div>
+                                <h3 className="zh-main text-2xl text-white">戰略對抗模擬：多代理人辯論</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="en-sub !text-[8px] text-emerald-500 font-black">AI_DEBATE_ENGINE_ACTIVE</span>
+                                </div>
+                            </div>
+                        </div>
+                        {!activeSim ? (
                             <button 
-                                key={i}
-                                onClick={() => handleSimOption(opt.advice)}
-                                className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-emerald-500/50 text-left transition-all group"
+                                onClick={runSimulation}
+                                className="px-8 py-3 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-celestial-gold transition-all shadow-xl active:scale-95"
                             >
-                                <div className="text-sm text-gray-300 group-hover:text-white">{opt.text}</div>
+                                Start Simulation
                             </button>
+                        ) : (
+                            <div className="flex gap-2">
+                                <span className="uni-mini bg-purple-500 text-white border-none animate-pulse">DEBATING...</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-6 pr-2 relative z-10">
+                        {activeSim ? (
+                            <div className="space-y-6 animate-fade-in">
+                                {debateFlow.map((turn, i) => (
+                                    <div key={i} className={`flex gap-5 animate-slide-up`}>
+                                        <div className={`w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center border transition-all
+                                            ${turn.type === 'CSO' ? 'bg-celestial-gold/20 border-celestial-gold/40 text-celestial-gold' : 
+                                              turn.type === 'CFO' ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 
+                                              'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'}
+                                        `}>
+                                            {turn.type === 'CSO' ? <Gavel className="w-6 h-6" /> : turn.type === 'CFO' ? <Cpu className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-1.5">
+                                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{turn.role}</span>
+                                                <div className="h-px bg-white/5 flex-1" />
+                                            </div>
+                                            <div className={`p-5 rounded-[2rem] text-sm leading-relaxed border shadow-xl
+                                                ${turn.type === 'CSO' ? 'bg-celestial-gold/5 border-celestial-gold/10 text-white' : 
+                                                  turn.type === 'CFO' ? 'bg-blue-500/5 border-blue-500/10 text-gray-200' : 
+                                                  'bg-emerald-500/5 border-emerald-500/10 text-gray-100'}
+                                            `}>
+                                                {turn.text}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {isDebating && (
+                                    <div className="flex gap-5 animate-pulse pl-16">
+                                        <div className="w-24 h-4 bg-white/5 rounded-full" />
+                                        <div className="w-48 h-10 bg-white/5 rounded-[2rem]" />
+                                    </div>
+                                )}
+                                <div ref={debateEndRef} />
+                            </div>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-center opacity-10">
+                                <ShieldAlert className="w-32 h-32 text-gray-600 mb-6" />
+                                <h4 className="zh-main text-3xl text-white uppercase tracking-[0.3em]">Awaiting Strategic Signal</h4>
+                                <p className="text-gray-500 mt-4 max-w-sm italic">選擇情境後，核心代理人群將針對 ESG 衝突進行理性辯論並產出「創價最優解」。</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bottom Reflex Bar */}
+                    <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center shrink-0 relative z-10">
+                        <div className="flex gap-6">
+                            <div className="flex items-center gap-2 text-[9px] text-gray-600 font-black uppercase">
+                                <Activity className="w-3 h-3 text-emerald-400" /> System_Vital: Optimal
+                            </div>
+                            <div className="flex items-center gap-2 text-[9px] text-gray-600 font-black uppercase">
+                                <TrendingUp className="w-3 h-3 text-celestial-gold" /> ROI_Sim: +24.5%
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                             <div className="uni-mini bg-slate-800 text-gray-500 border-none uppercase">JAK_War_Room_v16</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass-bento p-6 flex-1 flex flex-col bg-black/40 border-white/5 min-h-0 rounded-[2.5rem]">
+                    <div className="flex justify-between items-center mb-4 shrink-0">
+                        <h4 className="en-sub !text-[9px] text-emerald-400 flex items-center gap-2 uppercase tracking-[0.3em] font-black"><Activity className="w-3 h-3" /> Live_Neural_Reflex_Bus</h4>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <div className="flex-1 overflow-y-auto no-scrollbar font-mono text-[9px] text-gray-600 space-y-1.5 pr-2">
+                        {reflexes.map(r => (
+                            <div key={r.id} className="flex gap-4 border-b border-white/[0.02] pb-1.5 items-center group">
+                                <span className="shrink-0 text-gray-800 font-black">[{new Date(r.id).toLocaleTimeString([], { hour12: false })}]</span>
+                                <span className="text-emerald-500 uppercase font-black shrink-0">PROTOCOL_{r.type}</span>
+                                <span className="text-gray-400 truncate flex-1 group-hover:text-white transition-colors">Dimension <span className="text-celestial-gold font-bold">{r.source}</span> witnessed & verified via blockchain hash 0x{r.id.toString(16).substr(-4)}.</span>
+                            </div>
                         ))}
                     </div>
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-700 rounded-full mb-3 flex items-center justify-center text-xl">🤔</div>
-                        <h4 className="font-bold text-white mb-1">{isZh ? '模擬真實困境' : 'Simulate Dilemmas'}</h4>
-                        <p className="text-xs text-gray-400">{isZh ? '面對供應鏈斷鏈、碳稅衝擊等真實情境。' : 'Face real scenarios like supply chain breaks & carbon tax.'}</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-700 rounded-full mb-3 flex items-center justify-center text-xl">💡</div>
-                        <h4 className="font-bold text-white mb-1">{isZh ? '做出決策' : 'Make Decisions'}</h4>
-                        <p className="text-xs text-gray-400">{isZh ? '在有限資源下做出最佳 ESG 決策。' : 'Make the best ESG decisions with limited resources.'}</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-700 rounded-full mb-3 flex items-center justify-center text-xl">🎓</div>
-                        <h4 className="font-bold text-white mb-1">{isZh ? '專家建議' : 'Expert Advice'}</h4>
-                        <p className="text-xs text-gray-400">{isZh ? '獲得楊博的即時反饋與策略指導。' : 'Get immediate feedback & strategy from Dr. Yang.'}</p>
-                    </div>
-                </div>
-            )}
+            </div>
         </div>
     </div>
   );

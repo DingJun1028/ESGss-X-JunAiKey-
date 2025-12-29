@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ArrowRight, LayoutDashboard, Leaf, FileText, Zap, Settings, Globe, Command, X, GraduationCap, Home } from 'lucide-react';
+import { Search, ArrowRight, LayoutDashboard, Leaf, FileText, Zap, Settings, Globe, Command, X, GraduationCap, Home, Trophy } from 'lucide-react';
 import { View, Language } from '../types';
 import { useToast } from '../contexts/ToastContext';
 
@@ -26,6 +25,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
       section: isZh ? '導航' : 'Navigation',
       items: [
         { id: 'nav-home', label: isZh ? '回到首頁 (My ESG)' : 'Go to My ESG', icon: Home, action: () => onNavigate(View.MY_ESG) },
+        { id: 'nav-vault', label: isZh ? '個人寶庫 (Vault)' : 'Go to Personal Vault', icon: Trophy, action: () => onNavigate(View.VAULT) },
         { id: 'nav-dash', label: isZh ? '儀表板 (Dashboard)' : 'Go to Dashboard', icon: LayoutDashboard, action: () => onNavigate(View.DASHBOARD) },
         { id: 'nav-carbon', label: isZh ? '碳資產管理 (Carbon)' : 'Go to Carbon Assets', icon: Leaf, action: () => onNavigate(View.CARBON) },
         { id: 'nav-report', label: isZh ? '報告生成 (Report)' : 'Go to Report Gen', icon: FileText, action: () => onNavigate(View.REPORT) },

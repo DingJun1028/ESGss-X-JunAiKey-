@@ -280,13 +280,20 @@ export const CarbonAsset: React.FC<CarbonAssetProps> = ({ language }) => {
                                     </div>
                                     {mapResult.sources && mapResult.sources.length > 0 && (
                                         <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
-                                            {mapResult.sources.map((source: any, idx: number) => source.web?.uri && (
-                                                <a key={idx} href={source.web.uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 bg-celestial-blue/10 hover:bg-celestial-blue/20 text-celestial-blue rounded text-[10px] transition-colors border border-celestial-blue/20 font-medium">
-                                                    <MapPin className="w-3 h-3" />
-                                                    {source.web.title || "Map"}
-                                                    <ExternalLink className="w-2.5 h-2.5 opacity-50" />
-                                                </a>
-                                            ))}
+                                            {mapResult.sources.map((source: any, idx: number) => {
+                                                // Fix: Handle both map and web grounding sources according to guidelines
+                                                const uri = source.maps?.uri || source.web?.uri;
+                                                const title = source.maps?.title || source.web?.title || "Grounding Source";
+                                                if (!uri) return null;
+
+                                                return (
+                                                    <a key={idx} href={uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-2 py-1 bg-celestial-blue/10 hover:bg-celestial-blue/20 text-celestial-blue rounded text-[10px] transition-colors border border-celestial-blue/20 font-medium">
+                                                        <MapPin className="w-3 h-3" />
+                                                        {title}
+                                                        <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+                                                    </a>
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>

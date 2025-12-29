@@ -1,217 +1,147 @@
-
-import React, { useState } from 'react';
-import { Language, View, IntelligenceItem } from '../types';
-import { Briefcase, Search, Globe, FileText, Loader2, Database, TrendingUp, AlertCircle, CheckCircle, ArrowRightLeft, Activity, Save, BarChart } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Language, EntityPlanet } from '../types';
+import { 
+    Search, Globe, FileText, Loader2, Database,
+    Radar, Activity, ChevronRight, 
+    Zap, Info, Target, Users, Download, Sparkles, RefreshCw
+} from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
-import { performWebSearch } from '../services/ai-service';
-import { marked } from 'marked';
-import { useCompany } from './providers/CompanyProvider';
+import { performWebSearch, streamChat } from '../services/ai-service';
+import { useUniversalAgent } from '../contexts/UniversalAgentContext';
 import { UniversalPageHeader } from './UniversalPageHeader';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar as RadarArea, Tooltip } from 'recharts';
+import { marked } from 'marked';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 
-interface BusinessIntelProps {
-  language: Language;
-  onNavigate?: (view: View) => void;
-}
-
-export const BusinessIntel: React.FC<BusinessIntelProps> = ({ language, onNavigate }) => {
+export const BusinessIntel: React.FC<{ language: Language }> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
-  const { setIntelligenceBrief, saveIntelligence } = useCompany();
+  const { syncPlanet, addLog, observeAction } = useUniversalAgent();
   
-  const [companyName, setCompanyName] = useState('');
-  const [website, setWebsite] = useState('');
+  const [targetId, setTargetId] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [scanStep, setScanStep] = useState(0); // 0: Idle, 1: Crawling, 2: Analyzing, 3: Done
-  const [report, setReport] = useState<string | null>(null);
-  const [isSaved, setIsSaved] = useState(false);
+  const [reportContent, setReportContent] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
-  const pageData = {
-      title: { zh: '商情分析', en: 'Market Analysis' },
-      desc: { zh: 'AI 驅動的企業全方位偵測與競爭者分析', en: 'AI-driven Enterprise Surveillance & Competitor Analysis' },
-      tag: { zh: '智慧偵測', en: 'Intel Scout' }
-  };
+  const stakeholderData = [
+    { subject: isZh ? '政府與法規' : 'Gov & Reg', A: 85, fullMark: 100 },
+    { subject: isZh ? '社會與 NGO' : 'Social & NGO', A: 70, fullMark: 100 },
+    { subject: isZh ? '供應鏈夥伴' : 'Supply Chain', A: 90, fullMark: 100 },
+    { subject: isZh ? '員工與社群' : 'Talent', A: 65, fullMark: 100 },
+    { subject: isZh ? '投資人' : 'Investors', A: 95, fullMark: 100 },
+    { subject: isZh ? '競爭者' : 'Competitors', A: 40, fullMark: 100 },
+  ];
 
   const handleScan = async () => {
-      if (!companyName) {
-          addToast('error', isZh ? '請輸入企業名稱' : 'Please enter company name', 'Error');
-          return;
-      }
-
+      if (!targetId) return;
       setIsScanning(true);
-      setScanStep(1);
-      setReport(null);
-      setIsSaved(false);
-
+      setReportContent(null);
+      addToast('info', isZh ? 'AMICE 正在啟動全球節點掃描...' : 'AMICE searching global nodes...', 'Crawler');
+      
       try {
-          // Step 1: Simulated Crawl
-          addToast('info', isZh ? `正在爬取 ${companyName} 前 30 大搜尋結果...` : `Crawling top 30 results for ${companyName}...`, 'Crawler');
-          await new Promise(r => setTimeout(r, 2000));
+          const searchResult = await performWebSearch(targetId, language);
+          const cleaningPrompt = `你現在是 AMICE 分析官。請分析：${targetId}。原始數據：${searchResult.text}`;
+          const stream = streamChat(cleaningPrompt, language, "你是一位專業的 ESG 商情分析官。", [], [], 'gemini-3-pro-preview');
           
-          setScanStep(2);
-          addToast('info', isZh ? 'JunAiKey 正在進行非結構化數據清洗...' : 'JunAiKey cleaning unstructured data...', 'AI Processor');
-          
-          // Step 2: Use AI to generate report
-          const query = isZh 
-            ? `分析企業 "${companyName}" (網址: ${website}) 的最新 ESG 動態、負面新聞與競爭力分析。請整理成一份結構化的商情報告。`
-            : `Analyze company "${companyName}" (URL: ${website}) for latest ESG news, negative press, and competitive analysis. Structure as a business intelligence report.`;
-          
-          const result = await performWebSearch(query, language);
-          
-          setReport(result.text);
-          setScanStep(3);
-          addToast('success', isZh ? '商情報告生成完畢' : 'Intelligence Report Generated', 'System');
-
+          let fullReport = '';
+          for await (const chunk of stream) {
+              fullReport += chunk.text || '';
+              setReportContent(fullReport);
+          }
+          addToast('success', isZh ? '商情報告已顯化' : 'Intel Report Manifested', 'AMICE');
       } catch (e) {
-          addToast('error', 'Analysis Failed', 'Error');
-          setScanStep(0);
+          addToast('error', 'AMICE Scan Failed', 'Kernel');
       } finally {
           setIsScanning(false);
       }
   };
 
-  const handleSaveToKnowledge = () => {
-      if (!report) return;
-      
-      const newItem: IntelligenceItem = {
-          id: `intel-${Date.now()}`,
-          type: 'competitor',
-          title: `${companyName} - ${isZh ? '全方位分析' : 'Comprehensive Analysis'}`,
-          source: 'Business Intelligence Center',
-          date: new Date().toISOString(),
-          summary: isZh ? '包含 ESG 評分、負面新聞與競爭力分析的完整報告。' : 'Full report containing ESG scores, negative press, and competitive analysis.',
-          tags: ['Competitor', 'Auto-Generated'],
-          isRead: false
+  const handleExportPDF = () => {
+      if (!reportRef.current) return;
+      setIsExporting(true);
+      const opt = {
+          margin: [15, 15, 15, 15],
+          filename: `AMICE_REPORT_${targetId.toUpperCase()}.pdf`,
+          html2canvas: { scale: 3, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-
-      saveIntelligence(newItem);
-      setIsSaved(true);
-      addToast('success', isZh ? '報告已儲存至萬能智庫 (My Intelligence)' : 'Report saved to Universal Knowledge Base (My Intelligence)', 'Universal Brain');
-  };
-
-  const handleLinkToHealthCheck = () => {
-      // 1. Save intent to Provider
-      setIntelligenceBrief({
-          source: 'BusinessIntel',
-          targetCompany: companyName,
-          keyFindings: ['Supply Chain Resilience', 'Carbon Disclosure'],
-          action: 'compare'
+      html2pdf().set(opt).from(reportRef.current).save().then(() => {
+          setIsExporting(false);
       });
-
-      // 2. Navigate
-      if (onNavigate) {
-          onNavigate(View.HEALTH_CHECK);
-          addToast('info', isZh ? `正在建立針對 ${companyName} 的落差分析模型...` : `Building gap analysis model vs ${companyName}...`, 'System Link');
-      }
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="h-full flex flex-col space-y-6 animate-fade-in overflow-hidden">
         <UniversalPageHeader 
-            icon={BarChart}
-            title={pageData.title}
-            description={pageData.desc}
+            icon={Globe}
+            title={{ zh: 'AMICE 智慧商情監測', en: 'AMICE Strategic Intelligence' }}
+            description={{ zh: 'AI 情蒐 × 報告導出：掌控全球永續競爭力動態', en: 'AI Ingestion & PDF Manifestation' }}
             language={language}
-            tag={pageData.tag}
+            tag={{ zh: '商情內核 v16.1', en: 'AMICE_CORE_V16.1' }}
         />
 
-        {/* Input Section */}
-        <div className="glass-panel p-8 rounded-2xl border border-white/10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <label className="text-sm font-bold text-white">{isZh ? '企業名稱' : 'Company Name'}</label>
-                    <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <div className="grid grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
+            <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-hidden">
+                <div className="glass-bento p-8 flex flex-col bg-slate-900/60 border-white/5 shadow-2xl relative flex-1 min-h-0 rounded-[3rem]">
+                    <div className="flex gap-4 mb-8 shrink-0">
                         <input 
-                            type="text" 
-                            value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                            placeholder={isZh ? "例如：台積電 TSMC" : "e.g., TSMC"}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:ring-1 focus:ring-celestial-blue outline-none"
+                            value={targetId}
+                            onChange={(e) => setTargetId(e.target.value)}
+                            className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-1 focus:ring-celestial-blue outline-none"
+                            placeholder={isZh ? "輸入企業名稱..." : "Enter company name..."}
                         />
+                        <button onClick={handleScan} disabled={isScanning || !targetId} className="px-8 py-4 bg-celestial-blue text-white font-black rounded-2xl flex items-center gap-3">
+                            {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                            {isZh ? '啟動掃描' : 'BOOT'}
+                        </button>
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-bold text-white">{isZh ? '企業網址 (選填)' : 'Website (Optional)'}</label>
-                    <div className="relative">
-                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                        <input 
-                            type="text" 
-                            value={website}
-                            onChange={(e) => setWebsite(e.target.value)}
-                            placeholder="https://..."
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:ring-1 focus:ring-celestial-blue outline-none"
-                        />
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-10 bg-black/20 rounded-[3rem] border border-white/5 relative">
+                        {reportContent ? (
+                            <div ref={reportRef} className="prose prose-invert prose-lg max-w-none animate-fade-in text-white">
+                                <div className="markdown-body" dangerouslySetInnerHTML={{ __html: marked.parse(reportContent) as string }} />
+                            </div>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-700 opacity-20 text-center">
+                                <FileText className="w-32 h-32 mb-8" />
+                                <p className="zh-main text-2xl uppercase tracking-widest">Awaiting Analysis Protocol</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-            <button 
-                onClick={handleScan}
-                disabled={isScanning || !companyName}
-                className="mt-6 w-full py-4 bg-gradient-to-r from-celestial-blue to-cyan-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-                {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database className="w-5 h-5" />}
-                {isZh ? (isScanning ? '正在掃描全網...' : '啟動全網商情偵測') : (isScanning ? 'Scanning Web...' : 'Start Intelligence Scan')}
-            </button>
+
+            <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
+                <div className="glass-bento p-8 flex flex-col bg-slate-950 border-white/10 rounded-[3rem] shadow-2xl shrink-0 min-h-[400px]">
+                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+                        <Users className="w-5 h-5" /> STAKEHOLDER_RADAR
+                    </h4>
+                    <div className="flex-1 min-h-[300px] w-full relative overflow-hidden">
+                        <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stakeholderData}>
+                                <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                <RadarArea name="Current" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
+                                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px' }} />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+                {/* 底部日誌 */}
+                <div className="glass-bento p-6 flex-1 bg-slate-900/40 border-white/5 rounded-[3rem] overflow-hidden min-h-0">
+                    <div className="flex justify-between items-center mb-4 shrink-0">
+                        <h4 className="en-sub !text-[9px] text-emerald-500 uppercase tracking-widest">AMICE_LOG_BUS</h4>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <div className="text-[10px] font-mono text-gray-600 space-y-2">
+                        <div>[INFO] Waiting for ingestion cycles...</div>
+                        <div>[SYSTEM] Grounding active: Google Search</div>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        {/* Status Display */}
-        {scanStep > 0 && (
-            <div className="flex justify-between items-center px-8 py-4 bg-slate-900/50 rounded-xl border border-white/5">
-                <div className={`flex items-center gap-2 ${scanStep >= 1 ? 'text-celestial-blue' : 'text-gray-600'}`}>
-                    {scanStep === 1 && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {scanStep > 1 && <CheckCircle className="w-4 h-4" />}
-                    <span className="text-xs font-bold uppercase">{isZh ? '爬取網頁' : 'Crawling'}</span>
-                </div>
-                <div className="w-8 h-[1px] bg-white/10" />
-                <div className={`flex items-center gap-2 ${scanStep >= 2 ? 'text-celestial-purple' : 'text-gray-600'}`}>
-                    {scanStep === 2 && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {scanStep > 2 && <CheckCircle className="w-4 h-4" />}
-                    <span className="text-xs font-bold uppercase">{isZh ? '清洗數據' : 'Cleaning Data'}</span>
-                </div>
-                <div className="w-8 h-[1px] bg-white/10" />
-                <div className={`flex items-center gap-2 ${scanStep === 3 ? 'text-emerald-400' : 'text-gray-600'}`}>
-                    {scanStep === 3 && <CheckCircle className="w-4 h-4" />}
-                    <span className="text-xs font-bold uppercase">{isZh ? '生成報告' : 'Report Ready'}</span>
-                </div>
-            </div>
-        )}
-
-        {/* Result Area */}
-        {report && (
-            <div className="glass-panel p-8 rounded-2xl border border-celestial-blue/30 bg-slate-900/80 animate-fade-in relative">
-                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <FileText className="w-6 h-6 text-celestial-blue" />
-                        {companyName} - {isZh ? '商情分析報告' : 'Intelligence Report'}
-                    </h3>
-                    <div className="flex gap-2">
-                        {/* Action: Save to My Intelligence */}
-                        <button 
-                            onClick={handleSaveToKnowledge}
-                            disabled={isSaved}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg 
-                                ${isSaved 
-                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                    : 'bg-celestial-purple hover:bg-purple-600 text-white'}
-                            `}
-                        >
-                            {isSaved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                            {isZh ? (isSaved ? '已儲存' : '儲存至智庫') : (isSaved ? 'Saved' : 'Save to Knowledge')}
-                        </button>
-
-                        {/* Action: Link to Health Check */}
-                        <button 
-                            onClick={handleLinkToHealthCheck}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg"
-                        >
-                            <Activity className="w-4 h-4" />
-                            {isZh ? '執行內部落差分析' : 'Run Gap Analysis'}
-                        </button>
-                    </div>
-                </div>
-                <div className="markdown-content text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: marked.parse(report) as string }} />
-            </div>
-        )}
     </div>
   );
 };

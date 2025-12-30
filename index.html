@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -29,6 +30,7 @@
               'neural-pulse': 'neural-surge 2s ease-in-out infinite',
               'float-gentle': 'float 6s ease-in-out infinite',
               'liquid-flow': 'liquid 8s ease-in-out infinite',
+              'ai-pulse': 'ai-aura 3s ease-in-out infinite',
             },
             keyframes: {
               'prism-glow': {
@@ -46,6 +48,15 @@
               'liquid': {
                 '0%, 100%': { borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' },
                 '50%': { borderRadius: '30% 60% 70% 40% / 50% 60% 30% 60%' }
+              },
+              'ai-aura': {
+                '0%, 100%': { opacity: 0.2, boxShadow: '0 0 20px rgba(139,92,246,0.1)' },
+                '50%': { opacity: 0.5, boxShadow: '0 0 40px rgba(139,92,246,0.3)' }
+              },
+              'scan': {
+                '0%': { transform: 'translateY(-100%)', opacity: 0 },
+                '50%': { opacity: 0.5 },
+                '100%': { transform: 'translateY(100%)', opacity: 0 }
               }
             }
           }
@@ -69,8 +80,16 @@
         }
       }
 
-      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; scrollbar-width: none; }
-      *::-webkit-scrollbar { display: none; }
+      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+      
+      /* 全局禁止原生滾動條，使用自定義邏輯 */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
       body {
         height: 100vh;
@@ -84,22 +103,26 @@
       }
 
       .zh-main { font-weight: 800; font-size: var(--base-font); }
-      .en-sub { font-weight: 400; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; opacity: 0.6; }
+      .en-sub { font-weight: 400; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; font-size: 10px; letter-spacing: 0.15em; opacity: 0.6; margin-top: 2px; display: block; }
 
-      .glass-liquid {
-          background: rgba(15, 23, 42, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(25px);
-          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      .glass-panel {
+          background: rgba(15, 23, 42, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(20px);
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .glass-bento {
-          background: rgba(15, 23, 42, 0.4);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(20px);
-          border-radius: 12px;
-          transition: all 0.2s ease-out;
+          background: rgba(15, 23, 42, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-filter: blur(25px);
+          border-radius: 32px;
+          transition: all 0.3s ease-out;
+      }
+      
+      .glass-bento:hover {
+          background: rgba(15, 23, 42, 0.55);
+          border-color: rgba(255, 255, 255, 0.15);
       }
 
       /* 飛行動畫 */
@@ -113,7 +136,7 @@
           height: calc(100vh - var(--header-h) - var(--footer-h));
           overflow-y: auto;
           overflow-x: hidden;
-          padding-bottom: 80px; /* 為移動端菜單留空 */
+          padding-bottom: 80px; 
       }
 
       @media (min-width: 769px) {
@@ -127,13 +150,31 @@
       
       .uni-mini {
           display: inline-flex;
-          padding: 2px 6px;
+          padding: 2px 8px;
           font-size: 9px;
           font-weight: 900;
-          border-radius: 2px;
+          border-radius: 4px;
           background: #fbbf24;
           color: #000;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          border: 1px solid rgba(0,0,0,0.1);
       }
+
+      .scan-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.05), transparent);
+          height: 100%;
+          animation: scan 3s linear infinite;
+          pointer-events: none;
+      }
+
+      /* Markdown Content Styling */
+      .markdown-body { font-size: 14px; line-height: 1.6; }
+      .markdown-body h1, .markdown-body h2 { margin-top: 1.5em; margin-bottom: 0.5em; color: #fff; }
+      .markdown-body p { margin-bottom: 1em; color: #94a3b8; }
+      .markdown-body code { background: rgba(255,255,255,0.05); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Noto+Sans+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script type="importmap">

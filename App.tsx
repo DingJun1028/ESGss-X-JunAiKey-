@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Language } from './types';
 
@@ -50,8 +51,11 @@ import { ProxyMarketplace } from './components/ProxyMarketplace';
 import { DigitalSoulForge } from './components/DigitalSoulForge';
 import { RegenerativeModel } from './components/RegenerativeModel';
 import { PersonalVault } from './components/PersonalVault';
-// Corrected import path for AffiliateZone
 import { AffiliateZone } from './components/AffiliateZone';
+import { GlobalOperations } from './components/GlobalOperations';
+import { WorkflowLab } from './components/WorkflowLab';
+import { McpConfig } from './components/McpConfig';
+import { ImpactProjects } from './components/ImpactProjects';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -130,6 +134,10 @@ const App: React.FC = () => {
                     case View.PALACE: return <Gamification language={language} />;
                     case View.REGENERATIVE: return <RegenerativeModel language={language} />;
                     case View.AFFILIATE: return <AffiliateZone language={language} />;
+                    case View.GLOBAL_OPS: return <GlobalOperations />;
+                    case View.WORKFLOW_LAB: return <WorkflowLab language={language} />;
+                    case View.MCP_CONFIG: return <McpConfig language={language} />;
+                    case View.IMPACT_PROJECTS: return <ImpactProjects language={language} />;
                     default: return <MyEsg language={language} onNavigate={setCurrentView} />;
                   }
                 })()}

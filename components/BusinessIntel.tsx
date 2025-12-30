@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Language, EntityPlanet } from '../types';
 import { 
@@ -61,11 +62,12 @@ export const BusinessIntel: React.FC<{ language: Language }> = ({ language }) =>
   const handleExportPDF = () => {
       if (!reportRef.current) return;
       setIsExporting(true);
+      // Fix: Cast margin to 4-element tuple and orientation to literal to match Html2PdfOptions
       const opt = {
-          margin: [15, 15, 15, 15],
+          margin: [15, 15, 15, 15] as [number, number, number, number],
           filename: `AMICE_REPORT_${targetId.toUpperCase()}.pdf`,
           html2canvas: { scale: 3, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       };
       html2pdf().set(opt).from(reportRef.current).save().then(() => {
           setIsExporting(false);
@@ -119,7 +121,8 @@ export const BusinessIntel: React.FC<{ language: Language }> = ({ language }) =>
                         <Users className="w-5 h-5" /> STAKEHOLDER_RADAR
                     </h4>
                     <div className="flex-1 min-h-[300px] w-full relative overflow-hidden">
-                        <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                        {/* Fix: Added minWidth={0} to ResponsiveContainer to avoid width -1 warning */}
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={stakeholderData}>
                                 <PolarGrid stroke="rgba(255,255,255,0.05)" />
                                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />

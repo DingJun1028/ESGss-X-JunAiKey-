@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Language, DigitalSoulAsset, EsgCard } from '../types';
 import { 
@@ -42,8 +41,6 @@ export const PersonalVault: React.FC<{ language: Language }> = ({ language }) =>
         />
 
         <div className="flex-1 grid grid-cols-12 gap-6 min-h-0 overflow-hidden">
-            
-            {/* 左側：身分與核心屬性 (4/12) */}
             <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
                 <div className="glass-bento p-8 bg-slate-900/60 border-celestial-gold/30 rounded-[3rem] relative overflow-hidden shrink-0 shadow-2xl">
                     <div className="absolute top-0 right-0 p-8 opacity-[0.05]"><UserCircle className="w-48 h-48 text-celestial-gold" /></div>
@@ -102,9 +99,7 @@ export const PersonalVault: React.FC<{ language: Language }> = ({ language }) =>
                 </div>
             </div>
 
-            {/* 右側：資產矩陣 (8/12) */}
             <div className="col-span-12 lg:col-span-8 flex flex-col gap-6 overflow-hidden">
-                {/* 數據概覽帶 */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
                     {stats.map(s => (
                         <div key={s.label} className="glass-bento p-5 bg-slate-950 border-white/5 rounded-3xl hover:border-white/10 transition-all shadow-lg">
@@ -131,7 +126,6 @@ export const PersonalVault: React.FC<{ language: Language }> = ({ language }) =>
                     </div>
 
                     <div className="flex-1 overflow-y-auto no-scrollbar grid grid-cols-1 md:grid-cols-2 gap-6 pr-2">
-                        {/* 當前裝備的靈魂 */}
                         <div className="p-6 rounded-[2.5rem] border-2 border-celestial-gold/50 bg-celestial-gold/5 relative group overflow-hidden shadow-2xl">
                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Fingerprint className="w-24 h-24" /></div>
                             <div className="relative z-10">
@@ -148,7 +142,6 @@ export const PersonalVault: React.FC<{ language: Language }> = ({ language }) =>
                             </div>
                         </div>
 
-                        {/* 最近獲得的聖物卡 */}
                         <div className="p-6 rounded-[2.5rem] border border-white/10 bg-slate-900/60 relative group">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Gem className="w-4 h-4" /></div>
@@ -170,7 +163,6 @@ export const PersonalVault: React.FC<{ language: Language }> = ({ language }) =>
                             )}
                         </div>
 
-                        {/* 更多卡片預覽 */}
                         <div className="md:col-span-2 grid grid-cols-3 sm:grid-cols-6 gap-3">
                             {myDeck.slice(1, 7).map(card => (
                                 <div key={card.id} className="aspect-[3/4] bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center justify-center group hover:bg-white/10 transition-all cursor-crosshair">
@@ -179,9 +171,8 @@ export const PersonalVault: React.FC<{ language: Language }> = ({ language }) =>
                                 </div>
                             ))}
                             <button className="aspect-[3/4] bg-white/5 border border-white/5 border-dashed rounded-2xl flex flex-col items-center justify-center text-gray-600 hover:text-white hover:border-white/20 transition-all group">
-                                /* Fix: Plus icon is now correctly imported */
                                 <Plus className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter">ALL_RELICTS</span>
+                                <span className="text-[8px] font-black uppercase tracking-tighter">ALL_RELICS</span>
                             </button>
                         </div>
                     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
 import { 
@@ -5,7 +6,8 @@ import {
     ExternalLink, Building, Info, Newspaper, Target, Heart,
     Compass, Microscope, Mountain, Activity, Users, Radio,
     Sparkles, Calendar, Award, Star, Library, BookOpen, Fingerprint, Cpu,
-    Link as LinkIcon, Database, CheckCircle, Flame, Waveform
+    /* Fix: Removed non-existent Waveform import from lucide-react */
+    Link as LinkIcon, Database, CheckCircle, Flame
 } from 'lucide-react';
 import { UniversalPageHeader } from './UniversalPageHeader';
 

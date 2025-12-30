@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Language } from '../types';
 import { 
   Home, Layers, Bot, Leaf, FileText, Network, BookOpen, GraduationCap, Crown, Hammer, Coins, Library,
   ChevronLeft, ChevronRight, Zap, ShieldCheck, Command, Info, User, Star, Heart, Target, TrendingUp,
-  Globe, Briefcase, Stethoscope, Database, Activity, Trophy, Shield, Fingerprint, Sparkles, Box, Users, Archive, Menu, Share2, Compass, X, Gem, ArrowRight
+  Globe, Briefcase, Stethoscope, Database, Activity, Trophy, Shield, Fingerprint, Sparkles, Box, Users, Archive, Menu, Share2, Compass, X, Gem, ArrowRight, Settings, Terminal, Map as MapIcon,
+  Workflow, Share, Target as TargetIcon
 } from 'lucide-react';
 import { AiAssistant } from './AiAssistant';
 import { CommandPalette } from './CommandPalette';
@@ -49,24 +51,15 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (vaultRef.current && !vaultRef.current.contains(event.target as Node)) {
-        setShowVaultBrief(false);
-      }
-    };
-    if (showVaultBrief) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showVaultBrief]);
-
   const navSectors = [
     { title: 'CMD', items: [
       { id: View.MY_ESG, icon: Home, label: isZh ? '北極星' : 'Cockpit' },
       { id: View.BUSINESS_INTEL, icon: Globe, label: isZh ? 'AMICE' : 'AMICE' },
+      { id: View.GLOBAL_OPS, icon: MapIcon, label: isZh ? '營運' : 'Ops' },
+      { id: View.IMPACT_PROJECTS, icon: TargetIcon, label: isZh ? '影響力專案' : 'Impact' },
       { id: View.STRATEGY, icon: Layers, label: isZh ? '顧問' : 'Advisory' },
-      { id: View.THINK_TANK, icon: Archive, label: isZh ? '智庫' : 'Tank' },
+      { id: View.WORKFLOW_LAB, icon: Workflow, label: isZh ? '自動化' : 'Workflow' },
+      { id: View.RESEARCH_HUB, icon: Database, label: isZh ? 'RAG' : 'RAG' },
     ]},
     { title: 'ECO', items: [
       { id: View.PARTNER_PORTAL, icon: Compass, label: isZh ? '生態' : 'Ecosystem' },
@@ -74,9 +67,11 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
       { id: View.ACADEMY, icon: GraduationCap, label: isZh ? '學院' : 'Academy' },
     ]},
     { title: 'SYS', items: [
+      { id: View.MCP_CONFIG, icon: Share, label: isZh ? 'MCP 協議' : 'MCP' },
       { id: View.REPORT, icon: FileText, label: isZh ? '報告' : 'Report' },
-      { id: View.YANG_BO, icon: Crown, label: isZh ? '楊博' : 'CEO' },
       { id: View.HEALTH_CHECK, icon: Stethoscope, label: isZh ? '健檢' : 'Health' },
+      { id: View.UNIVERSAL_BACKEND, icon: Terminal, label: isZh ? '後端' : 'Kernel' },
+      { id: View.SETTINGS, icon: Settings, label: isZh ? '設定' : 'Config' },
     ]}
   ];
 
@@ -90,7 +85,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#020617] text-white overflow-hidden select-none">
+    <div className="flex h-screen w-screen bg-[#020617] text-white overflow-hidden select-none font-sans">
         {/* PC Sidebar */}
         {!isMobile && (
           <aside className={`flex flex-col flex-shrink-0 transition-all duration-500 border-r border-white/5 bg-slate-950/95 backdrop-blur-3xl z-[160] ${isSidebarCollapsed ? 'w-[52px]' : 'w-[180px]'}`}>
@@ -106,7 +101,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                               <button key={item.id} onClick={() => onNavigate(item.id)} className={`w-full flex items-center transition-all duration-300 relative group ${isSidebarCollapsed ? 'justify-center py-3' : 'px-4 py-2.5 gap-4'} ${currentView === item.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}>
                                   {currentView === item.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-celestial-gold shadow-[0_0_15px_#fbbf24]" />}
                                   <item.icon className={`shrink-0 w-5 h-5 ${currentView === item.id ? 'text-celestial-gold scale-110' : 'group-hover:scale-110'}`} />
-                                  {!isSidebarCollapsed && <span className={`text-[13px] font-bold truncate ${currentView === item.id ? 'text-white' : ''}`}>{item.label}</span>}
+                                  {!isSidebarCollapsed && <span className={`text-[12px] font-black truncate uppercase tracking-tight ${currentView === item.id ? 'text-white' : ''}`}>{item.label}</span>}
                               </button>
                           ))}
                       </div>
@@ -124,22 +119,13 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                     {isMobile && <LogoIcon id="system-logo-mobile" className="w-6 h-6" />}
                     <div className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 rounded-lg">
                         <Zap className="w-3 h-3 text-celestial-gold animate-pulse" />
-                        <span className="text-[9px] font-black text-white tracking-[0.2em] uppercase">JAK_v16</span>
+                        <span className="text-[9px] font-black text-white tracking-[0.2em] uppercase">JAK_v16.1</span>
                     </div>
-                    {!isMobile && (
-                      <button 
-                        onClick={() => onNavigate(View.VAULT)} 
-                        className="ml-2 flex items-center gap-2 px-3 py-1 bg-celestial-gold/10 border border-celestial-gold/20 rounded-lg text-celestial-gold hover:bg-celestial-gold hover:text-black transition-all group shadow-xl"
-                      >
-                        <Crown className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-wider">{isZh ? '個人寶庫' : 'Vault'}</span>
-                      </button>
-                    )}
                 </div>
 
                 <div className="hidden xl:flex items-center gap-8">
                     {[
-                        { label: 'GWC', val: goodwillBalance, icon: Coins, color: 'text-celestial-gold' },
+                        { label: 'GWC', val: goodwillBalance.toLocaleString(), icon: Coins, color: 'text-celestial-gold' },
                         { label: 'LEVEL', val: level, icon: Star, color: 'text-emerald-500' }
                     ].map((hud, i) => (
                         <div key={i} className="flex items-center gap-2">
@@ -156,26 +142,24 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                       onClick={() => setShowVaultBrief(!showVaultBrief)}
                     >
                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=masculine_${xp}`} className="w-full h-full object-cover" alt="Avatar" />
-                        {showVaultBrief && <div className="absolute inset-0 bg-black/40 flex items-center justify-center animate-fade-in"><X className="w-3 h-3 text-white" /></div>}
                     </div>
 
-                    {/* Floating Vault Briefing Menu */}
                     {showVaultBrief && (
                       <div 
                         ref={vaultRef}
-                        className="absolute right-0 top-12 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-[250] overflow-hidden animate-slide-up backdrop-blur-3xl ring-1 ring-white/10"
+                        className="absolute right-0 top-12 w-64 bg-slate-900 border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-[250] overflow-hidden animate-slide-up backdrop-blur-3xl ring-1 ring-white/10"
                       >
-                        <div className="p-5 bg-gradient-to-br from-white/10 to-transparent border-b border-white/5 flex flex-col items-center text-center">
-                          <div className="w-14 h-14 rounded-full border-2 border-celestial-gold p-0.5 mb-2 shadow-2xl relative">
+                        <div className="p-6 bg-gradient-to-br from-white/10 to-transparent border-b border-white/5 flex flex-col items-center text-center">
+                          <div className="w-14 h-14 rounded-full border-2 border-celestial-gold p-0.5 mb-3 shadow-2xl relative">
                             <div className="absolute inset-0 bg-celestial-gold/20 blur-xl animate-pulse rounded-full" />
                             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=masculine_${xp}`} className="w-full h-full rounded-full bg-slate-900 relative z-10" alt="" />
                           </div>
                           <div className="zh-main text-base text-white">{userName}</div>
-                          <div className="text-[10px] font-black text-celestial-gold uppercase tracking-widest mt-0.5">{activeTitle?.text || 'Novice Architect'}</div>
+                          <div className="text-[10px] font-black text-celestial-gold uppercase tracking-widest mt-1">{activeTitle?.text || 'Novice Architect'}</div>
                         </div>
                         
-                        <div className="p-4 space-y-4">
-                          <div className="grid grid-cols-2 gap-2">
+                        <div className="p-5 space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
                              <div className="p-3 bg-black/60 rounded-xl border border-white/5 flex flex-col items-center">
                                <Coins className="w-4 h-4 text-celestial-gold mb-1" />
                                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">Balance</span>
@@ -187,28 +171,11 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                                <span className="text-sm font-mono font-bold text-white">{level}</span>
                              </div>
                           </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-[10px] font-black uppercase text-gray-600 tracking-widest px-1">
-                              <span>Asset Inventory</span>
-                              <span className="text-white">Active</span>
-                            </div>
-                            <div className="flex gap-1">
-                               <div className="flex-1 p-2 bg-white/5 rounded-lg flex items-center justify-center gap-2 border border-white/5 hover:bg-white/10 transition-colors">
-                                  <Gem className="w-3 h-3 text-purple-400" />
-                                  <span className="text-[10px] text-white font-bold">{forgedSouls.length}</span>
-                               </div>
-                               <div className="flex-1 p-2 bg-white/5 rounded-lg flex items-center justify-center gap-2 border border-white/5 hover:bg-white/10 transition-colors">
-                                  <Box className="w-3 h-3 text-blue-400" />
-                                  <span className="text-[10px] text-white font-bold">{cardInventory.length}</span>
-                               </div>
-                            </div>
-                          </div>
                         </div>
 
                         <button 
                           onClick={() => { setShowVaultBrief(false); onNavigate(View.VAULT); }}
-                          className="w-full py-4 bg-white text-black font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-celestial-gold transition-all"
+                          className="w-full py-5 bg-white text-black font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-celestial-gold transition-all"
                         >
                           {isZh ? '進入個人寶庫' : 'OPEN VAULT'} <ArrowRight className="w-3.5 h-3.5" />
                         </button>
@@ -217,7 +184,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                 </div>
             </header>
 
-            <div className="flex-1 overflow-hidden relative bg-black main-content-area">
+            <div className="flex-1 overflow-hidden relative bg-black main-content-area no-scrollbar">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(15,23,42,0.8)_0%,rgba(2,6,23,1)_100%)] pointer-events-none" />
                 <div className="relative z-10 p-2 lg:p-4 min-h-full">
                     {children}
@@ -246,9 +213,9 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                   <div className="text-[9px] font-mono text-gray-600 uppercase tracking-widest flex items-center gap-3">
                       <span>KERNEL_OK</span>
                       <div className="w-px h-2 bg-white/10" />
-                      <span>ORCHESTRATOR_ACTIVE: {currentView}</span>
+                      <span>SYNC_BUS_L16.1</span>
                   </div>
-                  <div className="text-[9px] font-mono text-gray-700 uppercase">© 2025 JAK_V16_RWD</div>
+                  <div className="text-[9px] font-mono text-gray-700 uppercase tracking-tighter">© 2025 JAK_SYSTEM_REGEN</div>
               </footer>
             )}
         </main>

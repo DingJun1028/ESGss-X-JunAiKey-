@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
     Target, Activity, PieChart, TrendingUp, AlertTriangle, ArrowRight, 
@@ -171,7 +172,7 @@ export const Dashboard: React.FC<{ language: Language }> = ({ language }) => {
                         <Activity className="w-4 h-4" /> ENTITY_DNA_VERIFY
                     </h4>
                     <div className="flex-1 min-h-[260px] relative z-10 w-full overflow-hidden">
-                        <ResponsiveContainer width="100%" height="100%" minHeight={260}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                                 <PolarGrid stroke="rgba(255,255,255,0.05)" />
                                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 900 }} />

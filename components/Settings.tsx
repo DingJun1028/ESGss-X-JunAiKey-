@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useCompany } from './providers/CompanyProvider';
 import { useToast } from '../contexts/ToastContext';
 import { Language } from '../types';
 import { 
   Settings as SettingsIcon, Save, RotateCcw, User, Building, 
-  PlayCircle, Factory, ChevronDown, HelpCircle, Layout
+  PlayCircle, Factory, ChevronDown, HelpCircle, Layout, Github, Zap
 } from 'lucide-react';
 import { UniversalPageHeader } from './UniversalPageHeader';
 
@@ -38,7 +39,8 @@ export const Settings: React.FC<{ language: Language }> = ({ language }) => {
     socScore: esgScores.social,
     govScore: esgScores.governance,
     openaiKey: externalApiKeys.openai || '',
-    straicoKey: externalApiKeys.straico || ''
+    straicoKey: externalApiKeys.straico || '',
+    githubKey: externalApiKeys.github || ''
   });
 
   const [showIndustryDropdown, setShowIndustryDropdown] = useState(false);
@@ -63,7 +65,8 @@ export const Settings: React.FC<{ language: Language }> = ({ language }) => {
 
     updateExternalApiKeys({
         openai: formData.openaiKey,
-        straico: formData.straicoKey
+        straico: formData.straicoKey,
+        github: formData.githubKey
     });
     
     addAuditLog('System Configuration Update', `Modified system profile and parameters.`);
@@ -120,30 +123,41 @@ export const Settings: React.FC<{ language: Language }> = ({ language }) => {
             </div>
         </div>
 
-        {/* System Onboarding & Recovery */}
-        <div className="glass-panel p-8 rounded-[2.5rem] border border-white/10 bg-slate-900/40 flex flex-col justify-between">
+        {/* External API Integration Section */}
+        <div className="glass-panel p-8 rounded-[2.5rem] border border-white/10 bg-slate-900/40 flex flex-col">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
-                <HelpCircle className="w-5 h-5 text-celestial-emerald" />
-                {isZh ? '引導與系統維護' : 'Help & Onboarding'}
+                {/* Fix: Added Zap to lucide-react imports */}
+                <Zap className="w-5 h-5 text-celestial-gold" />
+                {isZh ? '外部 API 整合' : 'API Integrations'}
             </h3>
-            <div className="space-y-4">
-                 <button 
-                    onClick={handleReplayOnboarding}
-                    className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 font-bold group"
-                 >
-                    <PlayCircle className="w-5 h-5 text-celestial-gold group-hover:scale-110 transition-transform" />
-                    {isZh ? '重新啟動新手導覽' : 'Replay Onboarding'}
-                 </button>
-                 <button 
-                    onClick={() => { if(confirm('Reset Data?')) resetData(); }}
-                    className="w-full py-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl hover:bg-red-500/20 transition-all flex items-center justify-center gap-3 font-bold"
-                 >
-                    <RotateCcw className="w-5 h-5" />
-                    {isZh ? '重置核心數據' : 'Factory Reset'}
-                 </button>
+            <div className="space-y-5">
+                <div className="space-y-1">
+                    <label className="text-[10px] text-gray-500 font-black uppercase ml-1">GitHub Personal Access Token</label>
+                    <div className="relative">
+                        <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                        <input 
+                            type="password"
+                            name="githubKey"
+                            value={formData.githubKey}
+                            onChange={handleChange}
+                            placeholder="ghp_xxxxxxxxxxxx"
+                            className="w-full bg-slate-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:ring-1 focus:ring-celestial-gold outline-none transition-all"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-1">
+                    <label className="text-[10px] text-gray-500 font-black uppercase ml-1">Straico API Key</label>
+                    <input 
+                        type="password"
+                        name="straicoKey"
+                        value={formData.straicoKey}
+                        onChange={handleChange}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-celestial-gold outline-none transition-all"
+                    />
+                </div>
             </div>
             <p className="text-[9px] text-gray-600 mt-6 italic">
-                * 重啟導覽會刷新所有模組狀態並重新載入核心參數。
+                * GitHub Key used for MCP direct connection to private repositories.
             </p>
         </div>
 

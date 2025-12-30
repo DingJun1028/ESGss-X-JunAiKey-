@@ -1,9 +1,10 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { 
   DashboardWidget, AuditLogEntry, EsgCard, Quest, ToDoItem, NoteItem, BookmarkItem, 
   UserTier, CarbonData, MasteryLevel, Badge, WidgetType, AppFile, IntelligenceItem,
   UniversalCrystal, UserJournalEntry, ExternalApiKeys, VocationInfo, UserTitle, 
-  OfficialEvent, ActivityPulseNode, WebhookConfig
+  OfficialEvent, ActivityPulseNode, WebhookConfig, FinancialEntry
 } from '../../types';
 import { UNIVERSAL_CORES, VOCATIONS, INITIAL_TITLES, INITIAL_BADGES, MOCK_EVENTS } from '../../constants';
 import { useToast } from '../../contexts/ToastContext';
@@ -60,6 +61,10 @@ interface CompanyContextType {
   setBudget: (val: number) => void;
   carbonCredits: number;
   setCarbonCredits: (val: number) => void;
+
+  expenses: FinancialEntry[];
+  incomes: FinancialEntry[];
+  addFinancialEntries: (entries: FinancialEntry[]) => void;
   
   quests: Quest[];
   updateQuestStatus: (id: string, status: 'active' | 'verifying' | 'completed') => void;
@@ -101,16 +106,16 @@ interface CompanyContextType {
   setLatestEvent: (event: string) => void;
   
   customWidgets: DashboardWidget[];
-  addCustomWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full' }) => void;
+  addCustomWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full'; }) => void;
   removeCustomWidget: (id: string) => void;
 
   myEsgWidgets: DashboardWidget[];
-  addMyEsgWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full' }) => void;
+  addMyEsgWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full'; }) => void;
   removeMyEsgWidget: (id: string) => void;
   updateMyEsgWidgetSize: (id: string, size: 'small' | 'medium' | 'large' | 'full') => void;
 
   palaceWidgets: DashboardWidget[];
-  addPalaceWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full' }) => void;
+  addPalaceWidget: (widget: { type: WidgetType; title: string; config?: any; gridSize?: 'small' | 'medium' | 'large' | 'full'; }) => void;
   removePalaceWidget: (id: string) => void;
   
   checkBadges: () => Badge[];
@@ -143,7 +148,6 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { addToast } = useToast();
   
-  // 指令：預設男性角色視角
   const [userName, setUserName] = useState('Jun_JAK');
   const [userRole, setUserRole] = useState('Architect CEO');
   const [companyName, setCompanyName] = useState('ESGss JAK');
@@ -166,6 +170,9 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const [esgScores, setEsgScores] = useState({ environmental: 85, social: 80, governance: 92 });
   const [carbonData, setCarbonData] = useState<CarbonData>({ fuelConsumption: 12000, electricityConsumption: 38000, scope1: 320, scope2: 210, scope3: 980, lastUpdated: Date.now() });
+  
+  const [expenses, setExpenses] = useState<FinancialEntry[]>([]);
+  const [incomes, setIncomes] = useState<FinancialEntry[]>([]);
   
   const [quests, setQuests] = useState<Quest[]>([]);
   const [budget, setBudget] = useState(2000000);
@@ -204,6 +211,14 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const updateSocialFrequency = (delta: number) => setSocialFrequency(prev => Math.min(100, Math.max(0, prev + delta)));
   const unlockBadge = (id: string) => setBadges(prev => prev.map(b => b.id === id ? { ...b, unlockedAt: Date.now() } : b));
   const updateEventStatus = (id: string, status: OfficialEvent['status']) => setEvents(prev => prev.map(e => e.id === id ? { ...e, status } : e));
+  
+  const addFinancialEntries = useCallback((entries: FinancialEntry[]) => {
+    const newExpenses = entries.filter(e => e.type === 'expense');
+    const newIncomes = entries.filter(e => e.type === 'income');
+    setExpenses(prev => [...prev, ...newExpenses]);
+    setIncomes(prev => [...prev, ...newIncomes]);
+  }, []);
+
   const recordActivity = () => {};
   const addWebhook = (wh: any) => {};
   const deleteWebhook = (id: string) => {};
@@ -249,7 +264,9 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
       badges, unlockBadge, events, updateEventStatus, activityPulse, recordActivity,
       goodwillBalance, updateGoodwillBalance, goodwillValue, esgScores, updateEsgScore, totalScore,
       carbonData, updateCarbonData, budget, setBudget, carbonCredits, setCarbonCredits,
+      expenses, incomes, addFinancialEntries,
       quests, updateQuestStatus, completeQuest, auditLogs, addAuditLog,
+      /* Fix: Replaced duplicate purifiedCards with purifyCard function to satisfy CompanyContextType */
       collectedCards, unlockCard, purifiedCards, purifyCard, cardMastery, updateCardMastery,
       todos, addTodo, toggleTodo, deleteTodo, universalNotes, addNote, updateNote, deleteNote,
       bookmarks, toggleBookmark, files, addFile, removeFile, myIntelligence, saveIntelligence,

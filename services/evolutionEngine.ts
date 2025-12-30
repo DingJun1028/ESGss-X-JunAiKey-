@@ -1,8 +1,9 @@
+
 import { BehaviorSubject, interval, Subject } from 'rxjs';
 import { 
     UniversalKnowledgeNode, UniversalLabel, QuantumNode, 
     SemanticContext, LogicWitness, DimensionID, DimensionProtocol, UnitTestResult,
-    NeuralSignal, MCPRegistryItem, TrinityState
+    NeuralSignal, MCPRegistryItem, TrinityState, McpServer
 } from '../types';
 
 export type { MCPRegistryItem };
@@ -33,7 +34,7 @@ export interface SystemVital {
 }
 
 class AIOSKernel {
-    private static STORAGE_KEY = 'jun_aikey_v15_os';
+    private static STORAGE_KEY = 'jun_aikey_v16_os';
     private knowledgeGraph = new Map<string, UniversalKnowledgeNode>();
     private quantumStore = new Map<string, QuantumNode>();
     private listeners = new Map<string, Set<(node: UniversalKnowledgeNode) => void>>();
@@ -45,9 +46,65 @@ class AIOSKernel {
         { id: 't1', name: 'AuthorityForgingEngine', type: 'tool', description: 'Generates session tokens based on vocation level.', latency: 15 },
         { id: 'r1', name: 'MemoryPalaceIndex', type: 'resource', description: 'High-speed vectorized knowledge lookup.', latency: 8 }
     ]);
+
+    public mcpServers$ = new BehaviorSubject<McpServer[]>([
+        {
+            id: 'openai-direct',
+            name: 'OpenAI Direct API',
+            url: 'https://api.openai.com/v1',
+            status: 'connected',
+            transport: 'streamable_http',
+            latency: 28,
+            docsUrl: 'https://platform.openai.com/docs/api-reference',
+            tools: [
+                { name: 'chat_completions', description: 'Advanced reasoning and text generation', inputSchema: {} },
+                { name: 'embeddings', description: 'Vectorize text for semantic search', inputSchema: {} },
+                { name: 'image_generation', description: 'DALL-E 3 image manifestation', inputSchema: {} }
+            ]
+        },
+        {
+            id: 'agenticflow-mcp',
+            name: 'AgenticFlow API',
+            url: 'https://api.agenticflow.ai/v1',
+            status: 'connected',
+            transport: 'streamable_http',
+            latency: 35,
+            docsUrl: 'https://docs.agenticflow.ai',
+            tools: [
+                { name: 'execute_workflow', description: 'Trigger complex agentic chains', inputSchema: {} },
+                { name: 'get_context', description: 'Retrieve session context', inputSchema: {} }
+            ]
+        },
+        {
+            id: 'pixelml-core',
+            name: 'PixelML Core',
+            url: 'https://mcp.pixelml.ai/v1',
+            status: 'connected',
+            transport: 'streamable_http',
+            latency: 12,
+            tools: [
+                { name: 'text-generation', description: 'Generate high-quality ESG narratives', inputSchema: {} },
+                { name: 'image-enhance', description: 'Upscale technical ESG diagrams', inputSchema: {} }
+            ]
+        },
+        {
+            id: 'github-nexus',
+            name: 'GitHub Nexus',
+            url: 'https://mcp.github.com/v1',
+            status: 'connected',
+            transport: 'streamable_http',
+            latency: 45,
+            docsUrl: 'https://docs.github.com/en/rest',
+            tools: [
+                { name: 'search_code', description: 'Search GitHub repositories for specific ESG code patterns', inputSchema: {} },
+                { name: 'get_repo_contents', description: 'Retrieve documentation and data from repositories', inputSchema: {} },
+                { name: 'create_issue', description: 'Automate incident reporting or task creation in GitHub', inputSchema: {} }
+            ]
+        }
+    ]);
     
     public vitals$ = new BehaviorSubject<SystemVital>({
-        evolutionStage: 15.2,
+        evolutionStage: 16.1,
         contextLoad: 12.5,
         activeThreads: 8,
         memoryNodes: 4500,
@@ -69,7 +126,6 @@ class AIOSKernel {
             const currentVitals = this.vitals$.value;
             const currentDims = this.dimensions$.value;
             
-            // 模擬三元一體循環演化
             const newTrinity = {
                 perception: Math.min(100, currentVitals.trinity.perception + (Math.random() - 0.4)),
                 cognition: Math.min(100, currentVitals.trinity.cognition + (Math.random() - 0.4)),
@@ -78,7 +134,7 @@ class AIOSKernel {
 
             const updatedDims = currentDims.map(d => ({ 
                 ...d, 
-                integrity: Math.max(0, Math.min(100, d.integrity + (Math.random() - 0.45))) 
+                integrity: Math.max(0, Math.min(100, d.integrity + (Math.random() - 0.3))) 
             }));
             
             const avgIntegrity = updatedDims.reduce((acc, d) => acc + d.integrity, 0) / updatedDims.length;
@@ -97,7 +153,7 @@ class AIOSKernel {
 
     public runSystemWitness() {
         this.broadcastNeuralSignal('Kernel', 'RUNE_ACTIVATION', 1.0);
-        this.reflex$.next({ type: 'WITNESS', source: 'Kernel', payload: { hash: Math.random().toString(36) } });
+        this.reflex$.next({ type: 'WITNESS', source: 'Kernel', payload: { hash: Math.random().toString(36).substr(2, 9).toUpperCase() } });
     }
 
     public broadcastNeuralSignal(origin: string, type: NeuralSignal['type'], intensity: number = 0.5, payload: any = {}) {
@@ -159,6 +215,30 @@ class AIOSKernel {
             .filter(n => context.keywords.some(k => k.length > 1 && n.atom.toLowerCase().includes(k.toLowerCase())))
             .sort((a, b) => b.weight - a.weight)
             .slice(0, 10);
+    }
+
+    public addMcpServer(server: Omit<McpServer, 'status' | 'latency' | 'tools'>) {
+        const newServer: McpServer = {
+            ...server,
+            status: 'connecting',
+            latency: 0,
+            tools: []
+        };
+        this.mcpServers$.next([...this.mcpServers$.value, newServer]);
+        
+        // Simulate discovery
+        setTimeout(() => {
+            const updated = this.mcpServers$.value.map(s => s.id === server.id ? {
+                ...s,
+                status: 'connected',
+                latency: Math.floor(Math.random() * 50) + 10,
+                tools: [
+                    { name: 'list_resources', description: 'Discover available context resources', inputSchema: {} },
+                    { name: 'query_context', description: 'Semantic search over server context', inputSchema: {} }
+                ]
+            } : s);
+            this.mcpServers$.next(updated as McpServer[]);
+        }, 1500);
     }
 
     private save() {

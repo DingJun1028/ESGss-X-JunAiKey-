@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Language } from '../types';
-import { Calculator, TrendingUp, DollarSign, AlertCircle, LineChart, Activity, PieChart as PieChartIcon, Building, ArrowRightLeft, Wallet, Coins } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Language, FinancialEntry } from '../types';
+import { 
+    Calculator, TrendingUp, DollarSign, AlertCircle, LineChart, Activity, 
+    PieChart as PieChartIcon, Building, ArrowRightLeft, Wallet, Coins, 
+    FileUp, Check, X, Info, Download, Trash2, List, Filter, ArrowUpRight, ArrowDownLeft,
+    /* Added missing Settings icon import from lucide-react */
+    Settings
+} from 'lucide-react';
+import { 
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
+    ResponsiveContainer, Legend, PieChart, Pie, Cell, BarChart, Bar 
+} from 'recharts';
 import { QuantumSlider } from './minimal/QuantumSlider';
 import { OmniEsgCell } from './OmniEsgCell';
 import { predictFutureTrends } from '../services/ai-service';
@@ -14,6 +23,248 @@ interface FinanceSimProps {
   language: Language;
 }
 
+const CsvImportView: React.FC<{ language: Language }> = ({ language }) => {
+    const isZh = language === 'zh-TW';
+    const { addToast } = useToast();
+    const { addFinancialEntries, expenses, incomes } = useCompany();
+    const [parsedData, setParsedData] = useState<FinancialEntry[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
+
+    // Robust CSV parser handling quoted values with commas
+    const parseCsv = (text: string): FinancialEntry[] => {
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+        const dataLines = lines.slice(1);
+
+        const dateIdx = headers.indexOf('date');
+        const descIdx = headers.indexOf('description') !== -1 ? headers.indexOf('description') : headers.indexOf('desc');
+        const amountIdx = headers.indexOf('amount');
+        const catIdx = headers.indexOf('category');
+        const typeIdx = headers.indexOf('type');
+
+        if (dateIdx === -1 || amountIdx === -1 || typeIdx === -1) {
+            throw new Error(isZh ? 'CSV 缺少必要標題：Date, Amount, Type' : 'CSV missing required headers: Date, Amount, Type');
+        }
+
+        return dataLines.map((line, i) => {
+            // Regex to split by comma but ignore commas inside quotes
+            const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+            const cleanCols = cols.map(c => c.trim().replace(/^"|"$/g, ''));
+            
+            return {
+                id: `csv-${Date.now()}-${i}`,
+                date: cleanCols[dateIdx] || new Date().toISOString().split('T')[0],
+                description: descIdx !== -1 ? cleanCols[descIdx] : 'CSV Import',
+                amount: parseFloat(cleanCols[amountIdx]?.replace(/[$,]/g, '')) || 0,
+                category: catIdx !== -1 ? cleanCols[catIdx] : 'Uncategorized',
+                type: (cleanCols[typeIdx]?.toLowerCase().includes('inc') ? 'income' : 'expense') as 'income' | 'expense'
+            };
+        });
+    };
+
+    const handleFile = (file: File) => {
+        if (!file.name.endsWith('.csv')) {
+            addToast('error', isZh ? '僅支援 CSV 檔案' : 'Only CSV files supported', 'Invalid Format');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result as string;
+                const entries = parseCsv(text);
+                if (entries.length === 0) throw new Error(isZh ? '檔案中無有效數據' : 'No valid data in file');
+                setParsedData(entries);
+                addToast('info', isZh ? `解析成功：${entries.length} 筆資料` : `Parsed ${entries.length} records successfully`, 'CSV Import');
+            } catch (err: any) {
+                addToast('error', err.message || 'CSV Parsing Failed', 'Error');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const onDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <div 
+                className={`border-2 border-dashed rounded-[2.5rem] p-12 transition-all flex flex-col items-center justify-center text-center
+                    ${isDragging ? 'border-celestial-gold bg-celestial-gold/5 scale-[1.01]' : 'border-white/10 bg-slate-900/40 hover:border-white/30'}
+                `}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={onDrop}
+            >
+                <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 shadow-2xl">
+                    <FileUp className={`w-10 h-10 ${isDragging ? 'text-celestial-gold animate-bounce' : 'text-gray-500'}`} />
+                </div>
+                <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">{isZh ? '匯入財務大數據 (CSV)' : 'Import Financial Big Data (CSV)'}</h3>
+                <p className="text-sm text-gray-400 max-w-md mb-8 leading-relaxed">
+                    {isZh ? '拖曳 CSV 檔案至此。系統將自動對標 Date, Description, Amount, Category, Type 字段並注入內核。' : 'Drag & drop a CSV file. System will auto-map Date, Description, Amount, Category, Type fields and inject into kernel.'}
+                </p>
+                <input 
+                    type="file" 
+                    id="csv-upload" 
+                    className="hidden" 
+                    accept=".csv" 
+                    onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} 
+                />
+                <label 
+                    htmlFor="csv-upload" 
+                    className="px-12 py-4 bg-white text-black font-black rounded-2xl hover:bg-celestial-gold transition-all cursor-pointer shadow-2xl active:scale-95 uppercase tracking-widest text-xs"
+                >
+                    {isZh ? '選擇本地檔案' : 'SELECT LOCAL FILE'}
+                </label>
+            </div>
+
+            {parsedData.length > 0 && (
+                <div className="glass-panel p-8 rounded-[2.5rem] border border-white/10 bg-slate-950/80 animate-slide-up shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5"><Activity className="w-32 h-32" /></div>
+                    <div className="flex justify-between items-center mb-8 relative z-10">
+                        <div>
+                            <h4 className="zh-main text-2xl text-white tracking-tight">{isZh ? '解析預覽' : 'Parsing Preview'}</h4>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{parsedData.length} RECORDS IDENTIFIED</span>
+                        </div>
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setParsedData([])}
+                                className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl text-[10px] font-black tracking-widest transition-all uppercase border border-white/5"
+                            >
+                                {isZh ? '取消' : 'CANCEL'}
+                            </button>
+                            <button 
+                                onClick={() => { addFinancialEntries(parsedData); setParsedData([]); addToast('success', isZh ? '數據已注入系統核心' : 'Data injected into system kernel', 'Success'); }}
+                                className="px-8 py-2.5 bg-emerald-500 text-black font-black rounded-xl text-[10px] tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2 shadow-xl shadow-emerald-500/20"
+                            >
+                                <Check className="w-4 h-4" /> {isZh ? '確認匯入核心' : 'CONFIRM INJECTION'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-[400px] no-scrollbar rounded-2xl border border-white/5 bg-black/40">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-white/5 text-[9px] uppercase font-black text-gray-500 tracking-widest sticky top-0 z-20 backdrop-blur-md">
+                                <tr>
+                                    <th className="p-4 pl-8">Date</th>
+                                    <th className="p-4">Description</th>
+                                    <th className="p-4">Category</th>
+                                    <th className="p-4">Type</th>
+                                    <th className="p-4 text-right pr-8">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-xs divide-y divide-white/5 font-mono">
+                                {parsedData.map((entry, i) => (
+                                    <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="p-4 pl-8 text-gray-500">{entry.date}</td>
+                                        <td className="p-4 text-white group-hover:text-celestial-gold transition-colors">{entry.description}</td>
+                                        <td className="p-4 text-gray-600">{entry.category}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${entry.type === 'income' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                                {entry.type}
+                                            </span>
+                                        </td>
+                                        <td className={`p-4 text-right pr-8 font-bold ${entry.type === 'income' ? 'text-emerald-400' : 'text-white'}`}>
+                                            {entry.type === 'income' ? '+' : '-'}${entry.amount.toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const TransactionList: React.FC<{ language: Language }> = ({ language }) => {
+    const isZh = language === 'zh-TW';
+    const { expenses, incomes } = useCompany();
+    const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+
+    const allTransactions = useMemo(() => {
+        const combined = [...expenses, ...incomes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (filterType === 'all') return combined;
+        return combined.filter(t => t.type === filterType);
+    }, [expenses, incomes, filterType]);
+
+    if (expenses.length === 0 && incomes.length === 0) return null;
+
+    return (
+        <div className="glass-panel p-8 rounded-[3rem] border border-white/5 bg-slate-900/40 shadow-2xl animate-fade-in overflow-hidden flex flex-col">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 shrink-0">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-celestial-purple/20 rounded-2xl text-celestial-purple border border-celestial-purple/30 shadow-lg">
+                        <List className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h4 className="zh-main text-xl text-white uppercase tracking-tight">{isZh ? '財務交易歷史軌跡' : 'Financial Ledger Trace'}</h4>
+                        <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">PERSISTED_IN_CORE_MEMORY</span>
+                    </div>
+                </div>
+                
+                <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 shrink-0">
+                    {['all', 'income', 'expense'].map(t => (
+                        <button 
+                            key={t}
+                            onClick={() => setFilterType(t as any)}
+                            className={`px-6 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${filterType === t ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                        >
+                            {t}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar rounded-2xl border border-white/5 min-h-[300px]">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-white/5 text-[9px] uppercase font-black text-gray-500 tracking-widest sticky top-0 z-20 backdrop-blur-md">
+                        <tr>
+                            <th className="p-4 pl-8">Timestamp</th>
+                            <th className="p-4">Entity/Desc</th>
+                            <th className="p-4">Type</th>
+                            <th className="p-4 text-right pr-8">Quantum_Val</th>
+                        </tr>
+                    </thead>
+                    <tbody className="text-xs divide-y divide-white/5 font-mono">
+                        {allTransactions.map((t, i) => (
+                            <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
+                                <td className="p-4 pl-8 text-gray-500">{t.date}</td>
+                                <td className="p-4">
+                                    <div className="text-white group-hover:text-celestial-gold transition-colors">{t.description}</div>
+                                    <div className="text-[8px] text-gray-600 uppercase font-black mt-1 tracking-tighter">{t.category}</div>
+                                </td>
+                                <td className="p-4">
+                                    <div className={`flex items-center gap-2 ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {t.type === 'income' ? <ArrowDownLeft className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
+                                        <span className="text-[9px] font-black uppercase tracking-widest">{t.type}</span>
+                                    </div>
+                                </td>
+                                <td className={`p-4 text-right pr-8 font-bold text-base tracking-tighter ${t.type === 'income' ? 'text-emerald-400' : 'text-white'}`}>
+                                    {t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString()}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {allTransactions.length === 0 && (
+                    <div className="py-20 text-center opacity-20 flex flex-col items-center">
+                        <Filter className="w-12 h-12 mb-4" />
+                        <p className="zh-main uppercase tracking-widest">No matching records found in local memory.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 interface MarketOracleProps extends InjectedProxyProps {
     data: any[];
     isZh: boolean;
@@ -25,8 +276,8 @@ const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTra
 
     return (
         <div 
-            className={`lg:col-span-2 glass-panel p-6 rounded-2xl border transition-all duration-500 min-h-[400px] flex flex-col relative overflow-hidden group
-                ${isVolatile ? 'border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]' : 'border-white/5'}
+            className={`lg:col-span-2 glass-panel p-8 rounded-[2.5rem] border transition-all duration-500 flex flex-col relative overflow-hidden group shadow-2xl
+                ${isVolatile ? 'border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.1)]' : 'border-white/5'}
             `}
             onClick={() => trackInteraction?.('click')}
         >
@@ -34,20 +285,22 @@ const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTra
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-celestial-emerald/5 to-transparent animate-[scan_2s_linear_infinite] pointer-events-none" />
             )}
 
-            <div className="flex justify-between items-center mb-6 relative z-10">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <TrendingUp className={`w-5 h-5 ${isVolatile ? 'text-amber-400' : 'text-celestial-emerald'}`} />
+            <div className="flex justify-between items-center mb-8 relative z-10 shrink-0">
+                <h3 className="text-xl font-black text-white flex items-center gap-4 uppercase tracking-tight">
+                    <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-400 border border-emerald-500/20 shadow-lg">
+                        <TrendingUp className={`w-6 h-6 ${isVolatile ? 'text-amber-400' : 'text-emerald-400'}`} />
+                    </div>
                     {isZh ? '情境分析：一切照舊 vs 綠色轉型' : 'Scenario: BAU vs Green Transition'}
                 </h3>
                 {isAgentActive && (
-                    <div className="flex items-center gap-1 text-[10px] text-celestial-emerald border border-celestial-emerald/30 px-2 py-1 rounded bg-celestial-emerald/10">
-                        <Activity className="w-3 h-3" /> Oracle Live
+                    <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 border border-emerald-500/30 px-4 py-1.5 rounded-full bg-emerald-500/10 shadow-lg animate-pulse">
+                        <Activity className="w-3.5 h-3.5" /> Oracle Live
                     </div>
                 )}
             </div>
             
-            <div className="flex-1 min-h-[300px] w-full relative overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+            <div className="flex-1 min-h-[350px] w-full relative overflow-hidden">
+                <ResponsiveContainer width="100%" height="100%" minHeight={350}>
                     <AreaChart data={data}>
                         <defs>
                             <linearGradient id="colorGreen" x1="0" y1="0" x2="0" y2="1">
@@ -59,26 +312,27 @@ const MarketOracleBase: React.FC<MarketOracleProps> = ({ data, isZh, adaptiveTra
                                 <stop offset="95%" stopColor="#64748b" stopOpacity={0}/>
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="year" stroke="#94a3b8" />
-                        <YAxis stroke="#94a3b8" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis dataKey="year" stroke="#475569" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                        <YAxis stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />
                         <Tooltip 
-                            contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.1)' }}
-                            itemStyle={{ color: '#e2e8f0' }}
+                            contentStyle={{ backgroundColor: '#020617', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                            itemStyle={{ color: '#e2e8f0', fontSize: '12px', fontWeight: 'bold' }}
                         />
-                        <Legend verticalAlign="top" height={36} />
-                        <Area name={isZh ? "綠色轉型" : "Green Transition"} type="monotone" dataKey="Green" stroke="#10b981" fill="url(#colorGreen)" strokeWidth={2} />
-                        <Area name={isZh ? "一切照舊 (BAU)" : "Business As Usual"} type="monotone" dataKey="BAU" stroke="#64748b" fill="url(#colorBau)" strokeDasharray="5 5" />
+                        <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '0.1em', paddingBottom: '20px' }} />
+                        <Area name={isZh ? "綠色轉型" : "Green Transition"} type="monotone" dataKey="Green" stroke="#10b981" fill="url(#colorGreen)" strokeWidth={3} />
+                        <Area name={isZh ? "一切照舊 (BAU)" : "Business As Usual"} type="monotone" dataKey="BAU" stroke="#64748b" fill="url(#colorBau)" strokeDasharray="5 5" strokeWidth={2} />
                     </AreaChart>
                 </ResponsiveContainer>
             </div>
             
-            <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-amber-200 leading-relaxed">
+            <div className="mt-8 p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex gap-4 shadow-inner shrink-0">
+                <AlertCircle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-200/80 leading-relaxed font-medium">
+                    <b className="text-amber-400 block mb-1 uppercase text-[10px] tracking-widest font-black">AI_STRATEGIC_ADVICE:</b>
                     {isZh 
-                        ? "注意：當碳價超過 €120/t 時，BAU 情境將出現負現金流。建議加速資本支出。" 
-                        : "Insight: BAU scenario turns cash-negative when Carbon Price exceeds €120/t. Acceleration advised."}
+                        ? "注意：當碳價超過 €120/t 時，BAU 情境將出現負現金流。建議加速資本支出以避免市場估值崩潰。" 
+                        : "Insight: BAU scenario turns cash-negative when Carbon Price exceeds €120/t. Acceleration advised to protect market valuation."}
                 </div>
             </div>
         </div>
@@ -96,21 +350,25 @@ const ShadowPricingView: React.FC<{ price: number, emissions: number, isZh: bool
     ];
 
     return (
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="glass-panel p-6 rounded-2xl border border-white/5 flex flex-col min-h-[400px]">
-                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    <Building className="w-5 h-5 text-celestial-purple" />
-                    {isZh ? '部門內部碳費衝擊' : 'Departmental Carbon Fee Impact'}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+            <div className="glass-panel p-8 rounded-[3rem] border border-white/5 flex flex-col min-h-[400px] shadow-2xl bg-slate-900/40 overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-8 opacity-5"><PieChartIcon className="w-32 h-32" /></div>
+                <h3 className="text-xl font-black text-white mb-10 flex items-center gap-4 uppercase tracking-tight relative z-10">
+                    <div className="p-3 bg-purple-500/20 rounded-2xl text-purple-400 border border-purple-500/30">
+                        <Building className="w-6 h-6" />
+                    </div>
+                    {isZh ? '部門內部碳費衝擊' : 'Departmental Impact'}
                 </h3>
-                <div className="flex-1 w-full min-h-[300px] relative overflow-hidden">
+                <div className="flex-1 w-full min-h-[300px] relative overflow-hidden z-10">
                     <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                         <PieChart>
                             <Pie
                                 data={deptImpact}
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
+                                innerRadius={70}
+                                outerRadius={100}
+                                paddingAngle={8}
                                 dataKey="value"
+                                stroke="none"
                             >
                                 {deptImpact.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -118,45 +376,52 @@ const ShadowPricingView: React.FC<{ price: number, emissions: number, isZh: bool
                             </Pie>
                             <Tooltip 
                                 formatter={(value: number) => `$${value.toLocaleString()}`}
-                                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                                contentStyle={{ backgroundColor: '#020617', borderColor: '#1e293b', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
+                                itemStyle={{ color: '#fff', fontSize: '12px' }}
                             />
-                            <Legend verticalAlign="bottom" height={36}/>
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
             <div className="flex flex-col gap-6">
-                <div className="glass-panel p-6 rounded-2xl border border-emerald-500/20 bg-emerald-900/10 flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="glass-panel p-10 rounded-[3rem] border border-emerald-500/20 bg-emerald-900/10 flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden shadow-2xl">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-celestial-blue/5 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2" />
                     
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4 relative z-10">
-                        <Wallet className="w-8 h-8 text-emerald-400" />
+                    <div className="w-20 h-20 rounded-[2rem] bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mb-8 relative z-10 shadow-2xl animate-neural-pulse">
+                        <Wallet className="w-10 h-10 text-emerald-400" />
                     </div>
                     
-                    <div className="text-sm font-bold text-emerald-400 uppercase tracking-widest mb-2 relative z-10">
-                        {isZh ? '可籌集綠色轉型基金' : 'Green Transition Fund Generated'}
+                    <div className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-3 relative z-10">
+                        {isZh ? '可籌集綠色轉型基金' : 'ESTIMATED_REGEN_FUND'}
                     </div>
-                    <div className="text-4xl font-mono font-bold text-white mb-2 relative z-10">
+                    <div className="text-6xl font-mono font-black text-white mb-3 relative z-10 tracking-tighter">
                         ${totalFund.toLocaleString()}
                     </div>
-                    <div className="text-xs text-emerald-200/70 relative z-10">
-                        {isZh ? '基於當前排放量與影子價格' : 'Based on current emissions & shadow price'}
+                    <div className="text-[9px] text-emerald-200/40 uppercase font-bold tracking-widest relative z-10">
+                        {isZh ? '基於當前排放量與影子價格' : 'BASED_ON_DYNAMIC_SHADOW_PRICE'}
                     </div>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-400">{isZh ? '最高付費部門' : 'Top Payer'}</span>
-                        <span className="font-bold text-red-400">{isZh ? '製造部' : 'Manufacturing'} (60%)</span>
+                <div className="glass-panel p-8 rounded-[2.5rem] border border-white/5 space-y-5 bg-black/40 shadow-inner">
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500 font-bold uppercase tracking-widest">Highest Exposure</span>
+                        <span className="font-black text-rose-400">{isZh ? '製造部' : 'MANUFACTURING'} (60%)</span>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-400">{isZh ? '對 EPS 影響' : 'EPS Impact'}</span>
-                        <span className="font-bold text-white">-0.12%</span>
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500 font-bold uppercase tracking-widest">EPS Deviation</span>
+                        <span className="font-black text-white font-mono">-0.12%</span>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-400">{isZh ? '相當於營運成本' : 'Equiv. OpEx'}</span>
-                        <span className="font-bold text-white">1.8%</span>
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-gray-500 font-bold uppercase tracking-widest">Equiv. OpEx Load</span>
+                        <span className="font-black text-white font-mono">1.8%</span>
+                    </div>
+                    <div className="pt-4 border-t border-white/5">
+                        <button className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 flex items-center justify-center gap-2">
+                            <Info className="w-3 h-3" /> Full Exposure Report
+                        </button>
                     </div>
                 </div>
             </div>
@@ -167,9 +432,9 @@ const ShadowPricingView: React.FC<{ price: number, emissions: number, isZh: bool
 export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
-  const { carbonData } = useCompany(); 
+  const { carbonData, expenses, incomes } = useCompany(); 
   
-  const [activeTab, setActiveTab] = useState<'roi' | 'shadow'>('roi');
+  const [activeTab, setActiveTab] = useState<'roi' | 'shadow' | 'import'>('roi');
 
   const [carbonPrice, setCarbonPrice] = useState(85); 
   const [investment, setInvestment] = useState(5); 
@@ -180,7 +445,7 @@ export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
 
   const pageData = {
       title: { zh: '財務模擬器', en: 'Financial Simulator' },
-      desc: { zh: '去碳化投資回報與碳稅衝擊預測', en: 'Decarbonization Investment Analysis' },
+      desc: { zh: '去碳化投資回報與數據整合中心', en: 'Decarbonization ROI & Data Integration Hub' },
       tag: { zh: '認知核心', en: 'Cognition Core' }
   };
 
@@ -219,7 +484,7 @@ export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="h-full flex flex-col space-y-6 animate-fade-in overflow-hidden pb-12">
       <UniversalPageHeader 
           icon={Calculator}
           title={pageData.title}
@@ -228,97 +493,120 @@ export const FinanceSim: React.FC<FinanceSimProps> = ({ language }) => {
           tag={pageData.tag}
       />
 
-      <div className="flex justify-center -mt-6 mb-6">
-          <div className="bg-slate-900/50 p-1 rounded-xl border border-white/10 flex">
-              <button 
-                  onClick={() => setActiveTab('roi')}
-                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'roi' ? 'bg-celestial-emerald text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-              >
-                  <LineChart className="w-4 h-4" /> {isZh ? 'ROI 預測' : 'ROI Forecast'}
-              </button>
-              <button 
-                  onClick={() => setActiveTab('shadow')}
-                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'shadow' ? 'bg-celestial-purple text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-              >
-                  <Coins className="w-4 h-4" /> {isZh ? '影子價格模擬' : 'Shadow Pricing'}
-              </button>
+      <div className="flex justify-center -mt-8 mb-4 relative z-10 shrink-0">
+          <div className="bg-slate-900/80 p-1.5 rounded-2xl border border-white/10 flex backdrop-blur-2xl shadow-[0_30px_60px_rgba(0,0,0,0.5)]">
+              {[
+                  { id: 'roi', icon: LineChart, label: isZh ? 'ROI 預測' : 'ROI Forecast', color: 'bg-celestial-emerald' },
+                  { id: 'shadow', icon: Coins, label: isZh ? '影子價格' : 'Shadow Price', color: 'bg-celestial-purple' },
+                  { id: 'import', icon: FileUp, label: isZh ? '大數據匯入' : 'Data Ingestion', color: 'bg-white text-black' },
+              ].map(t => (
+                  <button 
+                      key={t.id}
+                      onClick={() => setActiveTab(t.id as any)}
+                      className={`flex items-center gap-3 px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300
+                          ${activeTab === t.id ? `${t.color} shadow-2xl scale-[1.05]` : 'text-gray-500 hover:text-white'}
+                      `}
+                  >
+                      <t.icon className="w-4 h-4" /> {t.label}
+                  </button>
+              ))}
           </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="glass-panel p-6 rounded-2xl space-y-8 border border-white/5 h-full">
-            <div className="flex items-center gap-2 mb-2 p-2 bg-white/5 rounded-lg border border-white/5">
-                <DollarSign className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs text-gray-400">
-                    Linked Emissions: 
-                    <span className="text-white font-bold ml-1">{(carbonData.scope1 + carbonData.scope2).toFixed(1)} tCO2e</span>
-                </span>
+      <div className="flex-1 overflow-y-auto no-scrollbar pr-1">
+        {activeTab === 'import' ? (
+            <div className="space-y-8 animate-fade-in">
+                <CsvImportView language={language} />
+                <TransactionList language={language} />
             </div>
-
-            <h3 className="text-lg font-semibold text-white mb-4">{isZh ? '模擬參數' : 'Parameters'}</h3>
-            
-            <QuantumSlider 
-                label={activeTab === 'roi' ? (isZh ? '外部碳稅 (Carbon Tax)' : 'External Carbon Tax') : (isZh ? '內部影子價格 (Shadow Price)' : 'Internal Shadow Price')}
-                value={carbonPrice}
-                min={0} max={300} unit="$/t"
-                color={activeTab === 'roi' ? 'gold' : 'purple'}
-                onChange={setCarbonPrice}
-            />
-            
-            {activeTab === 'roi' && (
-                <>
-                    <QuantumSlider 
-                        label={isZh ? '綠色投資額 (Investment)' : 'Green Investment'}
-                        value={investment}
-                        min={0} max={50} unit="M$"
-                        color="emerald"
-                        onChange={setInvestment}
-                    />
-
-                    <QuantumSlider 
-                        label={isZh ? '時間範疇 (Horizon)' : 'Time Horizon'}
-                        value={timeHorizon}
-                        min={1} max={15} unit="Yrs"
-                        color="blue"
-                        onChange={setTimeHorizon}
-                    />
-
-                    <QuantumSlider 
-                        label={isZh ? '預期能效提升 (Efficiency)' : 'Efficiency Gain'}
-                        value={efficiency}
-                        min={0} max={50} unit="%"
-                        color="purple"
-                        onChange={setEfficiency}
-                    />
-                </>
-            )}
-
-            <div className="pt-6 border-t border-white/10">
-                <OmniEsgCell 
-                    mode="list" 
-                    label={activeTab === 'roi' ? "Internal Rate of Return (IRR)" : "Internal Carbon Fee Potential"}
-                    value={activeTab === 'roi' ? "14.2%" : `$${(carbonPrice * (carbonData.scope1 + carbonData.scope2)).toLocaleString()}`} 
-                    confidence="medium" 
-                    traits={['gap-filling']}
-                    color={activeTab === 'roi' ? 'emerald' : 'purple'}
-                    onAiAnalyze={handleAiForecast}
-                />
-            </div>
-        </div>
-
-        {activeTab === 'roi' ? (
-            <MarketOracleAgent 
-                id="MarketOracle"
-                label="ROI Forecast"
-                data={data}
-                isZh={isZh}
-            />
         ) : (
-            <ShadowPricingView 
-                price={carbonPrice}
-                emissions={carbonData.scope1 + carbonData.scope2}
-                isZh={isZh}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
+                <div className="glass-panel p-8 rounded-[3rem] space-y-10 border border-white/5 h-full bg-slate-900/40 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5"><Activity className="w-48 h-48" /></div>
+                    
+                    <div className="flex items-center gap-3 mb-2 p-4 bg-white/5 rounded-2xl border border-white/5 relative z-10">
+                        <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400"><DollarSign className="w-5 h-5" /></div>
+                        <div>
+                            <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block">Linked_Emissions</span>
+                            <span className="text-xl font-mono font-bold text-white">{(carbonData.scope1 + carbonData.scope2).toFixed(1)} <span className="text-gray-500 text-xs">tCO2e</span></span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 relative z-10">
+                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] ml-1 mb-6 flex items-center gap-2">
+                            <Settings className="w-3.5 h-3.5" /> Simulation_Parameters
+                        </h3>
+                        
+                        <div className="space-y-8">
+                            <QuantumSlider 
+                                label={activeTab === 'roi' ? (isZh ? '外部碳稅 (Carbon Tax)' : 'External Carbon Tax') : (isZh ? '內部影子價格 (Shadow Price)' : 'Internal Shadow Price')}
+                                value={carbonPrice}
+                                min={0} max={300} unit="$/t"
+                                color={activeTab === 'roi' ? 'gold' : 'purple'}
+                                onChange={setCarbonPrice}
+                            />
+                            
+                            {activeTab === 'roi' && (
+                                <>
+                                    <QuantumSlider 
+                                        label={isZh ? '綠色投資額 (Investment)' : 'Green Investment'}
+                                        value={investment}
+                                        min={0} max={50} unit="M$"
+                                        color="emerald"
+                                        onChange={setInvestment}
+                                    />
+
+                                    <QuantumSlider 
+                                        label={isZh ? '時間範疇 (Horizon)' : 'Time Horizon'}
+                                        value={timeHorizon}
+                                        min={1} max={15} unit="Yrs"
+                                        color="blue"
+                                        onChange={setTimeHorizon}
+                                    />
+
+                                    <QuantumSlider 
+                                        label={isZh ? '預期能效提升 (Efficiency)' : 'Efficiency Gain'}
+                                        value={efficiency}
+                                        min={0} max={50} unit="%"
+                                        color="purple"
+                                        onChange={setEfficiency}
+                                    />
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="pt-8 border-t border-white/10 relative z-10">
+                        <OmniEsgCell 
+                            mode="list" 
+                            label={activeTab === 'roi' ? "Internal Rate of Return (IRR)" : "Internal Carbon Fee Potential"}
+                            value={activeTab === 'roi' ? "14.2%" : `$${(carbonPrice * (carbonData.scope1 + carbonData.scope2)).toLocaleString()}`} 
+                            confidence="medium" 
+                            traits={['gap-filling']}
+                            color={activeTab === 'roi' ? 'emerald' : 'purple'}
+                            onAiAnalyze={handleAiForecast}
+                            className="!bg-black/40 !border-white/5 shadow-2xl"
+                        />
+                    </div>
+                </div>
+
+                <div className="lg:col-span-2 h-full flex flex-col gap-6">
+                    {activeTab === 'roi' ? (
+                        <MarketOracleAgent 
+                            id="MarketOracle"
+                            label="ROI Forecast"
+                            data={data}
+                            isZh={isZh}
+                        />
+                    ) : (
+                        <ShadowPricingView 
+                            price={carbonPrice}
+                            emissions={carbonData.scope1 + carbonData.scope2}
+                            isZh={isZh}
+                        />
+                    )}
+                </div>
+            </div>
         )}
       </div>
     </div>

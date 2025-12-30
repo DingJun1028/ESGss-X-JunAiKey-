@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useMemo } from 'react';
 import { useCompany } from './providers/CompanyProvider';
 import { generateReportChapter } from '../services/ai-service';
@@ -75,11 +76,12 @@ export const ReportGen: React.FC<{ language: Language }> = ({ language }) => {
   const handleExportPDF = () => {
       if (!reportRef.current) return;
       setIsExporting(true);
+      // Fix: Cast orientation to literal 'portrait' to match Html2PdfOptions
       const opt = { 
           margin: 10, 
           filename: `${companyName}_ESG_Report_v15.pdf`, 
           html2canvas: { scale: 3, useCORS: true }, 
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const } 
       };
       html2pdf().set(opt).from(reportRef.current).save().then(() => { 
           setIsExporting(false); 

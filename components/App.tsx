@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Language } from './types';
 
@@ -50,7 +51,10 @@ import { ProxyMarketplace } from './components/ProxyMarketplace';
 import { DigitalSoulForge } from './components/DigitalSoulForge';
 import { RegenerativeModel } from './components/RegenerativeModel';
 import { PersonalVault } from './components/PersonalVault';
-import { AffiliateZone } from './components/AffiliateNexus'; // Fix: 應為 AffiliateZone 但依照結構可直接匯入
+import { AffiliateZone } from './components/AffiliateZone';
+import { GlobalOperations } from './components/GlobalOperations';
+import { WorkflowLab } from './components/WorkflowLab';
+import { McpConfig } from './components/McpConfig';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -129,6 +133,9 @@ const App: React.FC = () => {
                     case View.PALACE: return <Gamification language={language} />;
                     case View.REGENERATIVE: return <RegenerativeModel language={language} />;
                     case View.AFFILIATE: return <AffiliateZone language={language} />;
+                    case View.GLOBAL_OPS: return <GlobalOperations />;
+                    case View.WORKFLOW_LAB: return <WorkflowLab language={language} />;
+                    case View.MCP_CONFIG: return <McpConfig language={language} />;
                     default: return <MyEsg language={language} onNavigate={setCurrentView} />;
                   }
                 })()}

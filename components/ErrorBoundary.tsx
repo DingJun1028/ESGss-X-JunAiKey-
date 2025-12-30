@@ -16,9 +16,9 @@ interface ErrorBoundaryState {
  * Standard React Error Boundary component.
  * Ensures the platform remains stable by containing localized runtime errors.
  */
-// Fix: Directly extend Component from react to ensure proper inheritance of setState, props and state
+// Fix: Explicitly use Component from react to ensure inheritance of setState and props is recognized
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  // Initialize state using class fields which is standard for modern React components
+  // Correctly initialize state with type safety
   state: ErrorBoundaryState = {
     hasError: false,
     error: undefined
@@ -34,9 +34,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error("Critical System Interruption:", error, errorInfo);
   }
 
-  private handleRetry = () => {
-    // Correctly clear the error state and trigger a re-render
-    // Fix: setState is now correctly recognized via explicit inheritance from Component
+  // Fix: handleRetry as an arrow function correctly maintains 'this' context and allows calling setState inherited from base class
+  public handleRetry = () => {
+    /* Calling setState which is inherited from Component */
     this.setState({ hasError: false, error: undefined });
   };
 
@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   render(): ReactNode {
-    // Fix: state and props are now correctly recognized via explicit inheritance from Component
+    // Fix: Access state and props which are inherited from base Component class
     const { hasError, error } = this.state;
     const { children, fallback } = this.props;
 
@@ -91,6 +91,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       );
     }
 
-    return children || null;
+    return (children as ReactNode) || null;
   }
 }

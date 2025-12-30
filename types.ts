@@ -1,3 +1,4 @@
+
 export type Language = 'zh-TW' | 'en-US';
 
 export enum View {
@@ -39,13 +40,79 @@ export enum View {
     RESEARCH_HUB = 'RESEARCH_HUB',
     HEALTH_CHECK = 'HEALTH_CHECK',
     VAULT = 'VAULT',
-    AFFILIATE = 'AFFILIATE'
+    AFFILIATE = 'AFFILIATE',
+    GLOBAL_OPS = 'GLOBAL_OPS',
+    WORKFLOW_LAB = 'WORKFLOW_LAB',
+    MCP_CONFIG = 'MCP_CONFIG',
+    IMPACT_PROJECTS = 'IMPACT_PROJECTS'
 }
 
-// Added missing dimension ID type
+export interface LogicModel {
+    inputs: string[];
+    activities: string[];
+    outputs: string[];
+    outcomes: string[];
+    impact: string;
+}
+
+export interface ImpactProject {
+    id: string;
+    title: string;
+    description: string;
+    status: 'draft' | 'active' | 'completed';
+    progress: number; // 0-100
+    impactXP: number;
+    sdgs: number[];
+    logicModel: LogicModel;
+    financials: {
+        budget: number;
+        spent: number;
+        revenue_projected: number;
+    };
+    impactMetrics: {
+        label: string;
+        target: number;
+        current: number;
+        unit: string;
+        proxy_value: number; // Monetary value per unit for SROI
+    }[];
+    sroi: number; // Calculated ratio
+}
+
+export interface FinancialEntry {
+    id: string;
+    date: string;
+    description: string;
+    amount: number;
+    category: string;
+    type: 'income' | 'expense';
+}
+
+export interface McpTool {
+    name: string;
+    description: string;
+    inputSchema: any;
+}
+
+export interface McpServer {
+    id: string;
+    name: string;
+    url: string;
+    status: 'connected' | 'error' | 'connecting';
+    transport: 'sse' | 'streamable_http';
+    tools: McpTool[];
+    latency: number;
+    docsUrl?: string;
+}
+
+export interface McpRunActionOutput {
+  success: boolean;
+  result: any;
+  error: string | null;
+}
+
 export type DimensionID = 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'A7' | 'A8' | 'A9' | 'A10' | 'A11' | 'A12';
 
-// Added missing course interface
 export interface Course {
     id: string;
     title: string;
@@ -55,7 +122,6 @@ export interface Course {
     progress: number;
 }
 
-// Added missing universal crystal interface
 export interface UniversalCrystal {
     id: string;
     name: string;
@@ -67,7 +133,6 @@ export interface UniversalCrystal {
     fragmentsRequired: number;
 }
 
-// Added missing user title interface
 export interface UserTitle {
     id: string;
     text: string;
@@ -75,7 +140,6 @@ export interface UserTitle {
     bonusEffect?: string;
 }
 
-// Added missing badge interface
 export interface Badge {
     id: string;
     name: string;
@@ -84,7 +148,6 @@ export interface Badge {
     unlockedAt?: number;
 }
 
-// Added missing official event interface
 export interface OfficialEvent {
     id: string;
     title: string;
@@ -93,7 +156,6 @@ export interface OfficialEvent {
     xpReward: number;
 }
 
-// Added missing report section interface
 export interface ReportSection {
     id: string;
     title: string;
@@ -103,7 +165,6 @@ export interface ReportSection {
     subSections?: ReportSection[];
 }
 
-// Added missing ESG card interface
 export interface EsgCard {
     id: string;
     title: string;
@@ -120,7 +181,6 @@ export interface EsgCard {
     imageUrl?: string;
 }
 
-// Added missing scripture node interface
 export interface ScriptureNode {
     id: string;
     code: string;
@@ -131,7 +191,6 @@ export interface ScriptureNode {
     tags: { zh: string; en: string }[];
 }
 
-// Added missing dimension protocol interface
 export interface DimensionProtocol {
     id: DimensionID;
     name: string;
@@ -140,7 +199,6 @@ export interface DimensionProtocol {
     integrity: number;
 }
 
-// Added missing unit test result interface
 export interface UnitTestResult {
     id: string;
     name: string;
@@ -150,10 +208,8 @@ export interface UnitTestResult {
     assertionLog: string[];
 }
 
-// Added missing toast type
 export type ToastType = 'success' | 'error' | 'warning' | 'info' | 'reward';
 
-// Added missing toast interface
 export interface Toast {
     id: string;
     type: ToastType;
@@ -162,7 +218,6 @@ export interface Toast {
     duration?: number;
 }
 
-// Added missing OmniEsg types
 export type OmniEsgTrait = 'learning' | 'optimization' | 'performance' | 'evolution' | 'gap-filling' | 'seamless' | 'bridging' | 'stability' | 'altruism' | 'innovation';
 export type OmniEsgDataLink = 'live' | 'ai' | 'blockchain';
 export type OmniEsgMode = 'card' | 'list';
@@ -181,7 +236,6 @@ export interface LogicWitness {
     witnessHash: string;
 }
 
-// Added missing dashboard widget types
 export type WidgetType = 'carbon' | 'performance' | 'tasks' | 'news';
 
 export interface DashboardWidget {
@@ -192,7 +246,6 @@ export interface DashboardWidget {
     gridSize?: 'small' | 'medium' | 'large' | 'full';
 }
 
-// Added missing audit log entry interface
 export interface AuditLogEntry {
     id: string;
     timestamp: number;
@@ -202,7 +255,6 @@ export interface AuditLogEntry {
     hash: string;
 }
 
-// Added missing quest interface
 export interface Quest {
     id: string;
     title: string;
@@ -213,14 +265,12 @@ export interface Quest {
     status: 'active' | 'verifying' | 'completed';
 }
 
-// Added missing to-do item interface
 export interface ToDoItem {
     id: number;
     text: string;
     completed: boolean;
 }
 
-// Added missing note item interface
 export interface NoteItem {
     id: string;
     title?: string;
@@ -229,7 +279,6 @@ export interface NoteItem {
     timestamp: number;
 }
 
-// Added missing bookmark item interface
 export interface BookmarkItem {
     id: string;
     type: 'article' | 'video' | 'news';
@@ -237,10 +286,8 @@ export interface BookmarkItem {
     link?: string;
 }
 
-// Added missing user tier type
 export type UserTier = 'Free' | 'Pro' | 'Enterprise';
 
-// Added missing carbon data interface
 export interface CarbonData {
     fuelConsumption: number;
     electricityConsumption: number;
@@ -250,10 +297,8 @@ export interface CarbonData {
     lastUpdated: number;
 }
 
-// Added missing mastery level type
 export type MasteryLevel = 'Novice' | 'Apprentice' | 'Master';
 
-// Added missing app file interface
 export interface AppFile {
     id: string;
     name: string;
@@ -263,7 +308,6 @@ export interface AppFile {
     sourceModule: string;
 }
 
-// Added missing intelligence item interface
 export interface IntelligenceItem {
     id: string;
     content: string;
@@ -271,7 +315,6 @@ export interface IntelligenceItem {
     timestamp: number;
 }
 
-// Added missing user journal entry interface
 export interface UserJournalEntry {
     id: string;
     timestamp: number;
@@ -282,13 +325,12 @@ export interface UserJournalEntry {
     tags: string[];
 }
 
-// Added missing external api keys interface
 export interface ExternalApiKeys {
     openai?: string;
     straico?: string;
+    github?: string;
 }
 
-// Added missing vocation types
 export type VocationType = 'Architect' | 'Alchemist' | 'Scribe' | 'Envoy' | 'Seeker' | 'Guardian';
 
 export interface VocationInfo {
@@ -299,13 +341,11 @@ export interface VocationInfo {
     perks: string[];
 }
 
-// Added missing activity pulse node interface
 export interface ActivityPulseNode {
     date: string;
     intensity: number;
 }
 
-// Added missing webhook interfaces
 export interface WebhookConfig {
     id: string;
     eventType: string;
@@ -325,19 +365,16 @@ export interface WebhookDelivery {
     status: 'success' | 'failure';
 }
 
-// Added missing semantic context interface
 export interface SemanticContext {
     keywords: string[];
 }
 
-// Added missing soul evolution feedback interface
 export interface SoulEvolutionFeedback {
     suggestedPromptTweak: string;
     performanceSummary: string;
     suggestedTitle?: UserTitle;
 }
 
-// Added missing persona config interface
 export interface PersonaConfig {
     id: string;
     name: string;
@@ -361,7 +398,6 @@ export interface PersonaConfig {
     usageHistory?: any[];
 }
 
-// Added missing universal knowledge node interface
 export interface UniversalKnowledgeNode {
     id: string;
     type: string;
@@ -377,7 +413,6 @@ export interface UniversalKnowledgeNode {
     };
 }
 
-// Added missing quantum node interface
 export interface QuantumNode {
     id: string;
     atom: string;
@@ -386,7 +421,6 @@ export interface QuantumNode {
     source: string;
 }
 
-// Added missing neural signal interface
 export interface NeuralSignal {
     id: string;
     origin: string;
@@ -396,7 +430,6 @@ export interface NeuralSignal {
     timestamp: number;
 }
 
-// Added missing MCP registry item interface
 export interface MCPRegistryItem {
     id: string;
     name: string;
@@ -405,14 +438,12 @@ export interface MCPRegistryItem {
     latency: number;
 }
 
-// Added missing trinity state interface
 export interface TrinityState {
     perception: number;
     cognition: number;
     action: number;
 }
 
-// Added missing life ESG quest types
 export type LifeCategory = 'NetZero' | 'Altruism' | 'Governance' | 'Innovation';
 
 export interface LifeEsgQuest {
@@ -429,7 +460,6 @@ export interface LifeEsgQuest {
     verifiedHash?: string;
 }
 
-// Added missing persona attributes interface
 export interface PersonaAttributes {
     altruism: number;
     pragmatism: number;
@@ -437,7 +467,6 @@ export interface PersonaAttributes {
     stability: number;
 }
 
-// Added missing digital soul asset interface
 export interface DigitalSoulAsset {
     id: string;
     name: string;
@@ -448,7 +477,6 @@ export interface DigitalSoulAsset {
     ownerId: string;
 }
 
-// Added missing soul forge config interface
 export interface SoulForgeConfig {
     altruism: number;
     pragmatism: number;
@@ -456,7 +484,6 @@ export interface SoulForgeConfig {
     stability: number;
 }
 
-// Added missing training doc interface
 export interface TrainingDoc {
     id: string;
     name: string;
@@ -465,14 +492,12 @@ export interface TrainingDoc {
     atomsCount: number;
 }
 
-// Added missing Adan disciple interface
 export interface AdanDisciple extends PersonaConfig {
     version: string;
     alignment: number;
     rank: string;
 }
 
-// Added missing training log entry interface
 export interface TrainingLogEntry {
     id: string;
     agentId: string;
@@ -484,7 +509,6 @@ export interface TrainingLogEntry {
     isCriticalInsight?: boolean;
 }
 
-// Added missing entity planet interface
 export interface EntityPlanet {
     taxId: string;
     name: string;
@@ -499,7 +523,6 @@ export interface EntityPlanet {
     lastUpdated: string;
 }
 
-// Added missing agent certification interface
 export interface AgentCertification {
     id: string;
     title: string;
@@ -508,7 +531,6 @@ export interface AgentCertification {
     skillsUnlocked: string[];
 }
 
-// Added missing proxy product interface
 export interface ProxyProduct {
     id: string;
     name: string;
@@ -520,7 +542,6 @@ export interface ProxyProduct {
     pitchScript: string;
 }
 
-// Added missing agent soul 5D interface
 export interface AgentSoul5D {
     id: string;
     essence: { name: string; tone: string; backstory: string };
@@ -530,7 +551,6 @@ export interface AgentSoul5D {
     foundation: { model: string; temperature: number; tokens: number };
 }
 
-// Added missing skill node interface
 export interface SkillNode {
     id: string;
     name: string;
@@ -540,7 +560,6 @@ export interface SkillNode {
     status: 'Ready' | 'Cooldown';
 }
 
-// Added missing evolution proposal interface
 export interface EvolutionProposal {
     id: string;
     pattern: string;

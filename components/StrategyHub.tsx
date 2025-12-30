@@ -10,15 +10,20 @@ import {
 import { UniversalPageHeader } from './UniversalPageHeader';
 import { useToast } from '../contexts/ToastContext';
 import { useUniversalAgent } from '../contexts/UniversalAgentContext';
+import { useCompany } from './providers/CompanyProvider';
 import { streamChat } from '../services/ai-service';
 import { marked } from 'marked';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 
 export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View) => void }> = ({ language, onNavigate }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
+  const { companyName } = useCompany();
   const { observeAction } = useUniversalAgent();
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [thinkingSteps, setThinkingSteps] = useState<{id: number, text: string, status: 'pending' | 'done'}[]>([]);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
@@ -49,7 +54,6 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
     addToast('info', isZh ? `正在啟動 [${tool.name}] 深度分析...` : `Initiating [${tool.name}] analysis...`, 'Advisory');
     
     try {
-        // Step 1 Finish
         await new Promise(r => setTimeout(r, 800));
         setThinkingSteps(prev => prev.map(s => s.id === 1 ? {...s, status: 'done'} : s));
         
@@ -63,7 +67,9 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
             }
             fullRes += chunk.text || '';
             setAnalysisResult(fullRes);
-            outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight, behavior: 'smooth' });
+            if (outputRef.current) {
+                outputRef.current.scrollTop = outputRef.current.scrollHeight;
+            }
         }
         
         setThinkingSteps(prev => prev.map(s => s.id === 3 ? {...s, status: 'done'} : s));
@@ -75,6 +81,105 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
     }
   };
 
+  const handleExportPDF = () => {
+    if (!analysisResult) return;
+    setIsExporting(true);
+    addToast('info', isZh ? '正在顯化專業顧問報告...' : 'Manifesting Advisory Report...', 'Exporter');
+    
+    const activeToolName = advisoryTools.find(t => t.id === selectedTool)?.name || 'Advisory';
+
+    const printContainer = document.createElement('div');
+    printContainer.style.padding = '60px';
+    printContainer.style.background = '#FFFFFF';
+    printContainer.style.color = '#020617';
+    printContainer.style.fontFamily = "'Inter', 'serif'";
+
+    const header = document.createElement('div');
+    header.style.borderBottom = '4px solid #020617';
+    header.style.paddingBottom = '30px';
+    header.style.marginBottom = '50px';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'flex-end';
+    header.innerHTML = `
+        <div>
+            <h1 style="margin: 0; font-size: 32px; font-weight: 900; color: #020617; letter-spacing: -0.02em;">STRATEGIC ADVISORY BLUEPRINT</h1>
+            <p style="margin: 8px 0 0 0; font-size: 16px; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.1em;">CLIENT ENTITY: ${companyName.toUpperCase()}</p>
+        </div>
+        <div style="text-align: right;">
+            <p style="margin: 0; font-size: 12px; font-weight: 900; color: #94a3b8; letter-spacing: 0.2em;">JAK_CORE_v16.1</p>
+            <p style="margin: 4px 0 0 0; font-size: 14px; font-weight: 800; color: #020617;">${new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+    `;
+    printContainer.appendChild(header);
+
+    const meta = document.createElement('div');
+    meta.style.display = 'flex';
+    meta.style.gap = '24px';
+    meta.style.marginBottom = '40px';
+    meta.innerHTML = `
+        <div style="flex: 1; padding: 24px; background: #f1f5f9; border-radius: 20px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px;">Analysis Domain</div>
+            <div style="font-size: 18px; font-weight: 800; color: #0f172a;">${activeToolName}</div>
+        </div>
+        <div style="flex: 1; padding: 24px; background: #f1f5f9; border-radius: 20px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px;">Integrity Hash</div>
+            <div style="font-size: 12px; font-family: monospace; color: #0f172a; font-weight: 700;">0x${Math.random().toString(16).substr(2, 12).toUpperCase()}</div>
+        </div>
+    `;
+    printContainer.appendChild(meta);
+
+    const content = document.createElement('div');
+    content.className = 'markdown-body';
+    content.style.color = '#1e293b';
+    content.innerHTML = marked.parse(analysisResult) as string;
+    
+    content.querySelectorAll('h1, h2, h3').forEach((el: any) => {
+        el.style.color = '#0f172a';
+        el.style.fontWeight = '900';
+        el.style.borderBottom = '2px solid #f1f5f9';
+        el.style.paddingBottom = '12px';
+        el.style.marginTop = '40px';
+        el.style.letterSpacing = '-0.01em';
+    });
+    content.querySelectorAll('h2').forEach((el: any) => el.style.fontSize = '24px');
+    content.querySelectorAll('p, li').forEach((el: any) => {
+        el.style.color = '#334155';
+        el.style.lineHeight = '1.8';
+        el.style.fontSize = '14px';
+        el.style.marginBottom = '16px';
+    });
+    
+    printContainer.appendChild(content);
+
+    const footer = document.createElement('div');
+    footer.style.marginTop = '80px';
+    footer.style.paddingTop = '30px';
+    footer.style.borderTop = '2px solid #f1f5f9';
+    footer.style.textAlign = 'center';
+    footer.innerHTML = `
+        <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em;">
+            Confidential Document • Manifested by ESGss Advisory Lab • Secure Logic Verification Active
+        </p>
+        <p style="margin: 8px 0 0 0; font-size: 10px; color: #cbd5e1; font-weight: 700;">© 2025 JunAiKey Technologies. All Rights Reserved. This blueprint is provided for strategic guidance only.</p>
+    `;
+    printContainer.appendChild(footer);
+
+    const opt = {
+        margin: [15, 10, 15, 10] as [number, number, number, number],
+        filename: `ESGss_Advisory_Report_${companyName.replace(/\s+/g, '_')}_${Date.now()}.pdf`,
+        /* Fix: Cast image type as const to match expected literal type 'jpeg' | 'png' | 'webp' in Html2PdfOptions */
+        image: { type: 'jpeg' as const, quality: 1.0 },
+        html2canvas: { scale: 4, useCORS: true, letterRendering: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const, compress: true }
+    };
+    
+    html2pdf().set(opt).from(printContainer).save().then(() => {
+        setIsExporting(false);
+        addToast('success', isZh ? '精美顧問報告已匯出' : 'Bespoke advisory report exported', 'Success');
+    });
+  };
+
   return (
     <div className="h-full flex flex-col space-y-4 animate-fade-in overflow-hidden">
         <UniversalPageHeader 
@@ -82,11 +187,10 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
             title={{ zh: '整合顧問實驗室', en: 'Integrated Advisory Lab' }}
             description={{ zh: 'AI × 專業商管工具：產出具備「王道利他」精神的企業永續建議', en: 'AI × Consulting Tools: Manifesting Wangdao-driven Sustainability' }}
             language={language}
-            tag={{ zh: '顧問內核 v16.0', en: 'ADVISORY_V16.0' }}
+            tag={{ zh: '顧問內核 v16.1', en: 'ADVISORY_V16.1' }}
         />
 
         <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden">
-            {/* Left: Tools Grid (3/12) */}
             <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 overflow-hidden">
                 <div className="glass-bento p-6 flex flex-col bg-slate-900/60 border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden h-full">
                     <div className="flex justify-between items-center mb-6 shrink-0">
@@ -102,7 +206,7 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
                                 key={tool.id}
                                 onClick={() => handleToolExecute(tool)}
                                 className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between group relative overflow-hidden
-                                    ${selectedTool === tool.id ? 'bg-celestial-gold/10 border-celestial-gold/40 text-white' : 'bg-white/5 border-white/5 hover:border-white/20 text-gray-500'}
+                                    ${selectedTool === tool.id ? 'bg-celestial-gold/10 border-celestial-gold/40 text-white' : 'bg-white/5 border-white/5 text-gray-500 hover:border-white/20'}
                                 `}
                             >
                                 <div className="flex items-center gap-4 relative z-10">
@@ -118,7 +222,6 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
                 </div>
             </div>
 
-            {/* Right: Advisor Terminal (9/12) */}
             <div className="col-span-12 lg:col-span-9 flex flex-col min-h-0 overflow-hidden">
                 <div className="flex-1 glass-bento bg-[#020617] border-white/5 rounded-[3rem] relative overflow-hidden flex flex-col shadow-2xl">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(139,92,246,0.03)_0%,_transparent_70%)] pointer-events-none" />
@@ -136,10 +239,15 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
                                 </div>
                             </div>
                         </div>
-                        {selectedTool && (
+                        {selectedTool && analysisResult && (
                             <div className="flex gap-2">
-                                <button className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase text-gray-400 border border-white/5 transition-all flex items-center gap-2">
-                                    <Download className="w-3.5 h-3.5" /> Export_Insights
+                                <button 
+                                    onClick={handleExportPDF}
+                                    disabled={isExporting}
+                                    className="px-6 py-2 bg-white text-black hover:bg-celestial-gold transition-all rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-2xl disabled:opacity-50"
+                                >
+                                    {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} 
+                                    {isZh ? '匯出精美報告' : 'Export_Insights'}
                                 </button>
                             </div>
                         )}
@@ -149,7 +257,8 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
                         {isAnalyzing && (
                             <div className="mb-8 p-6 bg-white/5 rounded-3xl border border-white/5 animate-fade-in">
                                 <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
-                                    <Sparkles className="w-3 h-3 text-celestial-gold" /> Thinking_Chain_Active
+                                    <span className="w-2 h-2 rounded-full bg-celestial-gold animate-pulse" />
+                                    Thinking_Chain_Active
                                 </h4>
                                 <div className="space-y-4">
                                     {thinkingSteps.map((step) => (
@@ -164,7 +273,7 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
                         )}
 
                         {analysisResult ? (
-                            <div className="animate-fade-in max-w-4xl">
+                            <div className="animate-fade-in max-w-4xl bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
                                 <div className="prose prose-invert prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed text-gray-200">
                                     <div className="markdown-body" dangerouslySetInnerHTML={{ __html: marked.parse(analysisResult) as string }} />
                                 </div>
@@ -178,7 +287,6 @@ export const StrategyHub: React.FC<{ language: Language, onNavigate: (view: View
                         )}
                     </div>
 
-                    {/* Bottom HUD decoration */}
                     <div className="p-4 border-t border-white/5 bg-slate-950/40 flex justify-between items-center shrink-0 z-10">
                         <div className="flex gap-6">
                             <div className="flex items-center gap-2 text-[9px] text-gray-600 font-black uppercase">

@@ -1,64 +1,67 @@
-
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useTransition } from 'react';
 import { universalIntelligence } from '../../services/evolutionEngine';
-import { OmniEsgTrait, UniversalLabel } from '../../types';
+import { OmniEsgTrait, UniversalLabel, ComponentGrowth, CircuitStatus } from '../../types';
 
 interface ProxyConfig {
   enableTelemetry?: boolean;
   enableEvolution?: boolean;
+  enableCircuitBreaker?: boolean;
 }
 
 export interface InjectedProxyProps {
+  componentId: string;
   adaptiveTraits?: OmniEsgTrait[];
   trackInteraction?: (type: 'click' | 'hover' | 'edit' | 'ai-trigger', payload?: any) => void;
   isHighFrequency?: boolean;
   isAgentActive?: boolean;
+  growth?: ComponentGrowth;
+  isCircuitOpen?: boolean;
 }
 
 /**
- * Universal Proxy HOC (萬能代理).
- * Optimized: Uses targeted subscription to prevent global re-renders.
+ * Universal Proxy HOC (萬能代理 V1.2 Refined)
+ * Deeply intercepts all property access and function calls to implement
+ * the Universal Component Protocol.
  */
-export const withUniversalProxy = <P extends object>(
-  WrappedComponent: React.ComponentType<P & InjectedProxyProps>,
-  config: ProxyConfig = { enableTelemetry: true, enableEvolution: true }
+export const withUniversalProxy = <P extends InjectedProxyProps>(
+  WrappedComponent: React.ComponentType<P>,
+  config: ProxyConfig = { enableTelemetry: true, enableEvolution: true, enableCircuitBreaker: true }
 ) => {
-  const ComponentWithProxy = (props: P & { id?: string; label?: string | UniversalLabel; value?: any }) => {
-    // 1. Identity Resolution (Stable Ref)
+  // Fix: Use Omit to ensure injected props are not required by the returned component
+  type ComponentProps = Omit<P, keyof InjectedProxyProps> & { id?: string; label?: string | UniversalLabel; value?: any };
+
+  const ComponentWithProxy = (props: ComponentProps) => {
+    // Determine a stable ID for this component instance
     const idRef = useRef(props.id || (typeof props.label === 'string' ? props.label : props.label?.id) || `anon-${Math.random().toString(36).substr(2,9)}`);
     const componentId = idRef.current;
     
     const [adaptiveTraits, setAdaptiveTraits] = useState<OmniEsgTrait[]>([]);
-    const [isAgentActive, setIsAgentActive] = useState(false);
+    const [growth, setGrowth] = useState<ComponentGrowth | undefined>(undefined);
+    const [isPending, startTransition] = useTransition();
 
-    // 2. Registration & Neural Link (Mount)
     useEffect(() => {
       if (config.enableEvolution) {
-        // Register "I am here"
+        // Register the node with the universal intelligence engine
         universalIntelligence.registerNode(componentId, props.label || 'Unknown', props.value);
 
-        // Load initial state
         const node = universalIntelligence.getNode(componentId);
         if (node) {
-            // Fix: Cast string[] from kernel node to OmniEsgTrait[] to match state type
             setAdaptiveTraits(node.traits as OmniEsgTrait[]);
-            setIsAgentActive(node.traits.includes('learning'));
+            setGrowth(node.growth);
         }
 
-        // Optimized: Subscribe ONLY to this component's ID
         const unsubscribe = universalIntelligence.subscribe(componentId, (updatedNode) => {
-            // Fix: Cast string[] from kernel node to OmniEsgTrait[] to match state type
-            setAdaptiveTraits(updatedNode.traits as OmniEsgTrait[]);
-            setIsAgentActive(updatedNode.traits.includes('learning'));
+            startTransition(() => {
+                setAdaptiveTraits(updatedNode.traits as OmniEsgTrait[]);
+                setGrowth(updatedNode.growth);
+            });
         });
 
-        /* Fix: Ensure the cleanup function returns void by wrapping the unsubscribe call to satisfy EffectCallback return type */
         return () => { unsubscribe(); };
       }
-    }, [componentId]); // Depend only on stable ID
+    }, [componentId]);
 
-    // 3. Sense Input (Telemetry)
-    const trackInteraction = (type: 'click' | 'hover' | 'edit' | 'ai-trigger', payload?: any) => {
+    const trackInteraction = (type: string, payload?: any) => {
       if (config.enableTelemetry) {
         universalIntelligence.recordInteraction({
           componentId,
@@ -69,41 +72,53 @@ export const withUniversalProxy = <P extends object>(
       }
     };
 
-    const isHighFrequency = adaptiveTraits.includes('optimization');
+    const proxiedProps = useMemo(() => {
+        const handler: ProxyHandler<any> = {
+            get(target, prop, receiver) {
+                const value = Reflect.get(target, prop, receiver);
 
-    // 5. Render
-    try {
-      const proxiedProps = { ...props } as any;
+                if (typeof value === 'function') {
+                    return (...args: any[]) => {
+                        const eventType = String(prop).toLowerCase().includes('ai') ? 'ai-trigger' : 'click';
+                        trackInteraction(eventType, args);
 
-      if (proxiedProps.onClick) {
-        const originalOnClick = proxiedProps.onClick;
-        proxiedProps.onClick = (...args: any[]) => {
-          trackInteraction('click');
-          return originalOnClick(...args);
+                        if (config.enableCircuitBreaker && growth?.circuitStatus === 'OPEN') {
+                            console.warn(`[CircuitBreaker] Protection engaged for node: ${componentId}`);
+                            return; 
+                        }
+
+                        try {
+                            return value.apply(target, args);
+                        } catch (e) {
+                            console.error(`[UniversalProxy] Logic Breach in ${componentId}:`, e);
+                            throw e;
+                        }
+                    };
+                }
+
+                return value;
+            }
         };
-      }
+        return new Proxy(props, handler);
+    }, [props, growth?.circuitStatus]);
 
-      if (proxiedProps.onAiAnalyze) {
-        const originalOnAi = proxiedProps.onAiAnalyze;
-        proxiedProps.onAiAnalyze = (...args: any[]) => {
-          trackInteraction('ai-trigger');
-          return originalOnAi(...args);
-        };
-      }
+    const isHighFrequency = (growth?.heat || 0) > 15;
+    const isAgentActive = adaptiveTraits.includes('learning') || isHighFrequency;
+    const isCircuitOpen = growth?.circuitStatus === 'OPEN';
 
-      return (
-        <WrappedComponent
-          {...(proxiedProps as P)}
-          adaptiveTraits={adaptiveTraits}
-          trackInteraction={trackInteraction}
-          isHighFrequency={isHighFrequency}
-          isAgentActive={isAgentActive}
-        />
-      );
-    } catch (e) {
-      console.error(`[UniversalProxy] Error in agent node ${componentId}:`, e);
-      return null;
-    }
+    return (
+      <WrappedComponent
+        {...(proxiedProps as unknown as P)}
+        // Fix: Explicitly pass injected props to the wrapped component
+        componentId={componentId}
+        adaptiveTraits={adaptiveTraits}
+        trackInteraction={trackInteraction}
+        isHighFrequency={isHighFrequency}
+        isAgentActive={isAgentActive}
+        growth={growth}
+        isCircuitOpen={isCircuitOpen}
+      />
+    );
   };
 
   ComponentWithProxy.displayName = `UniversalProxy(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;

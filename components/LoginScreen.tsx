@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
-import { Lock, User, ShieldCheck, ToggleLeft, ToggleRight, ArrowRight, BrainCircuit, Activity, Eye, Cpu, Database, PenTool, Network, Server, Zap, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Lock, User, ShieldCheck, ToggleLeft, ToggleRight, ArrowRight, BrainCircuit, Activity, Eye, Cpu, Database, PenTool, Network, Server, Zap, CheckCircle2, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { LogoIcon } from './Layout';
+import { z } from 'zod';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -14,12 +15,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { addToast } = useToast();
 
   const isZh = language === 'zh-TW';
 
+  const loginSchema = useMemo(() => z.object({
+    email: z.string().email(isZh ? "請輸入正確的電子信箱格式" : "Invalid email address"),
+    password: z.string().min(6, isZh ? "密碼長度至少 6 位" : "Password must be at least 6 characters")
+  }), [isZh]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
+    if (!isDevMode) {
+      const result = loginSchema.safeParse({ email, password });
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach(err => {
+          if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+    }
     
     setLoading(true);
 
@@ -43,6 +63,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
 
   const toggleDevMode = () => {
       setIsDevMode(!isDevMode);
+      setErrors({});
       addToast('warning', isZh ? '開發者模式已啟用' : 'Dev Mode Enabled', 'System');
   };
 
@@ -75,23 +96,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
             <form onSubmit={handleLogin} className="space-y-4">
                 {!isDevMode && (
                 <>
-                    <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-celestial-emerald transition-colors" />
-                    <input 
-                        type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder={isZh ? "企業信箱" : "Enterprise Email"}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-celestial-emerald/50 focus:ring-1 transition-all"
-                        required
-                    />
+                    <div className="space-y-1">
+                        <div className="relative group">
+                        <User className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${errors.email ? 'text-rose-400' : 'text-gray-500 group-focus-within:text-celestial-emerald'}`} />
+                        <input 
+                            type="email" value={email} onChange={(e) => { setEmail(e.target.value); if(errors.email) setErrors(prev => ({...prev, email: ''})); }}
+                            placeholder={isZh ? "企業信箱" : "Enterprise Email"}
+                            className={`w-full bg-white/5 border rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all ${errors.email ? 'border-rose-500/50' : 'border-white/10 focus:border-celestial-emerald/50'}`}
+                            required
+                        />
+                        </div>
+                        {errors.email && <div className="text-[10px] text-rose-400 font-bold uppercase flex items-center gap-1 pl-4"><AlertCircle className="w-3 h-3"/> {errors.email}</div>}
                     </div>
-                    <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-celestial-purple transition-colors" />
-                    <input 
-                        type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                        placeholder={isZh ? "密碼" : "Password"}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-celestial-purple/50 focus:ring-1 transition-all"
-                        required
-                    />
+                    <div className="space-y-1">
+                        <div className="relative group">
+                        <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${errors.password ? 'text-rose-400' : 'text-gray-500 group-focus-within:text-celestial-purple'}`} />
+                        <input 
+                            type="password" value={password} onChange={(e) => { setPassword(e.target.value); if(errors.password) setErrors(prev => ({...prev, password: ''})); }}
+                            placeholder={isZh ? "密碼" : "Password"}
+                            className={`w-full bg-white/5 border rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 transition-all ${errors.password ? 'border-rose-500/50' : 'border-white/10 focus:border-celestial-purple/50'}`}
+                            required
+                        />
+                        </div>
+                        {errors.password && <div className="text-[10px] text-rose-400 font-bold uppercase flex items-center gap-1 pl-4"><AlertCircle className="w-3 h-3"/> {errors.password}</div>}
                     </div>
                 </>
                 )}
@@ -107,7 +134,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, language }) =
                     type="submit" disabled={loading}
                     className="w-full py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-celestial-gold transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 overflow-hidden group"
                 >
-                    {/* Fix: Added Loader2 to lucide-react imports and use it here for loading state */}
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Access System <ArrowRight className="w-4 h-4" /></>}
                 </button>
             </form>

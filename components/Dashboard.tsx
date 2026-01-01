@@ -1,221 +1,252 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-    Target, Activity, PieChart, TrendingUp, AlertTriangle, ArrowRight, 
-    ShieldCheck, Zap, Layers, Cpu, Radio, Database, FileUp, ListChecks,
-    History, Bell, CheckCircle2, ChevronRight, BarChart3, Search, RefreshCw, Sparkles,
-    Shield, Fingerprint, Globe
+    Target, Activity, PieChart, TrendingUp, AlertTriangle, 
+    ShieldCheck, Zap, Database, Bell, CheckCircle2, 
+    BarChart3, RefreshCw, Sparkles, Fingerprint, Globe, MoreVertical, Settings,
+    Cpu, Layers, Search, ChevronRight, Terminal, Flame, Info
 } from 'lucide-react';
-import { Language, DimensionID } from '../types';
-import { DIMENSION_LABELS } from '../constants';
+import { Language, EvolutionLogEntry } from '../types';
 import { useCompany } from './providers/CompanyProvider';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { 
+    ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, 
+    PolarRadiusAxis, Radar, Tooltip, AreaChart, Area, XAxis, YAxis, 
+    CartesianGrid, Legend, LineChart, Line
+} from 'recharts';
 import { UniversalPageHeader } from './UniversalPageHeader';
 import { universalIntelligence, SystemVital } from '../services/evolutionEngine';
 
+/**
+ * ESG Strategic Panorama (AIMS)
+ * The Command Center for real-time data monitoring.
+ */
 export const Dashboard: React.FC<{ language: Language }> = ({ language }) => {
   const isZh = language === 'zh-TW';
-  const { totalScore, activeTitle, companyName } = useCompany();
+  const { totalScore, esgScores } = useCompany();
   const [vitals, setVitals] = useState<SystemVital | null>(null);
-  const [activeAimsTab, setActiveAimsTab] = useState<'detection' | 'analytics' | 'governance'>('detection');
+  const [vitalsHistory, setVitalsHistory] = useState<any[]>([]);
+  const [evoLogs, setEvoLogs] = useState<EvolutionLogEntry[]>([]);
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const sub = universalIntelligence.vitals$.subscribe(setVitals);
-    return () => sub.unsubscribe();
+    const subV = universalIntelligence.vitals$.subscribe(v => {
+      setVitals(v);
+      setVitalsHistory(prev => {
+        const timestamp = new Date().toLocaleTimeString([], { hour12: false, minute: '2-digit', second: '2-digit' });
+        const newHistory = [...prev, {
+          time: timestamp,
+          integrity: v.integrityScore,
+          entropy: (1 - v.entropy) * 100, 
+          load: v.contextLoad * 5
+        }];
+        return newHistory.slice(-15); 
+      });
+    });
+    
+    const subE = universalIntelligence.evolutionLogs$.subscribe(setEvoLogs);
+    
+    return () => { subV.unsubscribe(); subE.unsubscribe(); };
   }, []);
 
-  const radarData = (Object.keys(DIMENSION_LABELS) as DimensionID[]).slice(0, 6).map(id => ({
-      subject: DIMENSION_LABELS[id][isZh ? 'zh' : 'en'],
-      A: 70 + Math.random() * 30,
-      fullMark: 100
-  }));
+  useEffect(() => {
+      logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [evoLogs]);
 
-  const chartData = [
-    { name: 'Jan', value: 400 }, { name: 'Feb', value: 300 }, { name: 'Mar', value: 500 }, { name: 'Apr', value: 450 }, { name: 'May', value: 600 }, { name: 'Jun', value: 550 }
-  ];
+  const radarData = useMemo(() => {
+    if (!vitals) return [];
+    return [
+      { subject: isZh ? '完整性' : 'Integrity', A: vitals.integrityScore, fullMark: 100 },
+      { subject: isZh ? '負熵' : 'Neg-Entropy', A: (1 - vitals.entropy) * 100, fullMark: 100 },
+      { subject: isZh ? '感知' : 'Sense', A: vitals.trinity.perception, fullMark: 100 },
+      { subject: isZh ? '認知' : 'Think', A: vitals.trinity.cognition, fullMark: 100 },
+      { subject: isZh ? '行動' : 'Action', A: vitals.trinity.action, fullMark: 100 },
+      { subject: isZh ? '協同' : 'Synergy', A: vitals.synergyLevel * 100, fullMark: 100 },
+    ];
+  }, [vitals, isZh]);
 
   return (
-    <div className="h-full flex flex-col space-y-4 animate-fade-in overflow-hidden">
-        <UniversalPageHeader 
-            icon={Database} 
-            title={{ zh: 'ESG 資訊管理系統 (AIMS)', en: 'ESG AIMS Control' }} 
-            description={{ zh: '即時數據映射與異常偵測：全自動化永續治理底座', en: 'Real-time Data Mapping & Anomaly Detection' }} 
-            language={language} 
-            tag={{ zh: '數據內核 v16.1', en: 'AIMS_CORE_V16.1' }} 
-        />
-        
-        <div className="flex bg-slate-950/80 p-1 rounded-2xl border border-white/5 w-fit backdrop-blur-xl shrink-0 shadow-2xl">
-            {[
-                { id: 'detection', label: isZh ? 'AI 異常偵測' : 'Detection', icon: Zap },
-                { id: 'analytics', label: isZh ? '績效指標' : 'Metrics', icon: BarChart3 },
-                { id: 'governance', label: isZh ? '治理見證' : 'Governance', icon: ShieldCheck },
-            ].map(tab => (
-                <button
-                    key={tab.id}
-                    onClick={() => setActiveAimsTab(tab.id as any)}
-                    className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeAimsTab === tab.id ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
-                >
-                    <tab.icon className="w-3.5 h-3.5" />
-                    {tab.label}
-                </button>
-            ))}
+    <div className="h-full flex flex-col min-h-0 overflow-hidden space-y-2 relative">
+        {/* Evolution Particles Background */}
+        {vitals?.isEvolving && (
+            <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                {[...Array(10)].map((_, i) => (
+                    <div 
+                        key={i} 
+                        className="evolution-particle" 
+                        style={{ 
+                            left: `${Math.random() * 100}%`, 
+                            animationDelay: `${Math.random() * 2}s`,
+                            background: i % 2 === 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(59, 130, 246, 0.4)'
+                        }} 
+                    />
+                ))}
+            </div>
+        )}
+
+        <div className="shrink-0 pb-1 border-b border-white/5 relative z-10">
+            <UniversalPageHeader 
+                icon={Database} 
+                title={{ zh: 'ESG 戰略一覽全景 (AIMS)', en: 'ESG Strategic Panorama' }} 
+                description={{ zh: '內核自動化治理底座：數據映射與邏輯對標', en: 'AIMS Panorama: One-view Data Mapping & Audit' }} 
+                language={language} 
+                tag={{ zh: '內核 v16.1', en: 'OMNI_VIEW_v16.1' }} 
+            />
         </div>
 
-        <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 overflow-hidden">
-            <div className="col-span-12 lg:col-span-8 flex flex-col gap-4 min-h-0 overflow-hidden">
-                {activeAimsTab === 'detection' && (
-                    <div className="flex-1 glass-bento p-8 flex flex-col bg-slate-900/40 relative overflow-hidden shadow-2xl rounded-[3rem]">
-                        <div className="absolute top-0 right-0 p-10 opacity-[0.03]"><Globe className="w-64 h-64 text-celestial-blue" /></div>
-                        
-                        <div className="flex justify-between items-center mb-8 shrink-0 relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-400 border border-rose-500/20 animate-pulse">
-                                    <Bell className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="zh-main text-xl text-white">實時異常監測 (Live Detection)</h3>
-                                    <span className="en-sub !mt-0 text-rose-500 opacity-100 font-black tracking-widest">SCAN_PROTOCOL_ACTIVE</span>
-                                </div>
-                            </div>
-                            <button className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black border border-white/10 transition-all flex items-center gap-2">
-                                <RefreshCw className="w-3.5 h-3.5" /> Trigger_Scan
-                            </button>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1 relative z-10">
-                            {[
-                                { title: "排放強度數據異常偏移", level: "Critical", desc: "偵測到本月 Scope 1 數據相較上季度同期異常增加 12.4%。", sugg: "建議檢查 Sector B 之燃料抄表紀錄。", color: "rose" },
-                                { title: "缺失關鍵佐證文件：Q3 PPA", level: "Warning", desc: "2024 Q3 綠電購買憑證尚未完成映射。", sugg: "請於 48 小時內完成文件補傳。", color: "amber" },
-                            ].map((alert, i) => (
-                                <div key={i} className="p-6 bg-black/60 border border-white/5 rounded-[2.5rem] hover:border-white/20 transition-all group relative overflow-hidden">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`px-3 py-0.5 rounded-lg bg-${alert.color}-500/20 text-${alert.color}-400 text-[9px] font-black uppercase border border-${alert.color}-500/30`}>{alert.level}</div>
-                                            <h4 className="zh-main text-lg text-white group-hover:text-celestial-gold transition-colors">{alert.title}</h4>
-                                        </div>
-                                        <span className="text-[10px] font-mono text-gray-700">SIG_0x{8+i}B3</span>
-                                    </div>
-                                    <p className="text-sm text-gray-400 mb-4 font-light leading-relaxed">{alert.desc}</p>
-                                    <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5 flex items-start gap-4">
-                                        <Sparkles className="w-5 h-5 text-celestial-gold shrink-0 mt-0.5" />
-                                        <div className="text-[11px] text-gray-300 italic">
-                                            <b className="text-white not-italic uppercase text-[8px] block mb-1">AI_Correction:</b>
-                                            {alert.sugg}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeAimsTab === 'analytics' && (
-                    <div className="flex-1 glass-bento p-8 flex flex-col bg-slate-900/40 shadow-2xl rounded-[3rem] min-h-[400px] overflow-hidden">
-                         <div className="flex justify-between items-center mb-10 shrink-0">
-                             <div>
-                                <h3 className="zh-main text-2xl text-white">ESG 績效演進分析</h3>
-                                <span className="en-sub text-celestial-purple opacity-100 font-black">PERFORMANCE_V16_DYNAMICS</span>
-                             </div>
-                         </div>
-                         <div className="flex-1 min-h-[300px] w-full relative">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
-                                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
-                                    <XAxis dataKey="name" stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#475569" fontSize={11} tickLine={false} axisLine={false} />
-                                    <Tooltip contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }} />
-                                    <Area type="monotone" dataKey="value" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorVal)" strokeWidth={3} />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                         </div>
-                    </div>
-                )}
-
-                {activeAimsTab === 'governance' && (
-                  <div className="flex-1 glass-bento p-8 flex flex-col bg-slate-900/40 shadow-2xl rounded-[3rem] min-h-[400px] overflow-hidden">
-                    <div className="flex justify-between items-center mb-8 shrink-0">
-                      <div>
-                        <h3 className="zh-main text-2xl text-white">治理見證與區塊鏈存證</h3>
-                        <span className="en-sub text-emerald-500 opacity-100 font-black">GOVERNANCE_WITNESS_CHAIN</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <div key={i} className="p-4 bg-black/40 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
-                           <div className="flex items-center gap-4">
-                             <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><ShieldCheck className="w-5 h-5" /></div>
-                             <div>
-                               <div className="text-sm font-bold text-white uppercase tracking-tight">Entry_Verified_0x{i}F2</div>
-                               <div className="text-[10px] text-gray-500 font-mono">Timestamp: {new Date().toLocaleTimeString()}</div>
-                             </div>
-                           </div>
-                           <div className="text-right">
-                             <div className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">WITNESSED</div>
-                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-            </div>
-
-            <div className="col-span-12 lg:col-span-4 flex flex-col gap-4 overflow-hidden">
-                <div className="glass-bento p-8 flex flex-col bg-slate-950 border-white/10 rounded-[3rem] shadow-2xl relative overflow-hidden shrink-0 min-h-[420px]">
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.02]"><Fingerprint className="w-56 h-56" /></div>
-                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 flex items-center gap-2 relative z-10">
-                        <Activity className="w-4 h-4" /> ENTITY_DNA_VERIFY
+        <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden relative z-10">
+            
+            {/* 左翼：生命徵象與共鳴 (3/12) */}
+            <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 min-h-0">
+                <div className="flex-1 glass-bento p-5 flex flex-col bg-slate-950 border-white/10 relative overflow-hidden rounded-3xl shadow-2xl">
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none"><Fingerprint className="w-40 h-40 text-white" /></div>
+                    <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2 relative z-10">
+                        <Activity className="w-3.5 h-3.5 text-emerald-500" /> SYSTEM_VITALS_RADAR
                     </h4>
-                    <div className="flex-1 min-h-[260px] relative z-10 w-full overflow-hidden">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260}>
-                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                    <div className="flex-1 min-h-0 relative z-10">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                                 <PolarGrid stroke="rgba(255,255,255,0.05)" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 900 }} />
-                                <Radar dataKey="A" stroke="#fbbf24" fill="#fbbf24" fillOpacity={0.4} />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 8, fontWeight: 900 }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                <Radar 
+                                    name="Vitals" 
+                                    dataKey="A" 
+                                    stroke="#06b6d4" 
+                                    fill="#06b6d4" 
+                                    fillOpacity={0.3} 
+                                    animationBegin={0} 
+                                    animationDuration={1500}
+                                />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '9px' }}
+                                    itemStyle={{ color: '#06b6d4' }}
+                                />
                             </RadarChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="mt-6 p-6 bg-white/[0.02] rounded-[2.5rem] border border-white/5 flex items-center justify-between relative z-10 shadow-inner shrink-0">
-                        <div>
-                            <div className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Holistic_Mastery</div>
-                            <div className="text-4xl font-mono font-bold text-white tracking-tighter">{totalScore}</div>
+                </div>
+
+                <div className="h-1/3 glass-bento p-5 bg-slate-900/60 border-white/5 relative overflow-hidden flex flex-col rounded-3xl shadow-xl">
+                    <h4 className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-4">Entropy_Stability</h4>
+                    <div className="flex-1 flex flex-col justify-center">
+                         <div className="flex justify-between text-[10px] font-mono text-white mb-2">
+                             <span>ΔS: {vitals?.entropy.toFixed(4)}</span>
+                             {vitals?.isEvolving && <span className="text-celestial-gold animate-pulse">ALCHEMIZING...</span>}
+                         </div>
+                         <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                             <div className={`h-full transition-all duration-1000 ${vitals?.isEvolving ? 'bg-celestial-gold animate-pulse' : 'bg-emerald-500'}`} style={{ width: `${(1 - (vitals?.entropy || 0)) * 100}%` }} />
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 中樞：效能動態與進化終端 (6/12) */}
+            <div className="col-span-12 lg:col-span-6 flex flex-col gap-3 min-h-0 overflow-hidden">
+                <div className="flex-[1.5] glass-bento p-6 flex flex-col bg-slate-900/40 relative overflow-hidden border-white/10 shadow-2xl rounded-[2.5rem]">
+                    <div className="flex justify-between items-center mb-6 shrink-0 relative z-10">
+                        <div className="min-w-0">
+                            <h3 className="zh-main text-lg text-white tracking-tighter uppercase truncate">內核效能演進 (Kernel Dynamics)</h3>
+                            <span className="en-sub !mt-0 text-celestial-purple font-black !text-[8px]">TEMPORAL_V16_LOAD_TRACE</span>
                         </div>
-                        <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 shadow-2xl animate-pulse">
-                            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                        <div className="flex gap-2 shrink-0">
+                            <div className="uni-mini !bg-emerald-500/10 !text-emerald-400 border-none !text-[7px]">Real-time</div>
+                            <div className="uni-mini !bg-blue-500/10 !text-blue-400 border-none !text-[7px]">Verified</div>
                         </div>
+                    </div>
+                    
+                    <div className="flex-1 min-h-0 w-full relative z-10">
+                        <ResponsiveContainer width="100%" height="100%" minHeight={0} minWidth={0}>
+                            <AreaChart data={vitalsHistory} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorIntegrity" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
+                                <XAxis dataKey="time" stroke="#334155" fontSize={8} tickLine={false} axisLine={false} />
+                                <YAxis domain={[0, 100]} stroke="#334155" fontSize={8} tickLine={false} axisLine={false} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
+                                />
+                                <Area name="Integrity" type="monotone" dataKey="integrity" stroke="#06b6d4" fill="url(#colorIntegrity)" strokeWidth={3} isAnimationActive={false}/>
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="glass-bento p-8 flex-1 flex flex-col bg-slate-900/60 border-white/5 rounded-[2.5rem] shadow-xl overflow-hidden min-h-[300px]">
-                    <div className="flex justify-between items-center mb-6 shrink-0">
-                        <div className="flex flex-col">
-                            <span className="zh-main text-lg text-white tracking-widest uppercase">Action_Relay</span>
-                            <span className="en-sub !mt-0.5">Task_Orchestrator</span>
-                        </div>
-                        <ListChecks className="w-6 h-6 text-celestial-purple" />
+                {/* 進化引擎日誌終端 */}
+                <div className="flex-1 glass-bento p-6 flex flex-col bg-black/80 border-celestial-gold/10 rounded-[2.5rem] shadow-2xl relative overflow-hidden min-h-0">
+                    <div className="flex justify-between items-center mb-4 shrink-0">
+                         <h4 className="zh-main text-[11px] text-white flex items-center gap-3 uppercase tracking-widest">
+                            <Terminal className="w-4 h-4 text-celestial-gold" /> 進化引擎日誌 (Alchemy_Audit)
+                         </h4>
+                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
                     </div>
-                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1">
-                        {[
-                            { task: "更新 Q4 溫室氣體排放量", owner: "DingJun", status: "80%", color: "blue" },
-                            { task: "執行供應商 ESG 二次審核", owner: "Linda", status: "Pending", color: "rose" },
-                            { task: "完成 2025 淨零路徑校準", owner: "Strategist", status: "Done", color: "emerald" },
-                        ].map((t, i) => (
-                            <div key={i} className="flex justify-between items-center p-5 bg-white/5 rounded-2xl border border-white/5 group hover:border-celestial-gold transition-all cursor-pointer">
-                                <div>
-                                    <div className="text-[13px] font-black text-white uppercase tracking-tight group-hover:text-celestial-gold">{t.task}</div>
-                                    <div className="text-[10px] text-gray-500 mt-1 font-mono uppercase">Owner: {t.owner}</div>
+                    <div className="flex-1 overflow-y-auto no-scrollbar font-mono text-[9px] text-gray-500 space-y-2 pr-2">
+                        {evoLogs.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center opacity-20 italic">Awaiting autonomous signal...</div>
+                        ) : (
+                            evoLogs.map(log => (
+                                <div key={log.id} className="p-3 bg-white/5 border border-white/5 rounded-xl animate-slide-up group hover:bg-white/10 transition-all">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-emerald-400 font-bold uppercase tracking-widest">[{new Date(log.timestamp).toLocaleTimeString()}] PROTOCOL_AUTO_EVO</span>
+                                        <span className="text-[7px] text-gray-700">0x{log.id.split('-').pop()?.toUpperCase()}</span>
+                                    </div>
+                                    <div className="text-white font-bold mb-1">{log.action}</div>
+                                    <div className="text-[8px] text-gray-500 leading-relaxed italic">Reason: {log.details}</div>
                                 </div>
-                                <span className={`text-[10px] font-black uppercase text-${t.color}-400 bg-${t.color}-500/10 px-3 py-1 rounded-lg border border-${t.color}-500/20`}>{t.status}</span>
+                            ))
+                        )}
+                        <div ref={logEndRef} />
+                    </div>
+                </div>
+            </div>
+
+            {/* 右翼：異常偵測與稽核鏈 (3/12) */}
+            <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 min-h-0">
+                <div className="flex-1 glass-bento p-5 flex flex-col bg-slate-900/60 border-white/5 shadow-xl relative overflow-hidden rounded-[2rem]">
+                    <div className="flex justify-between items-center mb-4 shrink-0 relative z-10">
+                        <h4 className="zh-main text-[11px] text-white uppercase tracking-widest flex items-center gap-2">
+                            <Bell className="w-3.5 h-3.5 text-rose-500 animate-pulse" />實時異常偵測
+                        </h4>
+                        <span className="text-[7px] font-mono text-gray-700">LIVE_PULSE</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1 relative z-10">
+                        {[
+                            { t: "排放數據偏移", l: "Crit", c: "rose" },
+                            { t: "GRI 缺口補完", l: "Warn", c: "amber" },
+                            { t: "供應鏈連結", l: "Info", c: "blue" },
+                            { t: "資產更新成功", l: "Done", c: "emerald" }
+                        ].map((alert, i) => (
+                            <div key={i} className="p-3 bg-black/40 border border-white/5 rounded-xl hover:border-white/15 transition-all group">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className={`text-[7px] font-black px-1.5 py-0.5 rounded bg-${alert.c}-500/10 text-${alert.c}-500 border border-${alert.c}-500/20 uppercase`}>{alert.l}</span>
+                                    <span className="text-[7px] text-gray-800 font-mono">0x{Math.random().toString(16).substr(2,4).toUpperCase()}</span>
+                                </div>
+                                <div className="text-[10px] font-bold text-gray-400 group-hover:text-white transition-colors truncate">{alert.t}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="h-2/5 glass-bento p-5 bg-slate-950 border-emerald-500/10 flex flex-col relative overflow-hidden rounded-[2rem] shadow-2xl">
+                    <div className="absolute -right-4 -bottom-4 opacity-5 pointer-events-none"><ShieldCheck className="w-24 h-24 text-emerald-400" /></div>
+                    <h4 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2 relative z-10">
+                        <Fingerprint className="w-3 h-3 text-emerald-500" /> AUDIT_CHAIN_TRACE
+                    </h4>
+                    <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 relative z-10">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="p-2.5 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between group hover:bg-white/5 transition-all">
+                                <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_5px_#10b981]" />
+                                <span className="text-[8px] font-mono text-gray-700 truncate flex-1 ml-2 group-hover:text-gray-400">BLOCK_#5{i}92_VERIFIED</span>
+                                <ChevronRight className="w-2.5 h-2.5 text-gray-800" />
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
   );

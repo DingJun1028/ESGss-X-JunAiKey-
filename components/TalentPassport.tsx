@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { OmniEsgCell } from './OmniEsgCell';
 import { Language } from '../types';
@@ -44,7 +45,7 @@ const SkillGalaxyBase: React.FC<SkillGalaxyProps> = ({ data, isZh, adaptiveTrait
             </h3>
             
             <div className="relative z-10 flex-1 min-h-[300px] w-full overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
                         <PolarGrid stroke="rgba(255,255,255,0.1)" />
                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />

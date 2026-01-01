@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Cpu, Database, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Cpu, Database, ShieldCheck, RefreshCw, Sparkles } from 'lucide-react';
 import { LogoIcon } from './Layout';
 
 const LOADING_MESSAGES = [
@@ -15,21 +15,23 @@ const LOADING_MESSAGES = [
 export const LoadingScreen: React.FC<{ message?: string; fullScreen?: boolean }> = ({ message, fullScreen = true }) => {
     const [currentMsgIndex, setCurrentMsgIndex] = useState(0);
     const [showEmergencyButton, setShowEmergencyButton] = useState(false);
+    const [showMotto, setShowMotto] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => setShowEmergencyButton(true), 3000);
+        const mottoTimer = setTimeout(() => setShowMotto(true), 1200);
         const msgInterval = setInterval(() => {
             setCurrentMsgIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
         }, 800); 
 
         return () => {
             clearTimeout(timer);
+            clearTimeout(mottoTimer);
             clearInterval(msgInterval);
         };
     }, []);
 
     const handleEmergencyBoot = () => {
-        // 強制重定向到當前路徑，這能清除所有的動態模組掛載錯誤
         sessionStorage.clear();
         localStorage.removeItem('esgss_boot_sequence_v15_final');
         window.location.href = window.location.origin + window.location.pathname;
@@ -59,14 +61,25 @@ export const LoadingScreen: React.FC<{ message?: string; fullScreen?: boolean }>
                         JUNAIKEY<span className="text-celestial-gold">OS</span>
                     </span>
                     <div className="h-4 w-[1px] bg-white/20" />
-                    <span className="text-xs text-gray-500 font-mono tracking-widest">BUILD_15.0.4</span>
+                    <span className="text-xs text-gray-500 font-mono tracking-widest">BUILD_16.1.0</span>
                 </div>
                 
-                <div className="text-sm font-bold text-celestial-emerald tracking-widest min-h-[20px] mb-4">
-                    {message || LOADING_MESSAGES[currentMsgIndex]}
-                </div>
+                {showMotto ? (
+                    <div className="animate-fade-in py-4 flex flex-col items-center gap-3">
+                        <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-celestial-gold via-white to-celestial-gold tracking-tight shadow-celestial-gold/20">
+                            「以神聖契約鑄造秩序，凡光所向皆成永續。」
+                        </p>
+                        <p className="text-[9px] text-gray-600 uppercase tracking-[0.3em] font-light italic">
+                            Forge Order with Sacred Contracts; Where the Light Points, Eternity Dwells.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="text-sm font-bold text-celestial-emerald tracking-widest min-h-[20px] mb-4">
+                        {message || LOADING_MESSAGES[currentMsgIndex]}
+                    </div>
+                )}
 
-                <div className="w-64 h-[3px] bg-white/5 rounded-full overflow-hidden relative border border-white/5">
+                <div className="w-64 h-[3px] bg-white/5 rounded-full overflow-hidden relative border border-white/5 mt-4">
                     <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-celestial-emerald via-celestial-blue to-celestial-purple w-full animate-[shimmer_2s_infinite]" 
                          style={{ transform: 'translateX(-70%)' }} />
                 </div>
@@ -80,9 +93,6 @@ export const LoadingScreen: React.FC<{ message?: string; fullScreen?: boolean }>
                             <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
                             重置並強制啟動 (Force Kernel Boot)
                         </button>
-                        <p className="text-[9px] text-gray-600 mt-4 max-w-xs leading-relaxed uppercase">
-                            Detected loading interruption. Click to clear cache and reboot core logic.
-                        </p>
                     </div>
                 )}
             </div>

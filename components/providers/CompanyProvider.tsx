@@ -4,12 +4,18 @@ import {
   DashboardWidget, AuditLogEntry, EsgCard, Quest, ToDoItem, NoteItem, BookmarkItem, 
   UserTier, CarbonData, MasteryLevel, Badge, WidgetType, AppFile, IntelligenceItem,
   UniversalCrystal, UserJournalEntry, ExternalApiKeys, VocationInfo, UserTitle, 
-  OfficialEvent, ActivityPulseNode, WebhookConfig, FinancialEntry
+  OfficialEvent, ActivityPulseNode, WebhookConfig, FinancialEntry, AgentTask, TaskStatus, TaskPriority,
+  Language
 } from '../../types';
 import { UNIVERSAL_CORES, VOCATIONS, INITIAL_TITLES, INITIAL_BADGES, MOCK_EVENTS } from '../../constants';
 import { useToast } from '../../contexts/ToastContext';
 
 interface CompanyContextType {
+  // Platform Settings
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  toggleLanguage: () => void;
+
   userName: string;
   setUserName: (name: string) => void;
   userRole: string;
@@ -86,8 +92,8 @@ interface CompanyContextType {
   deleteTodo: (id: number) => void;
   
   universalNotes: NoteItem[];
-  addNote: (content: string, tags?: string[], title?: string) => void; 
-  updateNote: (id: string, content: string, title?: string, tags?: string[]) => void;
+  addNote: (content: string, tags?: string[], title?: string, manifestedContent?: string, imageUrl?: string, source?: string) => void; 
+  updateNote: (id: string, content: string, title?: string, tags?: string[], aiMetadata?: NoteItem['aiMetadata']) => void;
   deleteNote: (id: string) => void;
   
   bookmarks: BookmarkItem[];
@@ -141,6 +147,11 @@ interface CompanyContextType {
   addWebhook: (webhook: Omit<WebhookConfig, 'id' | 'secret'>) => void;
   deleteWebhook: (id: string) => void;
   updateWebhookStatus: (id: string, update: Partial<WebhookConfig>) => void;
+
+  agentTasks: AgentTask[];
+  addAgentTask: (task: Omit<AgentTask, 'id' | 'createdAt' | 'status' | 'progress'>) => void;
+  updateAgentTaskStatus: (id: string, status: TaskStatus) => void;
+  deleteAgentTask: (id: string) => void;
 }
 
 const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
@@ -148,6 +159,24 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { addToast } = useToast();
   
+  // Platform & UI State
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('app_language');
+    return (saved as Language) || 'zh-TW';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('app_language', lang);
+  };
+
+  const toggleLanguage = () => {
+    const newLang = language === 'zh-TW' ? 'en-US' : 'zh-TW';
+    setLanguage(newLang);
+    addToast('success', newLang === 'zh-TW' ? '語言已切換' : 'Language Switched', 'System');
+  };
+
+  // Company-wide Settings
   const [userName, setUserName] = useState('Jun_JAK');
   const [userRole, setUserRole] = useState('Architect CEO');
   const [companyName, setCompanyName] = useState('ESGss JAK');
@@ -185,7 +214,11 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [crystals, setCrystals] = useState<UniversalCrystal[]>(UNIVERSAL_CORES);
   const [journal, setJournal] = useState<UserJournalEntry[]>([]);
   const [todos, setTodos] = useState<ToDoItem[]>([]);
-  const [universalNotes, setUniversalNotes] = useState<NoteItem[]>([]);
+  
+  const [universalNotes, setUniversalNotes] = useState<NoteItem[]>([
+      { id: 'note-1', title: '王道利他策略', content: '領導力的核心在於如何透過多方共贏達成系統的永續。', level: 'L1', timestamp: Date.now(), tags: ['Leadership'] }
+  ]);
+  
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [files, setFiles] = useState<AppFile[]>([]);
   const [myIntelligence, setMyIntelligence] = useState<IntelligenceItem[]>([]);
@@ -197,6 +230,40 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [intelligenceBrief, setIntelligenceBrief] = useState<any>(null);
   const [externalApiKeys, setExternalApiKeys] = useState<ExternalApiKeys>({ openai: '', straico: '' });
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
+
+  // Agent Tasks State
+  const [agentTasks, setAgentTasks] = useState<AgentTask[]>([]);
+
+  const addAgentTask = useCallback((task: Omit<AgentTask, 'id' | 'createdAt' | 'status' | 'progress'>) => {
+    const newTask: AgentTask = {
+      ...task,
+      id: `task-${Date.now()}`,
+      status: TaskStatus.PENDING,
+      progress: 0,
+      createdAt: Date.now()
+    };
+    setAgentTasks(prev => [newTask, ...prev]);
+    addToast('success', '指令已發送至代理人核心。', 'Orchestrator');
+  }, [addToast]);
+
+  const updateAgentTaskStatus = useCallback((id: string, status: TaskStatus) => {
+    setAgentTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        return { 
+          ...t, 
+          status, 
+          progress: status === TaskStatus.COMPLETED ? 100 : (status === TaskStatus.IN_PROGRESS ? 50 : 0) 
+        };
+      }
+      return t;
+    }));
+    addToast('info', `任務狀態更新: ${status}`, 'System');
+  }, [addToast]);
+
+  const deleteAgentTask = useCallback((id: string) => {
+    setAgentTasks(prev => prev.filter(t => t.id !== id));
+    addToast('warning', '任務已移除。', 'System');
+  }, [addToast]);
 
   const level = useMemo(() => Math.floor(xp / 1000) + 1, [xp]);
   const totalScore = useMemo(() => parseFloat(((esgScores.environmental + esgScores.social + esgScores.governance) / 3).toFixed(1)), [esgScores]);
@@ -235,9 +302,36 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const addTodo = (t: string) => {};
   const toggleTodo = (id: number) => {};
   const deleteTodo = (id: number) => {};
-  const addNote = (c: string) => {};
-  const updateNote = (id: string, c: string) => {};
-  const deleteNote = (id: string) => {};
+  
+  const addNote = (c: string, tags?: string[], title?: string, manifestedContent?: string, imageUrl?: string, source?: string) => {
+    const newNote: NoteItem = {
+      id: `note-${Date.now()}`,
+      content: c,
+      manifestedContent: manifestedContent || c,
+      imageUrl: imageUrl,
+      source: source || 'User',
+      tags: tags || [],
+      title: title || 'New Note',
+      timestamp: Date.now(),
+      level: manifestedContent ? 'L3' : 'L1'
+    };
+    setUniversalNotes(prev => [newNote, ...prev]);
+  };
+
+  const updateNote = (id: string, content: string, title?: string, tags?: string[], aiMetadata?: NoteItem['aiMetadata']) => {
+    setUniversalNotes(prev => prev.map(n => n.id === id ? {
+      ...n,
+      content,
+      title: title || n.title,
+      tags: tags || n.tags,
+      aiMetadata: aiMetadata || n.aiMetadata
+    } : n));
+  };
+
+  const deleteNote = (id: string) => {
+    setUniversalNotes(prev => prev.filter(n => n.id !== id));
+  };
+
   const toggleBookmark = (i: any) => {};
   const addFile = (f: File, s: string) => {};
   const removeFile = (id: string) => {};
@@ -259,6 +353,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   return (
     <CompanyContext.Provider value={{
+      language, setLanguage, toggleLanguage,
       userName, setUserName, userRole, setUserRole, companyName, setCompanyName, industrySector, setIndustrySector, externalUrl, setExternalUrl, crawledIntel, setCrawledIntel, tier, upgradeTier,
       xp, level, awardXp, vocation, activeTitle, ownedTitles, setActiveTitle, socialFrequency, updateSocialFrequency,
       badges, unlockBadge, events, updateEventStatus, activityPulse, recordActivity,
@@ -266,7 +361,6 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
       carbonData, updateCarbonData, budget, setBudget, carbonCredits, setCarbonCredits,
       expenses, incomes, addFinancialEntries,
       quests, updateQuestStatus, completeQuest, auditLogs, addAuditLog,
-      /* Fix: Replaced duplicate purifiedCards with purifyCard function to satisfy CompanyContextType */
       collectedCards, unlockCard, purifiedCards, purifyCard, cardMastery, updateCardMastery,
       todos, addTodo, toggleTodo, deleteTodo, universalNotes, addNote, updateNote, deleteNote,
       bookmarks, toggleBookmark, files, addFile, removeFile, myIntelligence, saveIntelligence,
@@ -274,7 +368,8 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({ children })
       customWidgets, addCustomWidget, removeCustomWidget, myEsgWidgets, addMyEsgWidget, removeMyEsgWidget, updateMyEsgWidgetSize,
       palaceWidgets, addPalaceWidget, removePalaceWidget, checkBadges, resetData, intelligenceBrief, setIntelligenceBrief,
       isAiToolsUnlocked, unlockAiTools, crystals, collectCrystalFragment, restoreCrystal, journal, addJournalEntry,
-      externalApiKeys, updateExternalApiKeys, webhooks, addWebhook, deleteWebhook, updateWebhookStatus
+      externalApiKeys, updateExternalApiKeys, webhooks, addWebhook, deleteWebhook, updateWebhookStatus,
+      agentTasks, addAgentTask, updateAgentTaskStatus, deleteAgentTask
     }}>
       {children}
     </CompanyContext.Provider>

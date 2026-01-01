@@ -1,4 +1,3 @@
-
 export type Language = 'zh-TW' | 'en-US';
 
 export enum View {
@@ -44,7 +43,250 @@ export enum View {
     GLOBAL_OPS = 'GLOBAL_OPS',
     WORKFLOW_LAB = 'WORKFLOW_LAB',
     MCP_CONFIG = 'MCP_CONFIG',
-    IMPACT_PROJECTS = 'IMPACT_PROJECTS'
+    IMPACT_PROJECTS = 'IMPACT_PROJECTS',
+    UNIVERSAL_NOTES = 'UNIVERSAL_NOTES',
+    HYPERCUBE_LAB = 'HYPERCUBE_LAB',
+    AGENT_TASKS = 'AGENT_TASKS',
+    ADMIN_PANEL = 'ADMIN_PANEL',
+    ECOSYSTEM_RADAR = 'ECOSYSTEM_RADAR',
+    CARBON_WALLET = 'CARBON_WALLET',
+    FLOWLU_INTEGRATION = 'FLOWLU_INTEGRATION',
+    SUPPLIER_CRM = 'SUPPLIER_CRM',
+    SUPPLIER_SURVEY = 'SUPPLIER_SURVEY'
+}
+
+export interface SupplierPersona {
+    id: string;
+    name: string;
+    taxId: string;
+    trustScore: number; // 1-100
+    carbonGrade: 'A' | 'B' | 'C' | 'D' | 'E';
+    riskStatus: 'RED' | 'YELLOW' | 'GREEN';
+    inflowStatus: 'IDLE' | 'REFining' | 'MAPPING' | 'ENGRAVED' | 'TO_FIX' | 'INVESTIGATING';
+    anomalyDetected?: boolean;
+    anomalyDetails?: string;
+    purity?: {
+        clarity: number;
+        alignment: number;
+        validity: number;
+    };
+    lastSubmission?: number;
+    metrics: {
+        electricity_total: number;
+        renewable_percent: number;
+        iso_certified: boolean;
+        safety_incidents: number;
+        gender_pay_ratio: number;
+        ethics_signed: boolean;
+    };
+    flowluMapping: {
+        crm_account_id: string;
+        custom_fields: Record<string, any>;
+    };
+}
+
+export interface CarbonAssetPackage {
+    id: string;
+    standard: 'VCS' | 'GOLD_STANDARD' | 'I-REC';
+    volume: number;
+    unit: string;
+    status: 'Verified' | 'Listed' | 'Traded';
+    marketValue: number;
+    listingHash: string;
+}
+
+export interface BenchmarkingNode {
+    id: string;
+    distance: number; // 0-1, similarity
+    angle: number; // circular layout
+    efficiency: number;
+    compliance: number;
+    isTarget: boolean;
+    industry: string;
+}
+
+export interface OptimizationPath {
+    steps: {
+        title: string;
+        roi: number;
+        carbonImpact: number;
+        difficulty: 'LOW' | 'MED' | 'HIGH';
+    }[];
+    estimatedTimeWeeks: number;
+    projectedSroi: number;
+}
+
+export interface OperationalKpi {
+    efficiency: {
+        hoursSaved: number;
+        reportLatency: number; // ms
+        commFriction: number; // 0-1
+    };
+    sanctity: {
+        ocrAccuracy: number;
+        gapCoverage: number;
+    };
+    resonance: {
+        actionFrequency: number;
+        autoInterventions: number;
+    };
+    integrity: {
+        apiSyncRate: number;
+        responseDelay: number; // ms
+    };
+}
+
+export enum TaskStatus {
+    PENDING = 'PENDING',
+    IN_PROGRESS = 'IN_PROGRESS',
+    COMPLETED = 'COMPLETED',
+    FAILED = 'FAILED'
+}
+
+export enum TaskPriority {
+    LOW = 'LOW',
+    MEDIUM = 'MEDIUM',
+    HIGH = 'HIGH',
+    URGENT = 'URGENT'
+}
+
+export interface AgentTask {
+    id: string;
+    title: string;
+    description: string;
+    assigneeId: string;
+    locationId: string;
+    dueDate: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    createdAt: number;
+    progress: number;
+}
+
+export interface EvolutionLogEntry {
+    id: string;
+    timestamp: number;
+    action: string;
+    details: string;
+    type: 'OPTIMIZATION' | 'REPAIR' | 'ALTRUISM';
+}
+
+export type NoteLevel = 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
+
+export interface NoteItem {
+    id: string;
+    title?: string;
+    content: string; // 原文 (RAW)
+    manifestedContent?: string; // AI 格式化後的美化版
+    imageUrl?: string; // 產出的圖片結果
+    source?: string; // 產出來源 (如: WorkflowLab)
+    tags?: string[];
+    timestamp: number;
+    level: NoteLevel;
+    aiMetadata?: {
+        summary?: string;
+        actionItems?: string[];
+        insights?: string[];
+        pollinatedStory?: string;
+    };
+}
+
+export type CircuitStatus = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+
+export interface ComponentGrowth {
+    heat: number;
+    evolutionLevel: number;
+    lastInteraction: number;
+    circuitStatus: CircuitStatus;
+}
+
+export interface UniversalKnowledgeNode {
+    id: string;
+    type: string;
+    label: UniversalLabel;
+    currentValue: any;
+    traits: string[];
+    confidence: OmniEsgConfidence;
+    lastInteraction: number;
+    interactionCount: number;
+    memory: {
+        history: any[];
+        aiInsights: any[];
+    };
+    growth?: ComponentGrowth;
+}
+
+export interface UniversalLabel {
+    id?: string;
+    text: string;
+    definition?: string;
+    formula?: string;
+    rationale?: string;
+}
+
+export type OmniEsgTrait = 'learning' | 'optimization' | 'performance' | 'evolution' | 'gap-filling' | 'seamless' | 'bridging' | 'stability' | 'altruism' | 'innovation';
+export type OmniEsgDataLink = 'live' | 'ai' | 'blockchain';
+export type OmniEsgMode = 'card' | 'list' | 'cell' | 'badge';
+export type OmniEsgConfidence = 'high' | 'medium' | 'low';
+export type OmniEsgColor = 'emerald' | 'gold' | 'purple' | 'blue' | 'slate' | 'cyan' | 'rose';
+
+export interface LogicWitness {
+    witnessHash: string;
+}
+
+export interface NeuralSignal {
+    id: string;
+    origin: string;
+    type: 'DATA_COLLISION' | 'LOGIC_RESONANCE' | 'ENTROPY_PURGE' | 'RUNE_ACTIVATION' | 'CIRCUIT_TRIP' | 'EVOLUTION_UPGRADE' | 'ANOMALY_ALERT';
+    intensity: number;
+    payload: any;
+    timestamp: number;
+}
+
+export interface SystemVital {
+    evolutionStage: number;
+    contextLoad: number;
+    activeThreads: number;
+    memoryNodes: number;
+    entropy: number;
+    integrityScore: number;
+    trinity: TrinityState;
+    synergyLevel: number;
+    activeCircuits: number;
+    isEvolving?: boolean;
+    kpis?: OperationalKpi;
+}
+
+export interface TrinityState {
+    perception: number;
+    cognition: number;
+    action: number;
+}
+
+export interface ImpactProject {
+    id: string;
+    title: string;
+    description: string;
+    status: 'draft' | 'active' | 'completed';
+    progress: number;
+    impactXP: number;
+    sdgs: number[];
+    logicModel: LogicModel;
+    milestones: ProjectMilestone[];
+    financials: {
+        budget: number;
+        spent: number;
+        revenue_projected: number;
+        roi_projected?: number;
+    };
+    impactMetrics: {
+        label: string;
+        target: number;
+        current: number;
+        unit: string;
+        proxy_value: number;
+    }[];
+    sroi: number;
 }
 
 export interface LogicModel {
@@ -55,28 +297,32 @@ export interface LogicModel {
     impact: string;
 }
 
-export interface ImpactProject {
+export interface ProjectMilestone {
     id: string;
     title: string;
+    status: 'pending' | 'verifying' | 'completed';
+    xpReward: number;
     description: string;
-    status: 'draft' | 'active' | 'completed';
-    progress: number; // 0-100
-    impactXP: number;
-    sdgs: number[];
-    logicModel: LogicModel;
-    financials: {
-        budget: number;
-        spent: number;
-        revenue_projected: number;
-    };
-    impactMetrics: {
-        label: string;
-        target: number;
-        current: number;
-        unit: string;
-        proxy_value: number; // Monetary value per unit for SROI
-    }[];
-    sroi: number; // Calculated ratio
+    evidenceUrl?: string;
+    verifiedHash?: string;
+}
+
+export interface McpServer {
+    id: string;
+    name: string;
+    url: string;
+    status: 'connected' | 'error' | 'connecting';
+    transport: 'sse' | 'streamable_http';
+    auth: 'none' | 'oauth';
+    tools: any[];
+    latency: number;
+    documentationUrl?: string;
+}
+
+export interface McpRunActionOutput {
+  success: boolean;
+  result: any;
+  error: string | null;
 }
 
 export interface FinancialEntry {
@@ -86,40 +332,6 @@ export interface FinancialEntry {
     amount: number;
     category: string;
     type: 'income' | 'expense';
-}
-
-export interface McpTool {
-    name: string;
-    description: string;
-    inputSchema: any;
-}
-
-export interface McpServer {
-    id: string;
-    name: string;
-    url: string;
-    status: 'connected' | 'error' | 'connecting';
-    transport: 'sse' | 'streamable_http';
-    tools: McpTool[];
-    latency: number;
-    docsUrl?: string;
-}
-
-export interface McpRunActionOutput {
-  success: boolean;
-  result: any;
-  error: string | null;
-}
-
-export type DimensionID = 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'A7' | 'A8' | 'A9' | 'A10' | 'A11' | 'A12';
-
-export interface Course {
-    id: string;
-    title: string;
-    thumbnail: string;
-    level: string;
-    category: string;
-    progress: number;
 }
 
 export interface UniversalCrystal {
@@ -156,15 +368,6 @@ export interface OfficialEvent {
     xpReward: number;
 }
 
-export interface ReportSection {
-    id: string;
-    title: string;
-    template?: string;
-    example?: string;
-    griStandards: string;
-    subSections?: ReportSection[];
-}
-
 export interface EsgCard {
     id: string;
     title: string;
@@ -192,7 +395,7 @@ export interface ScriptureNode {
 }
 
 export interface DimensionProtocol {
-    id: DimensionID;
+    id: string;
     name: string;
     description: string;
     status: 'stable' | 'unstable';
@@ -218,65 +421,10 @@ export interface Toast {
     duration?: number;
 }
 
-export type OmniEsgTrait = 'learning' | 'optimization' | 'performance' | 'evolution' | 'gap-filling' | 'seamless' | 'bridging' | 'stability' | 'altruism' | 'innovation';
-export type OmniEsgDataLink = 'live' | 'ai' | 'blockchain';
-export type OmniEsgMode = 'card' | 'list';
-export type OmniEsgConfidence = 'high' | 'medium' | 'low';
-export type OmniEsgColor = 'emerald' | 'gold' | 'purple' | 'blue' | 'slate' | 'cyan' | 'rose';
-
-export interface UniversalLabel {
-    id?: string;
-    text: string;
-    definition?: string;
-    formula?: string;
-    rationale?: string;
-}
-
-export interface LogicWitness {
-    witnessHash: string;
-}
-
-export type WidgetType = 'carbon' | 'performance' | 'tasks' | 'news';
-
-export interface DashboardWidget {
-    id: string;
-    type: WidgetType;
-    title: string;
-    config?: any;
-    gridSize?: 'small' | 'medium' | 'large' | 'full';
-}
-
-export interface AuditLogEntry {
-    id: string;
-    timestamp: number;
-    action: string;
-    user: string;
-    details: string;
-    hash: string;
-}
-
-export interface Quest {
-    id: string;
-    title: string;
-    desc: string;
-    xp: number;
-    type: 'Challenge' | 'Daily' | 'Task';
-    rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
-    status: 'active' | 'verifying' | 'completed';
-}
-
 export interface ToDoItem {
     id: number;
     text: string;
     completed: boolean;
-}
-
-export interface NoteItem {
-    id: string;
-    title?: string;
-    content: string;
-    tags?: string[];
-    timestamp: number;
 }
 
 export interface BookmarkItem {
@@ -285,19 +433,6 @@ export interface BookmarkItem {
     title: string;
     link?: string;
 }
-
-export type UserTier = 'Free' | 'Pro' | 'Enterprise';
-
-export interface CarbonData {
-    fuelConsumption: number;
-    electricityConsumption: number;
-    scope1: number;
-    scope2: number;
-    scope3: number;
-    lastUpdated: number;
-}
-
-export type MasteryLevel = 'Novice' | 'Apprentice' | 'Master';
 
 export interface AppFile {
     id: string;
@@ -331,10 +466,8 @@ export interface ExternalApiKeys {
     github?: string;
 }
 
-export type VocationType = 'Architect' | 'Alchemist' | 'Scribe' | 'Envoy' | 'Seeker' | 'Guardian';
-
 export interface VocationInfo {
-    type: VocationType;
+    type: 'Architect' | 'Alchemist' | 'Scribe' | 'Envoy' | 'Seeker' | 'Guardian';
     level: number;
     exp: number;
     nextLevelExp: number;
@@ -369,12 +502,6 @@ export interface SemanticContext {
     keywords: string[];
 }
 
-export interface SoulEvolutionFeedback {
-    suggestedPromptTweak: string;
-    performanceSummary: string;
-    suggestedTitle?: UserTitle;
-}
-
 export interface PersonaConfig {
     id: string;
     name: string;
@@ -395,76 +522,6 @@ export interface PersonaConfig {
     equippedCards?: string[];
     goodwillValue?: number;
     knowledgeRepoIds?: string[];
-    usageHistory?: any[];
-}
-
-export interface UniversalKnowledgeNode {
-    id: string;
-    type: string;
-    label: UniversalLabel;
-    currentValue: any;
-    traits: string[];
-    confidence: OmniEsgConfidence;
-    lastInteraction: number;
-    interactionCount: number;
-    memory: {
-        history: any[];
-        aiInsights: any[];
-    };
-}
-
-export interface QuantumNode {
-    id: string;
-    atom: string;
-    vector: string[];
-    weight: number;
-    source: string;
-}
-
-export interface NeuralSignal {
-    id: string;
-    origin: string;
-    type: 'DATA_COLLISION' | 'LOGIC_RESONANCE' | 'ENTROPY_PURGE' | 'RUNE_ACTIVATION';
-    intensity: number;
-    payload: any;
-    timestamp: number;
-}
-
-export interface MCPRegistryItem {
-    id: string;
-    name: string;
-    type: 'tool' | 'resource';
-    description: string;
-    latency: number;
-}
-
-export interface TrinityState {
-    perception: number;
-    cognition: number;
-    action: number;
-}
-
-export type LifeCategory = 'NetZero' | 'Altruism' | 'Governance' | 'Innovation';
-
-export interface LifeEsgQuest {
-    id: string;
-    category: LifeCategory;
-    title: string;
-    enTitle: string;
-    impactDesc: string;
-    xpReward: number;
-    gwcReward: number;
-    traitBonus: { trait: string; value: number };
-    status: 'ready' | 'completed' | 'locked';
-    icon: any;
-    verifiedHash?: string;
-}
-
-export interface PersonaAttributes {
-    altruism: number;
-    pragmatism: number;
-    innovation: number;
-    stability: number;
 }
 
 export interface DigitalSoulAsset {
@@ -554,10 +611,10 @@ export interface AgentSoul5D {
 export interface SkillNode {
     id: string;
     name: string;
-    type: string;
-    description: string;
     mastery: number;
     status: 'Ready' | 'Cooldown';
+    type: string;
+    description: string;
 }
 
 export interface EvolutionProposal {
@@ -566,4 +623,103 @@ export interface EvolutionProposal {
     suggestedSkill: string;
     confidence: number;
     status: 'Pending' | 'Approved' | 'Vetoed';
+}
+
+export type MasteryLevel = 'Novice' | 'Apprentice' | 'Master';
+
+export interface DashboardWidget {
+    id: string;
+    type: string;
+    title: string;
+    config?: any;
+    gridSize?: 'small' | 'medium' | 'large' | 'full';
+}
+
+export interface AuditLogEntry {
+    id: string;
+    timestamp: number;
+    action: string;
+    user: string;
+    details: string;
+    hash: string;
+}
+
+export interface Quest {
+    id: string;
+    title: string;
+    desc: string;
+    xp: number;
+    type: 'Challenge' | 'Daily' | 'Task';
+    rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
+    status: 'active' | 'verifying' | 'completed';
+}
+
+export type UserTier = 'Free' | 'Pro' | 'Enterprise';
+
+export interface CarbonData {
+    fuelConsumption: number;
+    electricityConsumption: number;
+    scope1: number;
+    scope2: number;
+    scope3: number;
+    lastUpdated: number;
+}
+
+export interface CarbonMarketHistory {
+    time: string;
+    price: number;
+}
+
+export type DimensionID = 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'A7' | 'A8' | 'A9' | 'A10' | 'A11' | 'A12';
+
+export interface Course {
+    id: string;
+    title: string;
+    thumbnail: string;
+    level: MasteryLevel | string;
+    category: string;
+    progress: number;
+}
+
+export interface ReportSection {
+    id: string;
+    title: string;
+    template?: string;
+    example?: string;
+    griStandards?: string;
+    subSections?: ReportSection[];
+}
+
+export interface QuantumNode {
+    id: string;
+    atom: string;
+    vector: string[];
+    weight: number;
+    source: string;
+}
+
+export type WidgetType = string;
+
+export interface SoulEvolutionFeedback {
+    score: number;
+    feedback: string;
+    suggestedTraits: Partial<SoulForgeConfig>;
+}
+
+export type VocationType = 'Architect' | 'Alchemist' | 'Scribe' | 'Envoy' | 'Seeker' | 'Guardian';
+
+export type LifeCategory = 'NetZero' | 'Altruism' | 'Governance' | 'Innovation';
+
+export interface LifeEsgQuest {
+    id: string;
+    category: LifeCategory;
+    title: string;
+    enTitle: string;
+    impactDesc: string;
+    xpReward: number;
+    gwcReward: number;
+    traitBonus: { trait: string; value: number };
+    status: 'ready' | 'completed';
+    icon: any;
+    verifiedHash?: string;
 }

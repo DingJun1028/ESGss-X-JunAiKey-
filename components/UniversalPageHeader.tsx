@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Language } from '../types';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Sparkles, Activity, Cpu } from 'lucide-react';
 
 interface UniversalPageHeaderProps {
     icon: LucideIcon;
@@ -19,30 +20,46 @@ export const UniversalPageHeader: React.FC<UniversalPageHeaderProps> = ({
 }) => {
     const isZh = language === 'zh-TW';
     return (
-        <div className="flex items-start gap-4 animate-fade-in mb-2 shrink-0">
-            <div className="p-2 bg-gradient-to-br from-white/10 to-transparent rounded-xl border border-white/10 shadow-xl shrink-0">
-                <Icon className="w-5 h-5 text-celestial-gold" />
-            </div>
-            <div className="min-w-0">
-                <div className="flex items-center gap-3">
-                    <h2 
-                        className={`text-xl tracking-tight uppercase ${isZh ? 'font-black text-white' : 'font-light text-white/90'}`}
-                        lang={isZh ? 'zh' : 'en'}
-                    >
-                        {isZh ? title.zh : title.en}
-                    </h2>
-                    {tag && (
-                        <span className="text-[7px] font-mono font-black text-celestial-purple px-1.5 py-0.5 rounded border border-celestial-purple/20 bg-celestial-purple/5 tracking-[0.2em] hidden sm:inline">
-                            {isZh ? tag.en : tag.zh}
-                        </span>
-                    )}
+        <div className="w-full flex items-center justify-between border-b border-white/10 pb-3 mb-4 group animate-fade-in shrink-0">
+            {/* 左側標頭：緊湊佈局 */}
+            <div className="flex items-center gap-4 min-w-0">
+                <div className="relative shrink-0">
+                    <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 shadow-lg group-hover:border-celestial-gold/50 transition-all duration-700 group-hover:scale-105">
+                        <Icon className="w-5 h-5 text-celestial-gold" />
+                    </div>
                 </div>
-                <p 
-                    className={`text-[9px] uppercase tracking-[0.15em] mt-0.5 opacity-60 ${isZh ? 'font-bold text-gray-300' : 'font-light text-gray-500'}`}
-                    lang={isZh ? 'zh' : 'en'}
-                >
-                    {isZh ? description.zh : description.en}
-                </p>
+                <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                        <h2 className={`text-xl tracking-tighter uppercase leading-none ${isZh ? 'font-black' : 'font-light'}`}>
+                            {isZh ? title.zh : title.en}
+                        </h2>
+                        {tag && (
+                            <div className="px-2 py-0.5 rounded bg-celestial-purple/10 border border-celestial-purple/20">
+                                <span className="text-[8px] font-black text-white uppercase tracking-widest">{isZh ? tag.en : tag.zh}</span>
+                            </div>
+                        )}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-widest opacity-40 mt-1 truncate font-mono">
+                        {isZh ? description.zh : description.en}
+                    </p>
+                </div>
+            </div>
+
+            {/* 右側空間利用：置入即時狀態 */}
+            <div className="hidden md:flex items-center gap-6 shrink-0 font-mono">
+                <div className="flex flex-col items-end">
+                    <span className="text-[8px] text-gray-600 uppercase font-black tracking-tighter">Sync_Latency</span>
+                    <div className="flex items-center gap-1.5 text-emerald-500 font-bold text-xs">
+                        <Activity className="w-2.5 h-2.5" /> 12ms
+                    </div>
+                </div>
+                <div className="w-px h-6 bg-white/5" />
+                <div className="flex flex-col items-end">
+                    <span className="text-[8px] text-gray-600 uppercase font-black tracking-tighter">Thread_Load</span>
+                    <div className="flex items-center gap-1.5 text-blue-400 font-bold text-xs">
+                        <Cpu className="w-2.5 h-2.5" /> 42%
+                    </div>
+                </div>
             </div>
         </div>
     );

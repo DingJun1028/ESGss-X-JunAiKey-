@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Language } from '../types';
 import { 
     Info, Target, FileCode, Binary, GitCommit, ShieldCheck, 
-    Zap, BrainCircuit, Network, 
-    Download, Share2,
+    Zap, BrainCircuit, Network, Download, Share2,
     Settings, BarChart, Activity, ShieldAlert, Code,
-    Layers, Cpu, Server, Lock, Globe, Database, Cpu as Processor,
-    Terminal, ChevronRight, Sparkles, TrendingUp, CpuIcon,
-    Fingerprint, Workflow, History
+    Layers, Cpu, Server, Lock, Globe, Database,
+    Terminal, ChevronRight, Sparkles, TrendingUp,
+    Fingerprint, Workflow, History, ArrowRight,
+    Award, Box, Compass, Flame, Leaf, Rocket,
+    Search, Heart, Crown, ExternalLink
 } from 'lucide-react';
 import { UniversalPageHeader } from './UniversalPageHeader';
 import { useToast } from '../contexts/ToastContext';
+import { marked } from 'marked';
 
 export const AboutUs: React.FC<{ language: Language }> = ({ language }) => {
   const isZh = language === 'zh-TW';
@@ -19,296 +22,234 @@ export const AboutUs: React.FC<{ language: Language }> = ({ language }) => {
   const [logLines, setLogLines] = useState<string[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
 
-  // 模擬實時神經反射日誌 (提升含金量視覺感)
+  // 📜 2026 ESGss JunAiKey 完整技術規範書 (The Great Compendium)
+  const whitepaperContent = `
+# 📜 2026 ESGss JunAiKey 完整技術規範書
+**版本**：V2.0 (2026-Q1 啟動版)  
+**監製**：策略長 Jun 洪鼎竣 (CSO, ESG Sunshine 善向永續)  
+**核心哲學**：以神聖代碼契約鑄造永恆架構，在熵增的混沌中開闢秩序之路。
+
+---
+
+## 一、 系統四大支柱 (The Four Pillars)
+| 支柱 | 實踐方案 | 核心價值 (SMART) | 智能標籤 |
+| :--- | :--- | :--- | :--- |
+| **聖典審查** | RAG 萬能智庫 | 實現 95% 以上的 ESG 法規召回率與精準對標。 | \`#記憶聖所\` |
+| **契約鑄造** | API 符文系統 | 完成 Flowlu、綠色金融與碳交易市場的無縫集成。 | \`#神聖契約\` |
+| **神使架構** | 代理網絡 (Agents) | 每日自動處理 50+ 供應商數據採集與分析任務。 | \`#光之羽翼\` |
+| **進化引擎** | 熵減煉金 (#Entropy) | 每週自動識別並修復 10% 的系統技術債與數據缺口。 | \`#原罪煉金\` |
+
+---
+
+## 二、 技術核心架構 (Technical Architecture)
+
+### 1. 數據提純與 MRV 引擎
+系統採用「多模態數據採集」與「RAG 知識共鳴」雙軌機制。
+* **感知層**：透過 **動作 05 (OCR)** 採集原始單據，利用多模態模型進行本質提純。
+* **認知層**：將提純數據注入 **Vector Knowledge Sanctuary**，實現多租戶隔離。
+* **演算層**：執行碳排核算物理公式：$E = \\sum (AD_i \\times EF_i \\times GWP_i)$。
+
+---
+
+## 三、 428 浮動功能鍵界面 (The 428 Interface)
+
+### 1. 極致美學 UI 規範
+* **佈局**：Bento Box (便當盒) 網格，高資訊密度與極簡導航的平衡。
+* **視覺**：Glassmorphism (玻璃擬態)，blur(20px)，配合動態光學脈衝。
+* **交互**：4 種核心模式、2 種動態能量狀態監控、8 組快速動作。
+
+### 2. ⚡ 奧義八式：快速動作
+1. **🌬️ 供應商排查**：自動生成並發送具備審計專業度的 GRI 合規郵件。
+2. **⚖️ 合規 GAP 分析**：即時對標 GRI/SASB，顯示紅綠燈狀態與修復建議。
+3. **🌿 即時減碳演算**：將活動數據提純為具備文明價值的「碳減量資產」。
+4. **📝 永續長週報**：一鍵聚合 Flowlu 數據，顯化董事會級別的戰略摘要。
+
+---
+
+## 四、 2026 進化路線圖 (Roadmap)
+
+### Q1：生態化與金融化 (#SacredContract)
+* **量子隔離**：建立多租戶級別的數據主權保護協議。
+* **金融符文**：碳減量數據自動轉化為銀行利率優化利差。
+
+### Q2：資產化與群體化 (#OriginalSinAlchemy)
+* **國際碳權交易**：連結 ACX 等交易所，實現減碳數據的直接變現。
+* **群體智慧進化**：跨供應商 ROI 博弈優化，AI 自動學習最優路徑。
+`;
+
   useEffect(() => {
     const logs = [
-      "[KERNEL] Initializing AIOS v15.2...",
-      "[AUTH] Authority Forging Handshake: SUCCESS",
-      "[SYNC] Neural Bus Synapse 0xBF32 Connected",
-      "[RAG] Atomic Knowledge Vector Indexing...",
-      "[LOGIC] Chain-of-Thought Reasoning Active",
-      "[DB] Connecting to Decentralized Ledger...",
-      "[AGENT] Navigation Swarm Reporting 98% Integrity",
-      "[SEC] Zero-Hallucination Guardrails: LOCKED",
-      "[TENSOR] Allocating 128k Context Window...",
-      "[UI] Optical Exclusive Layer Rendering..."
+      "[KERNEL] 2026 Q1 Evolution Protocol: ACTIVE",
+      "[AUTH] CSO Authority Witnessed: SUCCESS",
+      "[MANIFEST] Compendium v2.0 Ingested",
+      "[SYNC] International Carbon Nexus: HANDSHAKE",
+      "[RAG] Global Standards Indexing (GRI 2024)...",
+      "[LOGIC] Value Creation Logic Matrix: ALIGNED",
+      "[SEC] Tenant Data Shards Protected: TRUE",
+      "[FINANCE] Rate Discount Oracle Online",
     ];
     let i = 0;
     const timer = setInterval(() => {
-      setLogLines(prev => [...prev, logs[i % logs.length]].slice(-12));
+      setLogLines(prev => [...prev, logs[i % logs.length]].slice(-15));
       i++;
-    }, 2000);
+    }, 1500);
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logLines]);
-
-  const handleDownloadPDF = () => {
-      addToast('info', isZh ? '正在從 AIOS 內核編譯技術白皮書...' : 'Compiling Technical Whitepaper...', 'System');
-      setTimeout(() => {
-          addToast('success', isZh ? '下載完成：JunAiKey_Manifesto_v15.pdf' : 'Download Complete', 'System');
-      }, 1500);
+  const handleCompile = () => {
+      addToast('reward', isZh ? '正在編譯《2026 萬能聖典》...' : 'Compiling 2026 Great Compendium...', 'System');
   };
 
-  const TechParam = ({ label, val, color = "emerald", desc }: { label: string, val: string, color?: string, desc?: string }) => (
-      <div 
-        className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex flex-col justify-center hover:bg-white/10 transition-all group cursor-help relative"
-        title={desc}
-      >
-          <div className="text-[10px] text-gray-500 uppercase font-black mb-2 group-hover:text-gray-300 transition-colors flex justify-between">
+  const TechParam = ({ label, val, color = "emerald" }: { label: string, val: string, color?: string }) => (
+      <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl flex flex-col justify-center hover:bg-white/10 transition-all group relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-all" />
+          <div className="text-[9px] text-gray-500 uppercase font-black mb-1 group-hover:text-gray-300 transition-colors flex justify-between">
             {label}
-            <Info className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className={`w-1 h-1 rounded-full bg-${color}-400 animate-pulse`} />
           </div>
-          <div className="flex items-center justify-between">
-              <div className={`text-lg font-mono font-bold text-${color}-400`}>{val}</div>
-              <div className="h-1.5 w-16 bg-black/40 rounded-full overflow-hidden shrink-0">
-                  <div className={`h-full bg-${color}-500 shadow-[0_0_8px_rgba(0,0,0,0.5)]`} style={{ width: '75%' }} />
-              </div>
-          </div>
+          <div className={`text-base font-mono font-bold text-${color}-400`}>{val}</div>
       </div>
   );
 
   return (
     <div className="h-full flex flex-col space-y-4 animate-fade-in overflow-hidden">
-        {/* 頁頭數據帶 - 空間壓縮優化 */}
-        <div className="shrink-0 flex justify-between items-center px-2">
-            <div className="transform scale-95 origin-left">
-                <UniversalPageHeader 
-                    icon={FileCode}
-                    title={{ zh: '專案完全技術規格', en: 'Technical Manifesto' }}
-                    description={{ zh: 'JunAiKey AIOS：全景架構與三元一體技術深度報告', en: 'Deep Technical Architecture & Trinity Framework' }}
-                    language={language}
-                    tag={{ zh: '內核版本 v15.2', en: 'KERNEL_V15' }}
-                />
-            </div>
-            
-            <div className="flex bg-slate-900/50 p-1.5 backdrop-blur-xl border border-white/10 rounded-xl">
-                {[
-                    { id: 'whitepaper', label: isZh ? '技術規格' : 'Spec', icon: FileCode },
-                    { id: 'tech', label: isZh ? '三元架構' : 'Trinity', icon: Binary },
-                    { id: 'vision', label: isZh ? '核心哲學' : 'Philosophy', icon: Target },
-                    { id: 'roadmap', label: isZh ? '演進路徑' : 'Roadmap', icon: GitCommit },
-                ].map(tab => (
+        <div className="shrink-0 flex flex-col lg:flex-row justify-between items-start lg:items-end px-2 gap-4">
+            <UniversalPageHeader 
+                icon={FileCode}
+                title={{ zh: '2026 萬能技術規範聖典', en: '2026 Technical Compendium' }}
+                description={{ zh: 'ESGss 善向永續：全知之眼 · 萬能聖典 v16.1', en: 'The Great Compendium of Value Creation & Regenerative Governance.' }}
+                language={language}
+                tag={{ zh: '內核版本 v16.1', en: 'KERNEL_V16.1' }}
+            />
+            <div className="flex bg-slate-900/50 p-1 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                {['whitepaper', 'tech', 'vision', 'roadmap'].map(tab => (
                     <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-black transition-all ${activeTab === tab.id ? 'bg-white text-black shadow-2xl' : 'text-gray-400 hover:text-white'}`}
+                        key={tab}
+                        onClick={() => setActiveTab(tab as any)}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTab === tab ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'text-gray-500 hover:text-white'}`}
                     >
-                        <tab.icon className="w-4 h-4" /> {tab.label}
+                        {tab.toUpperCase()}
                     </button>
                 ))}
             </div>
         </div>
 
-        {/* 核心內容矩陣 - 撐滿全景 (1.618 : 1) */}
-        <div className="flex-1 grid grid-cols-12 gap-5 min-h-0 overflow-hidden">
-            
-            {/* 左側：核心文檔內容 */}
+        <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 overflow-hidden">
             <div className="col-span-12 lg:col-span-8 flex flex-col min-h-0">
-                <div className="flex-1 overflow-y-auto no-scrollbar glass-bento p-10 border-white/5 bg-slate-900/20 rounded-[2.5rem] relative">
-                    <div className="absolute top-0 right-0 p-12 opacity-[0.02] pointer-events-none">
-                        <Code className="w-80 h-80" />
-                    </div>
-
+                <div className="flex-1 overflow-y-auto no-scrollbar glass-bento p-10 border-white/5 bg-slate-900/40 rounded-[3.5rem] relative shadow-2xl">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.05)_0%,transparent_70%)] pointer-events-none" />
+                    
                     {activeTab === 'whitepaper' && (
-                        <div className="space-y-12 animate-fade-in w-full">
-                            <div className="border-l-8 border-celestial-gold pl-8 space-y-3">
-                                <h3 className="text-4xl font-black text-white tracking-tighter uppercase leading-none">JunAiKey_OS Kernel Manifesto</h3>
-                                <p className="text-gray-400 text-base font-light">基於邊緣計算與量子語義檢索的分層架構揭露</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="p-6 bg-white/[0.03] border border-white/5 rounded-3xl space-y-4 group hover:bg-white/[0.05] transition-all">
-                                    <div className="p-3 bg-blue-500/20 text-blue-400 rounded-2xl w-fit"><Server className="w-6 h-6" /></div>
-                                    <h4 className="font-black text-white uppercase tracking-widest text-sm">數據通訊層 (Protocol)</h4>
-                                    <p className="text-xs text-gray-400 leading-relaxed">採用 gRPC 與 Protobuf 的二進制通訊協定，實現毫秒級數據摺疊與同步，支持全球 500+ 端點並發。</p>
-                                </div>
-                                <div className="p-6 bg-white/[0.03] border border-white/5 rounded-3xl space-y-4 group hover:bg-white/[0.05] transition-all">
-                                    <div className="p-3 bg-purple-500/20 text-purple-400 rounded-2xl w-fit"><BrainCircuit className="w-6 h-6" /></div>
-                                    <h4 className="font-black text-white uppercase tracking-widest text-sm">智慧推理層 (Reasoning)</h4>
-                                    <p className="text-xs text-gray-400 leading-relaxed">內建 Atomic RAG 引擎，透過 1536 維向量空間對標 GRI/SASB 標準，確保 AI 回答具備 99% 邏輯見證度。</p>
-                                </div>
-                                <div className="p-6 bg-white/[0.03] border border-white/5 rounded-3xl space-y-4 group hover:bg-white/[0.05] transition-all">
-                                    <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl w-fit"><ShieldCheck className="w-6 h-6" /></div>
-                                    <h4 className="font-black text-white uppercase tracking-widest text-sm">安全驗證層 (Trust)</h4>
-                                    <p className="text-xs text-gray-400 leading-relaxed">所有決策軌跡均通過 SHA-256 雜湊處理並寫入區塊鏈稽核鏈，實現不可篡改的數位信任足跡。</p>
+                        <div className="space-y-12 animate-fade-in w-full relative z-10">
+                            <div className="border-l-4 border-celestial-gold pl-8">
+                                <h3 className="text-4xl font-black text-white tracking-tighter uppercase leading-none">The_Great_Compendium <span className="text-celestial-gold opacity-50">v16.1</span></h3>
+                                <div className="flex items-center gap-4 mt-3">
+                                    <p className="text-gray-400 text-lg font-light italic">
+                                        {isZh ? '「我們不編寫代碼，我們締結神聖架構契約。」' : 'We don’t just write code, we forge sacred architecture.'}
+                                    </p>
                                 </div>
                             </div>
 
-                            <section className="space-y-6">
-                                <h4 className="flex items-center gap-3 text-sm font-black text-celestial-gold uppercase tracking-[0.3em]"><Layers className="w-5 h-5"/> 核心封裝技術 (Module Specs)</h4>
-                                <div className="space-y-4">
-                                    <div className="flex items-start gap-5 p-6 bg-black/20 rounded-3xl border border-white/5">
-                                        <div className="px-3 py-1 bg-white/10 text-white font-mono text-[9px] rounded-lg mt-1">MODULE_A9</div>
-                                        <div className="flex-1">
-                                            <h5 className="text-sm font-bold text-white mb-2 uppercase">動態代理人協調器 (Agent Orchestrator)</h5>
-                                            <p className="text-xs text-gray-500 leading-relaxed">自動化任務分解引擎，能根據任務權重動態分配 CPU 與 Token 資源，支援多代理辯論模式 (CoT) 產出最優解。</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-5 p-6 bg-black/20 rounded-3xl border border-white/5">
-                                        <div className="px-3 py-1 bg-white/10 text-white font-mono text-[9px] rounded-lg mt-1">SECURE_L15</div>
-                                        <div className="flex-1">
-                                            <h5 className="text-sm font-bold text-white mb-2 uppercase">零幻覺邏輯斷言 (Zero-Hallucination Guardrails)</h5>
-                                            <p className="text-xs text-gray-500 leading-relaxed">基於 12 個維度的見證協定，在輸出前強制進行事實檢核，偏差值超過 0.05 則自動觸發自我校正機制。</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
+                            <div className="prose prose-invert prose-sm max-w-none bg-black/40 p-12 rounded-[3rem] border border-white/5 shadow-inner">
+                                <div className="markdown-body" dangerouslySetInnerHTML={{ __html: marked.parse(whitepaperContent) as string }} />
+                            </div>
 
-                            <section className="pt-8 border-t border-white/5 flex gap-5">
-                                <button onClick={handleDownloadPDF} className="flex items-center gap-3 px-8 py-4 bg-white text-black font-black rounded-2xl text-xs uppercase hover:scale-105 transition-all shadow-2xl shadow-white/5"><Download className="w-5 h-5"/> Compile_Whitepaper_PDF</button>
-                                <button className="flex items-center gap-3 px-8 py-4 bg-white/5 text-white font-bold rounded-2xl text-sm uppercase border border-white/10 hover:bg-white/10 transition-all"><Share2 className="w-5 h-5"/> Share_Architecture</button>
+                            <section className="pt-8 border-t border-white/5 flex flex-wrap gap-4">
+                                <button onClick={handleCompile} className="flex items-center gap-3 px-10 py-4 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest transition-all shadow-2xl hover:scale-105 active:scale-95">
+                                    <Download className="w-5 h-5"/> Download_Sacred_PDF
+                                </button>
+                                <button className="flex items-center gap-3 px-10 py-4 bg-white/5 text-white font-bold rounded-2xl text-xs uppercase border border-white/10 hover:bg-white/10 transition-all">
+                                    <Share2 className="w-5 h-5"/> Export_Markdown
+                                </button>
                             </section>
                         </div>
                     )}
 
                     {activeTab === 'tech' && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-fade-in h-full">
-                            {[
-                                { title: '感知層 (Perception)', icon: BrainCircuit, color: 'cyan', desc: '負責從系統內部狀態和外部環境中收集信息。採用 RxJS 神經匯流排，捕捉全球碳排、能源與社會輿情之瞬時變動。' },
-                                { title: '認知層 (Cognition)', icon: Network, color: 'amber', desc: '系統的思考中樞。利用 Gemini 3 Pro 深層推理能力，進行情境模擬與價值預測，將數據轉化為具體的商模洞察。' },
-                                { title: '行動層 (Action)', icon: Zap, color: 'purple', desc: '閉環進化的執行終端。根據決策自動生成報告、觸發 Webhook 或調整系統配置，將意圖轉化為現實世界的影響力。' }
-                            ].map((item, i) => (
-                                <div key={i} className="p-8 bg-white/5 rounded-[2.5rem] border border-white/10 space-y-6 hover:bg-white/[0.08] transition-all group">
-                                    <div className={`p-5 bg-${item.color}-500/20 rounded-[1.8rem] w-fit group-hover:scale-110 transition-transform`}><item.icon className={`w-10 h-10 text-${item.color}-400`} /></div>
-                                    <h4 className="text-xl font-black text-white">{item.title}</h4>
-                                    <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
-                                    <div className="pt-4 flex gap-2">
-                                        {[1, 2, 3].map(dot => <div key={dot} className={`w-1.5 h-1.5 rounded-full bg-${item.color}-500/30 group-hover:bg-${item.color}-500 transition-colors duration-500`} />)}
-                                    </div>
+                        <div className="space-y-10 animate-fade-in">
+                            <div className="p-10 bg-black/60 rounded-[3rem] border border-celestial-blue/30 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-12 opacity-5"><Cpu className="w-64 h-64 text-celestial-blue" /></div>
+                                <h4 className="text-2xl font-black text-white mb-8 flex items-center gap-4">
+                                    <Terminal className="w-7 h-7 text-celestial-blue" /> AIOS Deep-Logic Integration
+                                </h4>
+                                <div className="space-y-6 text-gray-300 text-base leading-relaxed">
+                                    <p>本系統基於「超立方進化協議」，實現跨代理人的智慧編排。每個組件皆具備自我遙測與邏輯折疊能力，確保 100% MECE 一致性。</p>
+                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 list-none p-0">
+                                        {[
+                                            { t: "MRV 數位認證", d: "自動化監測、報告與核證流程", icon: ShieldCheck },
+                                            { t: "量子隔離架構", d: "多租戶數據實體物理隔離協定", icon: Lock },
+                                            { t: "金融符文對接", d: "利差自動對標與金融 API 集成", icon: Zap },
+                                            { t: "群體博弈優化", d: "跨產業標竿 ROI 演化路徑建議", icon: BrainCircuit }
+                                        ].map((item, i) => (
+                                            <li key={i} className="flex items-center gap-4 p-5 bg-white/5 rounded-2xl border border-white/10">
+                                                <item.icon className="w-6 h-6 text-celestial-blue shrink-0" />
+                                                <div>
+                                                    <div className="font-bold text-white text-sm">{item.t}</div>
+                                                    <div className="text-[10px] text-gray-500 uppercase">{item.d}</div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
-                            ))}
+                            </div>
                         </div>
                     )}
 
                     {activeTab === 'vision' && (
-                        <div className="space-y-10 animate-fade-in">
-                            <div className="text-center py-16">
-                                <h3 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-celestial-gold via-white to-celestial-emerald tracking-tighter uppercase mb-6">萬能 MECE # 極限性能晉級</h3>
-                                <p className="text-xl text-gray-400 italic font-light">「萬物歸宗，撥亂反正，同體一心，無差無別。」</p>
+                        <div className="space-y-12 animate-fade-in flex flex-col items-center text-center py-20">
+                            <div className="p-8 bg-celestial-gold/20 rounded-[3rem] border border-celestial-gold/30 animate-float-gentle">
+                                <Crown className="w-24 h-24 text-celestial-gold" />
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {[
-                                    { zh: '萬物歸宗', en: 'SOURCE_UNITY', desc: '數據溯源機制' },
-                                    { zh: '撥亂反正', en: 'ENTROPY_REDUCTION', desc: '雜訊過濾算法' },
-                                    { zh: '同體一心', en: 'NEURAL_SYNC', desc: '全局狀態管理' },
-                                    { zh: '無縫接軌', en: 'SEAMLESS_IO', desc: 'API 自適應層' },
-                                    { zh: '缺口補齊', en: 'GAP_FILLING', desc: '缺失值 AI 推理' },
-                                    { zh: '自主通典', en: 'AUTONOMOUS_CODEX', desc: '智慧合規知識庫' },
-                                    { zh: '永續進化', en: 'DYNAMIC_EVO', desc: '自我修復能力' },
-                                    { zh: '極簡光學', en: 'OPTICAL_UX', desc: '視覺語義對齊' }
-                                ].map(v => (
-                                    <div key={v.en} className="p-6 bg-white/5 border border-white/10 rounded-2xl text-center group hover:border-celestial-gold transition-all cursor-crosshair">
-                                        <div className="text-xs font-black text-white mb-1 uppercase tracking-widest">{v.zh}</div>
-                                        <div className="text-[7px] text-gray-500 font-mono mb-2">{v.en}</div>
-                                        <div className="text-[8px] text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">{v.desc}</div>
-                                    </div>
-                                ))}
+                            <div className="max-w-2xl space-y-6">
+                                <h3 className="zh-main text-5xl text-white tracking-tighter">從「負擔」到「數位黃金」</h3>
+                                <p className="text-gray-400 text-xl font-light leading-relaxed">
+                                    我們正在定義未來企業的「永續利潤」。不只是減少排放，而是透過 JunAiKey 煉金術，將地球的健康轉化為資產負債表上的增長。
+                                </p>
                             </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'roadmap' && (
-                        <div className="space-y-12 animate-fade-in h-full relative">
-                            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 transform -translate-x-1/2 hidden md:block" />
-                            
-                            {[
-                                { v: 'v1.0', name: 'Genesis Project', status: 'Archive', date: '2023.Q1', desc: '基礎碳盤查模組與初步 UI 框架確立。', color: 'slate' },
-                                { v: 'v5.0', name: 'Cognitive Layer', status: 'Legacy', date: '2023.Q3', desc: '導入深度學習輔助報告撰寫，實現初步智慧化。', color: 'blue' },
-                                { v: 'v12.0', name: 'StarGate Protocol', status: 'Legacy', date: '2024.Q2', desc: '多代理人協作機制啟動，數據同步率突破 85%。', color: 'purple' },
-                                { v: 'v15.2', name: 'Singularity Key', status: 'ACTIVE', date: 'NOW', desc: 'JunAiKey 萬能內核覺醒，全面實裝三元一體技術規格。', color: 'gold' },
-                                { v: 'v20.0', name: 'Omni-Presence', status: 'Planned', date: '2025.Q4', desc: '全自動化自治決策系統 (Autonomous DAO) 實驗啟動。', color: 'emerald' },
-                            ].map((step, i) => (
-                                <div key={step.v} className={`flex items-center gap-8 ${i % 2 === 0 ? 'flex-row' : 'flex-row-reverse'} relative z-10`}>
-                                    <div className="flex-1 bg-white/5 border border-white/5 p-6 rounded-[2rem] hover:bg-white/10 transition-all">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[10px] font-black text-gray-500 uppercase">{step.date}</span>
-                                            <span className={`text-[8px] px-2 py-0.5 rounded font-bold bg-${step.color}-500/20 text-${step.color}-400 border border-${step.color}-500/30`}>{step.status}</span>
-                                        </div>
-                                        <h4 className="text-white font-bold text-lg mb-2">{step.name} <span className="text-xs opacity-50 ml-2">{step.v}</span></h4>
-                                        <p className="text-xs text-gray-400 leading-relaxed">{step.desc}</p>
-                                    </div>
-                                    <div className={`w-8 h-8 rounded-full border-4 border-slate-900 bg-${step.color}-500 shadow-[0_0_15px_rgba(251,191,36,0.2)] shrink-0 hidden md:block`} />
-                                    <div className="flex-1 hidden md:block" />
-                                </div>
-                            ))}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* 右側：價值補償區與技術監控 */}
-            <div className="col-span-12 lg:col-span-4 flex flex-col gap-5 min-h-0">
-                {/* 參數矩陣 */}
-                <div className="glass-bento p-6 flex flex-col bg-slate-950/40 border-white/10 rounded-[2.5rem] shrink-0">
+            <div className="col-span-12 lg:col-span-4 flex flex-col gap-4 min-h-0">
+                <div className="glass-bento p-8 flex flex-col bg-slate-950 border-white/10 rounded-[3rem] shrink-0 shadow-2xl">
                     <div className="flex justify-between items-center mb-8">
                         <div className="flex items-center gap-3">
-                            <Processor className="w-5 h-5 text-celestial-purple" />
-                            <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">內核技術參數矩陣</span>
+                            <Box className="w-5 h-5 text-celestial-purple" />
+                            <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">Sacred_Contract_Vitals</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                             <div className="text-[9px] font-mono text-gray-400 bg-black/40 px-2 py-0.5 rounded">TENSOR_LOAD: 42.1%</div>
-                        </div>
+                        <div className="uni-mini bg-celestial-gold text-black">Master_Auth</div>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-3">
-                        <TechParam label="Neural_Sync" val="98.4%" desc="跨模態神經元同步率，確保全系統數據一致性" />
-                        <TechParam label="Context_W" val="128k" color="blue" desc="當前處理之上下文視窗長度（Tokens）" />
-                        <TechParam label="Reflex_Lat" val="12ms" color="gold" desc="感知到數據變化至執行行動層之反應延遲" />
-                        <TechParam label="Entropy_Q" val="0.082" color="purple" desc="系統亂度指數，數值愈低代表邏輯愈嚴謹" />
-                        <TechParam label="Auth_LV" val="L15.2" color="rose" desc="當前核心授權等級，解鎖高級辯論與模擬權能" />
-                        <TechParam label="Agent_Count" val="42" color="blue" desc="當前背景運行之專業子代理人總數" />
+                        <TechParam label="Core_Integrity" val="99.99%" color="emerald" />
+                        <TechParam label="Logic_Sanctity" val="100%" color="purple" />
+                        <TechParam label="Auth_Level" val="ARCHITECT" color="gold" />
+                        <TechParam label="MECE_Verify" val="PASSED" color="blue" />
                     </div>
                 </div>
 
-                {/* 即時神經反射 (Terminal Log) */}
-                <div className="glass-bento p-6 flex-1 flex flex-col bg-slate-900/40 border-white/5 rounded-[2.5rem] min-h-0 overflow-hidden">
+                <div className="glass-bento p-8 flex-1 flex flex-col bg-slate-900/60 border-white/5 rounded-[3rem] min-h-0 overflow-hidden shadow-xl">
                     <div className="flex justify-between items-center mb-6 shrink-0">
                         <div className="flex items-center gap-3">
                             <Activity className="w-5 h-5 text-emerald-400" />
-                            <span className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Live_Neural_Reflex</span>
+                            <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">Neural_Compendium_Stream</span>
                         </div>
-                        <Sparkles className="w-4 h-4 text-celestial-gold animate-pulse" />
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
-
-                    <div className="flex-1 bg-black/40 rounded-3xl border border-dashed border-white/10 flex flex-col p-4 font-mono text-[9px] relative group overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/5 to-transparent pointer-events-none" />
-                        <div className="space-y-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                    <div className="flex-1 bg-black/60 rounded-[2rem] border border-dashed border-white/5 flex flex-col p-6 font-mono text-[9px] relative overflow-hidden group shadow-inner">
+                        <div className="space-y-2 opacity-60 group-hover:opacity-100 transition-opacity">
                             {logLines.map((line, idx) => (
-                                <div key={idx} className={`${line.includes('SUCCESS') || line.includes('OK') ? 'text-emerald-500' : 'text-gray-400'}`}>
-                                  {line}
+                                <div key={idx} className={`flex gap-3 ${line.includes('SUCCESS') || line.includes('ALIGNED') ? 'text-emerald-500' : 'text-gray-500'}`}>
+                                  <span className="shrink-0 text-gray-800">[{idx.toString().padStart(2, '0')}]</span>
+                                  <span className="truncate">{line}</span>
                                 </div>
                             ))}
                             <div ref={logEndRef} />
                         </div>
-                        {/* 模擬曲線 */}
-                        <svg className="absolute bottom-0 left-0 w-full h-24 text-emerald-500/10 fill-current pointer-events-none" viewBox="0 0 400 100" preserveAspectRatio="none">
-                            <path d="M0,80 Q50,20 100,70 T200,40 T300,90 T400,30 L400,100 L0,100 Z" />
-                        </svg>
-                    </div>
-
-                    <div className="mt-6 p-5 bg-white/5 rounded-2xl border border-white/10 space-y-3 shrink-0">
-                        <div className="flex items-center gap-3 text-xs font-bold text-white">
-                            <ShieldAlert className="w-5 h-5 text-amber-500" />
-                            <span>Architecture Sync Advice</span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 leading-relaxed italic border-l-2 border-amber-500/30 pl-3">
-                            「當前系統處於 v15.2 核心穩定態。偵測到 A9 維度與數據層同步率偏移，建議強化 WebSocket 握手協定。」
-                        </p>
+                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black to-transparent pointer-events-none" />
                     </div>
                 </div>
             </div>
-        </div>
-
-        {/* 操作底欄 */}
-        <div className="shrink-0 flex justify-end gap-4 pb-4">
-            <button className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-xs font-black transition-all border border-white/10 uppercase tracking-[0.2em]">取消校準</button>
-            <button onClick={() => addToast('success', '核心邏輯已寫入聖典', 'Sync')} className="px-10 py-3 bg-gradient-to-r from-celestial-gold to-amber-500 text-black font-black rounded-2xl text-xs uppercase tracking-[0.2em] shadow-2xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" /> 執行模擬並寫入聖典
-            </button>
         </div>
     </div>
   );

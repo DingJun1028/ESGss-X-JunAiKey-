@@ -1,8 +1,9 @@
 {
   "name": "ESGss JAK: Hypercube Evolution",
-  "description": "The v15.9.1 AIOS Kernel powered by JunAiKey. The Best Practice Protocol for Regenerative ESG Decision Making.",
+  "description": "The v16.1 AIOS Kernel powered by JunAiKey. Advanced AI Hypercube Protocol.",
   "requestFramePermissions": [
     "camera",
-    "microphone"
+    "microphone",
+    "geolocation"
   ]
 }

@@ -2,11 +2,13 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { useToast } from './ToastContext';
 import { 
     PersonaConfig, DigitalSoulAsset, SoulForgeConfig, 
-    TrainingDoc, AdanDisciple, EsgCard, TrainingLogEntry, EntityPlanet 
+    TrainingDoc, AdanDisciple, EsgCard, TrainingLogEntry, EntityPlanet,
+    UserJournalEntry
 } from '../types';
 import { universalIntelligence } from '../services/evolutionEngine';
 import { Subject } from 'rxjs';
 import { getEsgCards } from '../constants';
+import { useCompany } from '../components/providers/CompanyProvider';
 
 export type AvatarFace = 'MIRROR' | 'EXPERT' | 'VOID' | 'CUSTOM';
 
@@ -53,7 +55,6 @@ interface UniversalAgentContextType {
     switchPersona: (id: string) => void;
     updatePersonaStats: (id: string, updates: Partial<PersonaConfig>) => void;
     
-    // 新增：人格四維矩陣
     traits: PersonaAttributes;
     updateTraits: (updates: Partial<PersonaAttributes>) => void;
     
@@ -97,7 +98,6 @@ interface UniversalAgentContextType {
     activeSoulAsset: DigitalSoulAsset | null;
     soul: AdanDisciple; 
 
-    // Fix: Added missing properties for AgentTraining and EsgCardAlbum
     trainingLogs: TrainingLogEntry[];
     addTrainingSession: (session: Omit<TrainingLogEntry, 'id'>) => void;
     exportNeuralState: (agentId: string) => string;
@@ -143,6 +143,12 @@ const INITIAL_PERSONAS: PersonaConfig[] = [
 
 export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { addToast } = useToast();
+    // Assuming useCompany is used to get addJournalEntry and awardXp
+    // But we need to be careful with circular dependencies if useCompany is a child.
+    // In App.tsx, UniversalAgentProvider is a PARENT of CompanyProvider.
+    // To solve this, we can either move the logic or pass a ref.
+    // For now, we will handle what we can locally and trigger signals.
+
     const [availablePersonas, setAvailablePersonas] = useState<PersonaConfig[]>(INITIAL_PERSONAS);
     const [activePersonaId, setActivePersonaId] = useState('jun-ai-key');
     const [logs, setLogs] = useState<AgentLog[]>([]);
@@ -163,7 +169,6 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
     const [activeJourney, setActiveJourney] = useState<Journey | null>(null);
     const [evolutionPlan, setEvolutionPlan] = useState<EvolutionMilestone[]>([]);
     const [aiVersionHistory, setAiVersionHistory] = useState<AIVersionHistory[]>([]);
-    // Fix: Added state for training logs
     const [trainingLogs, setTrainingLogs] = useState<TrainingLogEntry[]>([]);
 
     const activePersona = useMemo<PersonaConfig>(() => {
@@ -249,10 +254,36 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         setAvailablePersonas(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
     };
 
+    const addTrainingSession = useCallback((session: Omit<TrainingLogEntry, 'id'>) => {
+        const id = `tl-${Date.now()}`;
+        setTrainingLogs(prev => [{ ...session, id }, ...prev]);
+    }, []);
+
     const commitChatToMemory = useCallback((prompt: string, answer: string) => {
         const atom = `[對話記憶] ${activePersona.name}：${answer.substring(0, 100)}`;
-        universalIntelligence.injectQuantumNodes([{ atom, vector: ['chat'], weight: 0.8 }], `Memory_${activePersona.id}`);
-    }, [activePersona.id, activePersona.name]);
+        
+        // 1. Inject to Vector Engine
+        universalIntelligence.injectQuantumNodes([{ atom, vector: ['chat', 'memory'], weight: 0.8 }], `Memory_${activePersona.id}`);
+        
+        // 2. Add to Training Logs (Internal evolution)
+        addTrainingSession({
+            agentId: activePersona.id,
+            timestamp: Date.now(),
+            sessionType: '對話學習 (Contextual Learning)',
+            gainedExp: 25,
+            statChanges: { INT: 0.1, STRAT: 0.05 },
+            newKnowledge: [prompt.substring(0, 50) + "..."]
+        });
+
+        // 3. Emit Signal for HUD / UX
+        addLog(`Knowledge atom engraved: "${prompt.substring(0, 20)}..."`, 'success', 'Kernel');
+        broadcastSignal('MEMORY_COMMITTED', `Agent ${activePersona.name} integrated a new knowledge shard.`);
+        
+        // 4. Update traits based on interaction (Autonomous alignment)
+        if (prompt.toLowerCase().includes('help') || prompt.toLowerCase().includes('social')) {
+            updateTraits({ altruism: Math.min(100, traits.altruism + 0.5) });
+        }
+    }, [activePersona.id, activePersona.name, addTrainingSession, addLog, broadcastSignal, traits.altruism, updateTraits]);
 
     const uploadTrainingDoc = async (file: File) => {
         const id = `doc-${Date.now()}`;
@@ -287,13 +318,6 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         setIsProcessing(false);
         setActiveKeyId(null);
     };
-
-    // Fix: Implemented missing methods for AgentTraining and EsgCardAlbum
-    const addTrainingSession = useCallback((session: Omit<TrainingLogEntry, 'id'>) => {
-        const id = `tl-${Date.now()}`;
-        setTrainingLogs(prev => [{ ...session, id }, ...prev]);
-        addToast('success', 'Training session logged.', 'Kernel');
-    }, [addToast]);
 
     const exportNeuralState = useCallback((agentId: string) => {
         const agent = availablePersonas.find(p => p.id === agentId);
@@ -339,7 +363,6 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         isProcessing, activeFace, setActiveFace, activeKeyId, executeMatrixProtocol, subAgentsActive: isProcessing,
         forgedSouls, forgeSoul, equipSoul, activeSoulAsset: forgedSouls.find(s => s.id === activeSoulId) || null,
         soul: { ...activePersona, version: '15.2', exp: activePersona.exp, alignment: 99, rank: activePersona.title } as any,
-        // Fix: Added missing methods to context value
         trainingLogs, addTrainingSession, exportNeuralState, importNeuralState, updatePersonaKnowledge,
         synthesizeCards, decomposeCard
     };

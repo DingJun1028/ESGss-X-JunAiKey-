@@ -175,6 +175,23 @@
       .markdown-body h1, .markdown-body h2 { margin-top: 1.5em; margin-bottom: 0.5em; color: #fff; }
       .markdown-body p { margin-bottom: 1em; color: #94a3b8; }
       .markdown-body code { background: rgba(255,255,255,0.05); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+
+      /* Evolution Particles */
+      .evolution-particle {
+          position: absolute;
+          width: 4px; height: 4px;
+          background: rgba(0, 198, 255, 0.6);
+          border-radius: 50%;
+          animation: floatUp 3s infinite ease-out;
+          pointer-events: none;
+          bottom: -10px;
+      }
+
+      @keyframes floatUp {
+          0% { transform: translateY(0) scale(1); opacity: 0; }
+          20% { opacity: 1; }
+          100% { transform: translateY(-300px) scale(0); opacity: 0; }
+      }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Noto+Sans+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script type="importmap">
@@ -188,7 +205,8 @@
     "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
     "recharts": "https://esm.sh/recharts@^3.6.0",
     "rxjs": "https://esm.sh/rxjs@^7.8.2",
-    "html2pdf.js": "https://esm.sh/html2pdf.js@^0.12.1"
+    "html2pdf.js": "https://esm.sh/html2pdf.js@^0.12.1",
+    "zod": "https://esm.sh/zod@^3.23.8"
   }
 }
 </script>

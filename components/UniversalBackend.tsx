@@ -1,12 +1,16 @@
 
-import React, { useEffect, useState, useRef } from 'react';
-import { universalIntelligence, SystemVital, MCPRegistryItem } from '../services/evolutionEngine';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { universalIntelligence, SystemVital } from '../services/evolutionEngine';
 import { 
     Activity, Database, Cpu, Network, Zap, Server, BrainCircuit, MemoryStick, 
     HardDrive, Box, ShieldCheck, FileText, CheckCircle, TrendingUp, History, 
     Search, Loader2, Sparkles, AlertCircle, ArrowUpRight, Share2, Terminal, Code2, ShieldAlert,
-    FastForward, Layers, Layout, Globe, Settings, Cpu as Processor
+    FastForward, Layers, Layout, Globe, Settings, Cpu as Processor, BarChart3, LineChart as LineChartIcon
 } from 'lucide-react';
+import { 
+    ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, 
+    PolarRadiusAxis, Radar, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid
+} from 'recharts';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { useUniversalAgent } from '../contexts/UniversalAgentContext';
 import { UniversalPageHeader } from './UniversalPageHeader';
@@ -50,13 +54,25 @@ const MetricCard = React.memo(({ icon, label, value, subtext, color, progress }:
 
 const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) => {
   const [vitals, setVitals] = useState<SystemVital | null>(null);
+  const [vitalsHistory, setVitalsHistory] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'monitor' | 'ragflow' | 'registry'>('monitor');
   const [reflexes, setReflexes] = useState<any[]>([]);
   const isZh = language === 'zh-TW';
   const reflexEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const sub1 = universalIntelligence.vitals$.subscribe(setVitals);
+    const sub1 = universalIntelligence.vitals$.subscribe(v => {
+        setVitals(v);
+        setVitalsHistory(prev => {
+            const next = [...prev, {
+                time: new Date().toLocaleTimeString([], { hour12: false, minute: '2-digit', second: '2-digit' }),
+                cpu: Math.min(100, v.contextLoad * 5 + (Math.random() * 5)),
+                mem: Math.min(100, (v.integrityScore * 0.8) + (Math.random() * 10)),
+                load: v.activeThreads * 10
+            }];
+            return next.slice(-20); // 僅保留最近 20 個點
+        });
+    });
     const sub3 = universalIntelligence.reflex$.subscribe(reflex => {
         setReflexes(prev => [...prev, { ...reflex, id: Date.now() }].slice(-50));
     });
@@ -67,9 +83,20 @@ const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) => {
       reflexEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [reflexes]);
 
+  const radarData = useMemo(() => {
+    if (!vitals) return [];
+    return [
+        { subject: isZh ? '完整性' : 'Integrity', A: vitals.integrityScore, fullMark: 100 },
+        { subject: isZh ? '負熵值' : 'Neg-Entropy', A: (1 - vitals.entropy) * 100, fullMark: 100 },
+        { subject: isZh ? '感知力' : 'Perception', A: vitals.trinity.perception, fullMark: 100 },
+        { subject: isZh ? '認知力' : 'Cognition', A: vitals.trinity.cognition, fullMark: 100 },
+        { subject: isZh ? '行動力' : 'Action', A: vitals.trinity.action, fullMark: 100 },
+    ];
+  }, [vitals, isZh]);
+
   const pageData = {
       title: { zh: 'AIOS 萬能核心中樞', en: 'AIOS Nexus Core' },
-      desc: { zh: 'RAGFlow v0.23 全棧整合：內核參數監控與 Docker 組件矩陣', en: 'RAGFlow v0.23 Integration: Kernel Vitals & Docker Matrix' },
+      desc: { zh: '系統健康矩陣：內核參數監控與 Docker 組件狀態', en: 'System Health Matrix: Kernel Vitals & Docker Service Monitor' },
       tag: { zh: '核心版本 v16.1', en: 'KERNEL_V16.1' }
   };
 
@@ -99,28 +126,88 @@ const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) => {
           ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-8 relative z-10 no-scrollbar">
+      <div className="flex-1 overflow-y-auto p-8 relative z-10 no-scrollbar">
         {activeTab === 'monitor' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-7xl mx-auto">
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                    <MetricCard icon={<Processor className="w-5 h-5" />} label={isZh ? "量子同步率" : "Neural Sync"} value="98.4%" subtext={isZh ? "跨模態一致性" : "Consistency"} color="cyan" progress={98.4} />
-                    <MetricCard icon={<Database className="w-5 h-5" />} label={isZh ? "向量庫飽和度" : "Vector Saturation"} value="42.1%" subtext={isZh ? "Infinity Engine" : "Infinity Engine"} color="gold" progress={42.1} />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto">
+                <div className="lg:col-span-3 flex flex-col gap-6">
+                    <MetricCard icon={<Processor className="w-5 h-5" />} label={isZh ? "量子同步率" : "Neural Sync"} value={`${vitals.integrityScore.toFixed(1)}%`} subtext={isZh ? "跨模態一致性" : "Consistency"} color="cyan" progress={vitals.integrityScore} />
+                    <MetricCard icon={<TrendingUp className="w-5 h-5" />} label={isZh ? "系統熵值" : "Kernel Entropy"} value={vitals.entropy.toFixed(4)} subtext={isZh ? "負熵優化中" : "Optimizing Entropy"} color="purple" progress={vitals.entropy * 100} />
                     <MetricCard icon={<Zap className="w-5 h-5" />} label={isZh ? "響應延遲" : "Latency"} value="12ms" subtext={isZh ? "核心神經傳導" : "Reflex Delay"} color="emerald" progress={12} />
                 </div>
-                <div className="lg:col-span-8 flex flex-col gap-6">
-                    <div className="glass-panel p-6 rounded-[2.5rem] border border-white/10 bg-black/60 flex flex-col h-[600px] overflow-hidden shadow-2xl">
+
+                <div className="lg:col-span-4 flex flex-col gap-6">
+                    <div className="glass-panel p-8 rounded-[2.5rem] border border-white/10 bg-slate-900/60 shadow-2xl h-full flex flex-col relative overflow-hidden min-h-[400px]">
+                        <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none"><Activity className="w-40 h-40" /></div>
+                        <h3 className="text-sm font-black text-gray-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-3 relative z-10">
+                            <BarChart3 className="w-4 h-4" /> SYSTEM_VITAL_RADAR
+                        </h3>
+                        
+                        <div className="flex-1 min-h-[250px] w-full relative z-10">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                    <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 900 }} />
+                                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                    <Radar 
+                                        name="Kernel Health" 
+                                        dataKey="A" 
+                                        stroke="#06b6d4" 
+                                        fill="#06b6d4" 
+                                        fillOpacity={0.4} 
+                                        animationBegin={0} 
+                                        animationDuration={1500} 
+                                    />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '10px' }}
+                                        itemStyle={{ color: '#06b6d4' }}
+                                    />
+                                </RadarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="lg:col-span-5 flex flex-col gap-6">
+                    {/* 新增：生命徵象實時 LineChart */}
+                    <div className="glass-panel p-6 rounded-[2.5rem] border border-white/10 bg-slate-900/40 shadow-2xl h-[300px] relative overflow-hidden">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-sm font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2"><Share2 className="w-4 h-4" /> Neural Trace Stream (Agentic Reflex)</h3>
-                            <div className="text-[10px] text-emerald-500 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LIVE_REFLEX_BUS</div>
+                            <h3 className="text-sm font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2"><LineChartIcon className="w-4 h-4 text-celestial-gold" /> Temporal Load Pulse</h3>
+                            <div className="flex gap-4">
+                                <div className="flex items-center gap-1.5 text-[8px] font-black uppercase text-cyan-400">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> CPU
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[8px] font-black uppercase text-celestial-gold">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-celestial-gold" /> MEM
+                                </div>
+                            </div>
+                        </div>
+                        <div className="h-[200px] w-full">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                <LineChart data={vitalsHistory}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis dataKey="time" hide />
+                                    <YAxis domain={[0, 100]} hide />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
+                                    />
+                                    <Line type="monotone" dataKey="cpu" stroke="#06b6d4" strokeWidth={2} dot={false} isAnimationActive={false} />
+                                    <Line type="monotone" dataKey="mem" stroke="#fbbf24" strokeWidth={2} dot={false} isAnimationActive={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-[2.5rem] border border-white/10 bg-black/60 flex flex-col h-[300px] overflow-hidden shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-sm font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-2"><Share2 className="w-4 h-4" /> Neural Trace</h3>
+                            <div className="text-[10px] text-emerald-500 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> LIVE</div>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2 font-mono text-[10px]">
-                            {reflexes.length === 0 && <div className="text-gray-800 italic">Waiting for kernel signals...</div>}
                             {reflexes.map((r) => (
-                                <div key={r.id} className="p-3 bg-white/[0.02] border border-white/5 rounded-xl animate-fade-in flex gap-4 hover:bg-white/[0.05] transition-colors">
-                                    <span className="text-gray-700 shrink-0">[{new Date(r.id).toLocaleTimeString()}]</span>
+                                <div key={r.id} className="p-2 bg-white/[0.02] border border-white/5 rounded-xl flex gap-3 hover:bg-white/[0.05]">
+                                    <span className="text-gray-700">[{new Date(r.id).toLocaleTimeString([], {hour12: false})}]</span>
                                     <span className={`font-black uppercase shrink-0 ${r.type === 'EVOLUTION' ? 'text-emerald-400' : 'text-celestial-purple'}`}>{r.type}</span>
-                                    <span className="text-white shrink-0">&lt;{r.source}&gt;</span>
-                                    <span className="text-gray-400 truncate flex-1">{JSON.stringify(r.payload)}</span>
+                                    <span className="text-white truncate flex-1">{JSON.stringify(r.payload)}</span>
                                 </div>
                             ))}
                             <div ref={reflexEndRef} />
@@ -140,7 +227,7 @@ const UniversalBackend: React.FC<UniversalBackendProps> = ({ language }) => {
                 
                 <div className="glass-panel p-10 rounded-[3.5rem] border border-white/5 bg-slate-900/60 shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-[0.03]"><Settings className="w-32 h-32 text-white" /></div>
-                    <h3 className="text-xl font-black text-white mb-8 flex items-center gap-3 tracking-widest uppercase"><Settings className="w-6 h-6 text-celestial-gold" /> Environment Parameters Matrix (.env)</h3>
+                    <h3 className="text-xl font-black text-white mb-8 flex items-center gap-3 tracking-widest uppercase"><Settings className="w-6 h-6 text-celestial-gold" /> Environment Parameters Matrix</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                         {[
                             { k: 'MEM_LIMIT', v: '16 GB', s: 'Server Memory Cap' },

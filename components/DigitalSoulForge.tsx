@@ -1,15 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Language, SoulForgeConfig, DigitalSoulAsset } from '../types';
 import { 
     Hammer, Sparkles, Heart, Zap, Shield, Cpu, 
     ArrowRight, Loader2, Coins, UserCircle, Star,
-    Database, Activity, Hexagon, Fingerprint, Lock, Layers, FlaskConical, Save, CheckCircle, Plus
+    Database, Activity, Hexagon, Fingerprint, Lock, Layers, FlaskConical, Save, CheckCircle, Plus, AlertCircle
 } from 'lucide-react';
 import { useUniversalAgent } from '../contexts/UniversalAgentContext';
 import { UniversalPageHeader } from './UniversalPageHeader';
 import { QuantumSlider } from './minimal/QuantumSlider';
 import { useCompany } from './providers/CompanyProvider';
+import { z } from 'zod';
 
 interface DigitalSoulForgeProps {
   language: Language;
@@ -28,15 +29,32 @@ export const DigitalSoulForge: React.FC<DigitalSoulForgeProps> = ({ language }) 
       stability: 50
   });
 
-  // 目前正在「編輯中」的靈魂對象
   const [editingSoulId, setEditingSoulId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const soulSchema = useMemo(() => z.object({
+      name: z.string().trim().min(2, isZh ? "名稱太短 (至少 2 字)" : "Name too short (min 2)").max(30, isZh ? "名稱太長 (上限 30 字)" : "Name too long (max 30)"),
+      altruism: z.number().min(0).max(100),
+      pragmatism: z.number().min(0).max(100),
+      innovation: z.number().min(0).max(100),
+      stability: z.number().min(0).max(100)
+  }), [isZh]);
 
   const FORGE_COST = 500;
 
   const handleForge = async () => {
-      if (!soulName.trim()) return;
+      setErrors({});
+      const result = soulSchema.safeParse({ name: soulName, ...config });
       
-      // 只有新建立才扣費，更新現有資產不扣費 (商業邏輯優化)
+      if (!result.success) {
+          const fieldErrors: Record<string, string> = {};
+          result.error.errors.forEach(err => {
+              if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
+          });
+          setErrors(fieldErrors);
+          return;
+      }
+
       if (!editingSoulId) {
           if (goodwillBalance < FORGE_COST) return;
           updateGoodwillBalance(-FORGE_COST);
@@ -47,12 +65,14 @@ export const DigitalSoulForge: React.FC<DigitalSoulForgeProps> = ({ language }) 
   };
 
   const handleSelectSoul = (soul: DigitalSoulAsset) => {
+      setErrors({});
       setEditingSoulId(soul.id);
       setSoulName(soul.name);
       setConfig({ ...soul.traits });
   };
 
   const handleReset = () => {
+      setErrors({});
       setEditingSoulId(null);
       setSoulName('');
       setConfig({ altruism: 50, pragmatism: 50, innovation: 50, stability: 50 });
@@ -79,7 +99,7 @@ export const DigitalSoulForge: React.FC<DigitalSoulForgeProps> = ({ language }) 
             {/* Left: Personality Reactor (Editor) */}
             <div className="lg:col-span-7 space-y-6">
                 <div className={`glass-panel p-8 rounded-[3rem] border transition-all duration-500 bg-slate-900/40 relative overflow-hidden group shadow-2xl
-                    ${activeSoulAsset?.id === editingSoulId ? 'border-celestial-gold/50 shadow-amber-500/10' : 'border-white/10'}
+                    ${errors.name ? 'border-rose-500/50 ring-1 ring-rose-500/10' : activeSoulAsset?.id === editingSoulId ? 'border-celestial-gold/50 shadow-amber-500/10' : 'border-white/10'}
                 `}>
                     <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none group-hover:opacity-[0.07] transition-opacity">
                         <FlaskConical className="w-64 h-64" />
@@ -92,13 +112,8 @@ export const DigitalSoulForge: React.FC<DigitalSoulForgeProps> = ({ language }) 
                             </div>
                             <div>
                                 <h3 className="text-2xl font-bold text-white">
-                                    {isZh ? (editingSoulId ? '正在編輯靈魂 shard' : '人格特質共鳴器') : (editingSoulId ? 'Editing Soul Shard' : 'Personality Reactor')}
+                                    {isZh ? (editingSoulId ? '正在編輯靈魂 Shard' : '人格特質共鳴器') : (editingSoulId ? 'Editing Soul Shard' : 'Personality Reactor')}
                                 </h3>
-                                {activeSoulAsset?.id === editingSoulId && (
-                                    <div className="text-[9px] font-black text-celestial-gold uppercase tracking-widest flex items-center gap-1 mt-1">
-                                        <CheckCircle className="w-2.5 h-2.5" /> Currently Synced to Kernel
-                                    </div>
-                                )}
                             </div>
                         </div>
                         <div className="flex gap-2">
@@ -114,14 +129,19 @@ export const DigitalSoulForge: React.FC<DigitalSoulForgeProps> = ({ language }) 
 
                     <div className="space-y-10 relative z-10">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Soul Designation</label>
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Soul_Designation</label>
                             <input 
                                 type="text" 
                                 value={soulName} 
-                                onChange={(e) => setSoulName(e.target.value)}
+                                onChange={(e) => { setSoulName(e.target.value); if(errors.name) setErrors({...errors, name: ''}); }}
                                 placeholder={isZh ? "賦予此人格一個標識..." : "Enter personality ID..."}
-                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-1 focus:ring-celestial-gold outline-none text-xl placeholder:text-gray-700 transition-all"
+                                className={`w-full bg-black/40 border rounded-2xl px-6 py-4 text-white focus:ring-1 outline-none text-xl placeholder:text-gray-700 transition-all ${errors.name ? 'border-rose-500/50 focus:ring-rose-500/20' : 'border-white/10 focus:ring-celestial-gold'}`}
                             />
+                            {errors.name && (
+                                <div className="flex items-center gap-1.5 px-1 text-[10px] text-rose-400 font-bold uppercase animate-fade-in">
+                                    <AlertCircle className="w-3 h-3" /> {errors.name}
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">

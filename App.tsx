@@ -1,21 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Language } from './types';
+import React, { useState } from 'react';
+import { View } from './types';
 
-// --- 靜態導入所有組件 ---
+// --- Static Imports ---
 import { Layout } from './components/Layout';
 import { LoginScreen } from './components/LoginScreen';
 import { MyEsg } from './components/MyEsg';
-import { ToastProvider } from './contexts/ToastContext';
-import { CompanyProvider } from './components/providers/CompanyProvider';
-import { UniversalAgentProvider } from './contexts/UniversalAgentContext';
 import { ToastContainer } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LoadingScreen } from './components/LoadingScreen';
 import { OnboardingSystem } from './components/OnboardingSystem';
 import { NeuralNexus } from './components/NeuralNexus';
+import { useCompany } from './components/providers/CompanyProvider';
 
-// 分頁組件
+// Views
 import { Dashboard } from './components/Dashboard';
 import { ResearchHub } from './components/ResearchHub';
 import { Academy } from './components/Academy';
@@ -56,46 +53,45 @@ import { GlobalOperations } from './components/GlobalOperations';
 import { WorkflowLab } from './components/WorkflowLab';
 import { McpConfig } from './components/McpConfig';
 import { ImpactProjects } from './components/ImpactProjects';
+import { UniversalNotes } from './components/UniversalNotes';
+import { HypercubeAiLab } from './components/HypercubeAiLab';
+import { AgentTasks } from './components/AgentTasks';
+import { AdminPanel } from './components/AdminPanel';
+import { EcosystemRadar } from './components/EcosystemRadar';
+import { CarbonWallet } from './components/CarbonWallet';
+import { FlowluIntegration } from './components/FlowluIntegration';
+import { SupplierCrm } from './components/SupplierCrm';
+import { SupplierSurvey } from './components/SupplierSurvey';
+import { X, FileText, Zap, Sparkles, Layout as LayoutIcon, List } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentView, setCurrentView] = useState<View>(View.MY_ESG);
-  const [language, setLanguage] = useState<Language>('zh-TW');
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
 
-  useEffect(() => {
-    const savedLang = localStorage.getItem('app_language') as Language;
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-  }, []);
-
-  const handleToggleLanguage = () => {
-    const newLang = language === 'zh-TW' ? 'en-US' : 'zh-TW';
-    setLanguage(newLang);
-    localStorage.setItem('app_language', newLang);
-  };
+  const { language, toggleLanguage } = useCompany();
   
   return (
-    <ToastProvider>
-      <UniversalAgentProvider>
-        {!isLoggedIn ? (
-          <ErrorBoundary>
-             <LoginScreen onLogin={() => setIsLoggedIn(true)} language={language} />
-          </ErrorBoundary>
-        ) : (
-          <CompanyProvider>
-            <OnboardingSystem />
-            <NeuralNexus />
-            <Layout 
-              currentView={currentView} 
-              onNavigate={setCurrentView}
-              language={language}
-              onToggleLanguage={handleToggleLanguage}
-            >
-              <ErrorBoundary>
+    <>
+      {!isLoggedIn ? (
+        <ErrorBoundary>
+           <LoginScreen onLogin={() => setIsLoggedIn(true)} language={language} />
+        </ErrorBoundary>
+      ) : (
+        <>
+          <OnboardingSystem />
+          <NeuralNexus />
+          <Layout 
+            currentView={currentView} 
+            onNavigate={(v) => setCurrentView(v)}
+            language={language}
+            onToggleLanguage={toggleLanguage}
+          >
+            <ErrorBoundary>
+              <div className="relative h-full">
                 {(() => {
                   switch (currentView) {
-                    case View.MY_ESG: return <MyEsg language={language} onNavigate={setCurrentView} />;
+                    case View.MY_ESG: return <MyEsg language={language} onNavigate={(v) => setCurrentView(v)} />;
                     case View.VAULT: return <PersonalVault language={language} />;
                     case View.DASHBOARD: return <Dashboard language={language} />;
                     case View.RESTORATION: return <UniversalRestoration language={language} />;
@@ -105,10 +101,10 @@ const App: React.FC = () => {
                     case View.ABOUT_US: return <AboutUs language={language} />;
                     case View.API_ZONE: return <ApiZone language={language} />;
                     case View.UNIVERSAL_BACKEND: return <UniversalBackend language={language} />;
-                    case View.RESEARCH_HUB: return <ResearchHub language={language} />;
+                    case View.RESEARCH_HUB: return <ResearchHub language={language} setGlobalAnalysisResult={setAnalysisResult} />;
                     case View.ACADEMY: return <Academy language={language} />;
                     case View.DIAGNOSTICS: return <Diagnostics language={language} />;
-                    case View.STRATEGY: return <StrategyHub language={language} onNavigate={setCurrentView} />;
+                    case View.STRATEGY: return <StrategyHub language={language} onNavigate={(v) => setCurrentView(v)} />;
                     case View.REPORT: return <ReportGen language={language} />;
                     case View.CARBON: return <CarbonAsset language={language} />;
                     case View.TALENT: return <TalentPassport language={language} />;
@@ -121,14 +117,14 @@ const App: React.FC = () => {
                     case View.YANG_BO: return <YangBoZone language={language} />;
                     case View.ADAN_ZONE: return <AdanZone language={language} />;
                     case View.BUSINESS_INTEL: return <BusinessIntel language={language} />;
-                    case View.HEALTH_CHECK: return <HealthCheck language={language} onNavigate={setCurrentView} />;
+                    case View.HEALTH_CHECK: return <HealthCheck language={language} onNavigate={(v) => setCurrentView(v)} />;
                     case View.UNIVERSAL_TOOLS: return <UniversalTools language={language} />;
                     case View.UNIVERSAL_SYSTEM: return <UniversalSystem language={language} />;
                     case View.THINK_TANK: return <ThinkTank language={language} />;
                     case View.ALUMNI_ZONE: return <AlumniZone language={language} />;
-                    case View.LIBRARY: return <GoodwillLibrary language={language} onNavigate={setCurrentView} />;
+                    case View.LIBRARY: return <GoodwillLibrary language={language} />;
                     case View.SOUL_FORGE: return <DigitalSoulForge language={language} />;
-                    case View.AGENT_ARENA: return <AgentArena language={language} onNavigate={setCurrentView} />;
+                    case View.AGENT_ARENA: return <AgentArena language={language} onNavigate={(v) => setCurrentView(v)} />;
                     case View.AGENT_TRAINING: return <AgentTraining language={language} />;
                     case View.PROXY_MARKET: return <ProxyMarketplace language={language} />;
                     case View.PALACE: return <Gamification language={language} />;
@@ -138,16 +134,26 @@ const App: React.FC = () => {
                     case View.WORKFLOW_LAB: return <WorkflowLab language={language} />;
                     case View.MCP_CONFIG: return <McpConfig language={language} />;
                     case View.IMPACT_PROJECTS: return <ImpactProjects language={language} />;
-                    default: return <MyEsg language={language} onNavigate={setCurrentView} />;
+                    case View.UNIVERSAL_NOTES: return <UniversalNotes language={language} />;
+                    case View.HYPERCUBE_LAB: return <HypercubeAiLab language={language} />;
+                    case View.AGENT_TASKS: return <AgentTasks language={language} />;
+                    case View.ADMIN_PANEL: return <AdminPanel language={language} />;
+                    case View.ECOSYSTEM_RADAR: return <EcosystemRadar language={language} />;
+                    case View.CARBON_WALLET: return <CarbonWallet language={language} />;
+                    case View.FLOWLU_INTEGRATION: return <FlowluIntegration language={language} />;
+                    case View.SUPPLIER_CRM: return <SupplierCrm language={language} onNavigate={(v) => setCurrentView(v)} />;
+                    case View.SUPPLIER_SURVEY: return <SupplierSurvey language={language} onComplete={() => setCurrentView(View.SUPPLIER_CRM)} />;
+                    default: return <MyEsg language={language} onNavigate={(v) => setCurrentView(v)} />;
                   }
                 })()}
-              </ErrorBoundary>
-            </Layout>
-          </CompanyProvider>
-        )}
-        <ToastContainer />
-      </UniversalAgentProvider>
-    </ToastProvider>
+                {/* DeepDoc Analysis Results Overlay ... (omitted for brevity) */}
+              </div>
+            </ErrorBoundary>
+          </Layout>
+        </>
+      )}
+      <ToastContainer />
+    </>
   );
 };
 

@@ -94,7 +94,7 @@ export const CarbonWallet: React.FC<{ language: Language }> = ({ language }) => 
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ACX_Market_Index</span>
                             </div>
                         </div>
-                        <ResponsiveContainer width="100%" height="80%">
+                        <ResponsiveContainer width="100%" height="80%" minWidth={0} minHeight={200}>
                             <AreaChart data={marketData}>
                                 <Area type="monotone" dataKey="price" stroke="#fbbf24" fill="rgba(251,191,36,0.1)" strokeWidth={3} />
                             </AreaChart>

@@ -168,7 +168,7 @@ export const TacticalDashboard = () => {
       {/* 2. 實時神經流 (Live Neural Stream) */}
       <div className="bg-black/40 rounded-xl p-4 border border-white/5 h-64 overflow-y-auto font-mono text-xs">
         <h3 className="text-gray-400 mb-3 sticky top-0 bg-black/80 p-1 backdrop-blur">
-          >> SYSTEM_EVENT_STREAM
+          &gt;&gt; SYSTEM_EVENT_STREAM
         </h3>
 
         {logs.length === 0 && (

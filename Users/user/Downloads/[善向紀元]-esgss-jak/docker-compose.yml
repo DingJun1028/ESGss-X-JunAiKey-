@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'  # 已棄用，移除以避免警告
 
 services:
   # ESG儀表板前端
@@ -23,7 +23,7 @@ services:
       - esg-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,7 +31,7 @@ services:
 
   # ESG API後端 (模擬)
   esg-api:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: esg-api
     working_dir: /app
     ports:
@@ -132,6 +132,68 @@ services:
     profiles:
       - monitoring
 
+  # 萬能智庫服務
+  junaikeydb-backend:
+    build: ./junaikeydb-server
+    container_name: junaikeydb-backend
+    restart: always
+    depends_on:
+      - junaikeydb-db
+      - junaikeydb-redis
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://junaikeydb_admin:${DB_PASSWORD:-junaikeydb_secret}@junaikeydb-db:5432/junaikeydb_db
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ADMIN_SECRET: ${ADMIN_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ./junaikeydb-server/uploads:/app/uploads
+    networks:
+      - esg-network
+  junaikeydb-db:
+    image: pgvector/pgvector:pg16
+    container_name: junaikeydb-db
+    environment:
+      POSTGRES_DB: junaikeydb_db
+      POSTGRES_USER: junaikeydb_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-junaikeydb_secret}
+    volumes:
+      - junaikeydb_postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - esg-network
+    restart: unless-stopped
+  junaikeydb-redis:
+    image: redis:alpine
+    container_name: junaikeydb-redis
+    networks:
+      - esg-network
+    restart: unless-stopped
+  junaikeydb-worker:
+    build: ./junaikeydb-server
+    container_name: junaikeydb-worker
+    command: node worker.js
+    restart: always
+    depends_on:
+      - junaikeydb-backend
+      - junaikeydb-redis
+    environment:
+      DATABASE_URL: postgres://junaikeydb_admin:${DB_PASSWORD:-junaikeydb_secret}@junaikeydb-db:5432/junaikeydb_db
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    networks:
+      - esg-network
+  junaikeydb-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: junaikeydb-tunnel
+    restart: always
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    networks:
+      - esg-network
+    profiles:
+      - junaikeydb  # 可選啟動
+
 volumes:
   postgres_data:
     driver: local
@@ -142,6 +204,8 @@ volumes:
   nginx_logs:
     driver: local
   nginx_cache:
+    driver: local
+  junaikeydb_postgres_data:
     driver: local
 
 networks:

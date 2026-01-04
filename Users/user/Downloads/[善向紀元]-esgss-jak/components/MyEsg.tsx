@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
-import { 
-    Zap, ShieldCheck, Hammer, Heart, Star, Trophy, 
-    Bell, Gem, Leaf, Box, Bike, Utensils, Share2, 
-    FileText, CheckCircle2, Camera, ArrowRight, Activity, 
+import {
+    Zap, ShieldCheck, Hammer, Heart, Star, Trophy,
+    Bell, Gem, Leaf, Box, Bike, Utensils, Share2,
+    FileText, CheckCircle2, Camera, ArrowRight, Activity,
     Target, Crown, Loader2, ChevronRight, Hash,
     Newspaper, MessageSquare, History, TrendingUp,
     Layout, Database, Globe, Filter, Sparkles, Flame,
@@ -15,6 +15,10 @@ import { useCompany } from './providers/CompanyProvider';
 import { UniversalPageHeader } from './UniversalPageHeader';
 import { useUniversalAgent } from '../contexts/UniversalAgentContext';
 import { useToast } from '../contexts/ToastContext';
+import { useBreakpoint } from '../src/utils/responsive';
+import { ResponsiveGrid, ResponsiveCard } from './ui/ResponsiveContainer';
+import { MobileBottomNav, ResponsivePageContainer, MobileCard } from './ui/MobileNavigation';
+import { TouchCard, TouchButton, TouchScrollable } from './ui/TouchOptimized';
 
 const InfoBlock = ({ title, icon: Icon, color, children, tag, className = "" }: any) => (
     <div className={`flex flex-col h-full glass-bento bg-slate-950/40 border-white/5 rounded-xl p-4 shadow-2xl group hover:border-white/10 transition-all overflow-hidden relative ${className}`}>
@@ -35,6 +39,7 @@ export const MyEsg: React.FC<{ language: Language; onNavigate: (view: View) => v
   const { userName, xp, level, awardXp, updateGoodwillBalance, esgScores, totalScore, goodwillBalance } = useCompany();
   const { traits, updateTraits } = useUniversalAgent();
   const { addToast } = useToast();
+  const { isMobile, isTablet } = useBreakpoint();
   const isZh = language === 'zh-TW';
 
   const [lifeQuests, setLifeQuests] = useState<LifeEsgQuest[]>([
@@ -73,20 +78,160 @@ export const MyEsg: React.FC<{ language: Language; onNavigate: (view: View) => v
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0 overflow-hidden font-sans pb-4">
-        <UniversalPageHeader 
-            icon={Target}
-            title={{ zh: '個人北極星：戰略矩陣', en: 'Strategic Matrix' }}
-            description={{ zh: '超立方體演進追蹤：靈魂、戰略、實踐與全球情報', en: 'Hypercube Evolution: Souls, Strategy & Global Intel.' }}
-            language={language}
-            tag={{ zh: '內核 v16.1', en: 'OMNI_SYNC_v16.1' }}
-        />
+    <ResponsivePageContainer className="h-full flex flex-col min-h-0 overflow-hidden font-sans">
+      <UniversalPageHeader
+        icon={Target}
+        title={{ zh: '個人北極星：戰略矩陣', en: 'Strategic Matrix' }}
+        description={{ zh: '超立方體演進追蹤：靈魂、戰略、實踐與全球情報', en: 'Hypercube Evolution: Souls, Strategy & Global Intel.' }}
+        language={language}
+        tag={{ zh: '內核 v16.1', en: 'OMNI_SYNC_v16.1' }}
+      />
 
-        {/* 核心佈局比例優化: 3:4:5 */}
+      {/* 響應式佈局：移動端堆疊，桌面端網格 */}
+      {isMobile ? (
+        <TouchScrollable className="flex-1" direction="vertical">
+          <div className="space-y-4">
+            {/* 移動端：用戶資料卡片 */}
+            <MobileCard>
+              <div className="flex items-center gap-4">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${xp}`}
+                  className="w-16 h-16 rounded-xl bg-slate-900 border border-white/10"
+                  alt="Avatar"
+                />
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-white truncate uppercase tracking-tight">{userName}</h3>
+                  <div className="px-2 py-1 bg-celestial-gold text-black rounded-md text-xs font-bold uppercase tracking-widest inline-block">
+                    LV.{level} ARCHITECT
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="p-2 bg-white/5 rounded-lg border border-white/5">
+                      <div className="text-xs text-gray-500 uppercase font-black">Impact_XP</div>
+                      <div className="text-base font-mono font-bold text-emerald-400">{xp.toLocaleString()}</div>
+                    </div>
+                    <div className="p-2 bg-white/5 rounded-lg border border-white/5">
+                      <div className="text-xs text-gray-500 uppercase font-black">GWC_Vault</div>
+                      <div className="text-base font-mono font-bold text-celestial-gold">{goodwillBalance.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </MobileCard>
+
+            {/* 移動端：ESG分數卡片 */}
+            <MobileCard>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold text-white uppercase tracking-tight">ESG 實時監控</h4>
+                  <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <Target className="w-4 h-4 text-emerald-400" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { l: "Env", v: esgScores.environmental, c: "emerald" },
+                    { l: "Soc", v: esgScores.social, c: "blue" },
+                    { l: "Gov", v: esgScores.governance, c: "purple" }
+                  ].map((s, i) => (
+                    <div key={i} className="bg-black/60 rounded-xl border border-white/5 p-3 flex flex-col items-center justify-center">
+                      <span className="text-xs font-black text-gray-700 uppercase mb-1">{s.l}</span>
+                      <span className={`text-xl font-mono font-black text-${s.c}-400`}>{s.v}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </MobileCard>
+
+            {/* 移動端：靈魂向量 */}
+            <MobileCard>
+              <h4 className="text-sm font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Database className="w-4 h-4 text-celestial-purple" /> 靈魂向量
+              </h4>
+              <div className="space-y-3">
+                {['altruism', 'innovation', 'pragmatism', 'stability'].map(t => (
+                  <div key={t} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black text-gray-500 uppercase tracking-widest">{t}</span>
+                      <span className="text-sm font-mono font-black text-white">{(traits as any)[t]}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                      <div
+                        className={`h-full transition-all duration-1000 shadow-[0_0_8px_currentColor] ${
+                          t === 'altruism' ? 'bg-emerald-500' :
+                          t === 'innovation' ? 'bg-purple-500' :
+                          t === 'pragmatism' ? 'bg-blue-500' : 'bg-amber-500'
+                        }`}
+                        style={{ width: `${(traits as any)[t]}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <TouchButton
+                onClick={() => onNavigate(View.VAULT)}
+                className="w-full mt-4"
+                variant="secondary"
+              >
+                <Gem className="w-4 h-4" />
+                <span>同步靈魂容器</span>
+              </TouchButton>
+            </MobileCard>
+
+            {/* 移動端：生活鍛造任務 */}
+            <MobileCard>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold text-white uppercase tracking-tight">生活鍛造</h4>
+                  <span className="px-2 py-1 bg-black/40 text-emerald-500 rounded text-xs font-bold uppercase">
+                    {activeQuests.length} 待執行
+                  </span>
+                </div>
+
+                <TouchScrollable direction="vertical" className="max-h-80">
+                  <div className="space-y-3">
+                    {activeQuests.map((quest) => {
+                      const theme = getQuestTheme(quest.category);
+                      return (
+                        <TouchCard
+                          key={quest.id}
+                          onClick={() => handleVerifyAction(quest)}
+                          className={`border-l-4 ${theme.border}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`p-2 rounded-lg bg-white/5 border border-white/10 ${theme.icon}`}>
+                              <quest.icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-1.5 py-0.5 rounded text-xs font-black uppercase border ${theme.color} ${theme.bg} ${theme.border}`}>
+                                  {quest.category}
+                                </span>
+                              </div>
+                              <h5 className="text-sm font-bold text-white mb-1">{quest.title}</h5>
+                              <p className="text-xs text-gray-400 mb-2">{quest.impactDesc}</p>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-emerald-400 font-bold">+{quest.xpReward} XP</span>
+                                <span className="text-celestial-gold font-bold">+{quest.gwcReward} GWC</span>
+                              </div>
+                            </div>
+                            <TouchButton size="sm" variant="primary">
+                              {isVerifyingId === quest.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                            </TouchButton>
+                          </div>
+                        </TouchCard>
+                      );
+                    })}
+                  </div>
+                </TouchScrollable>
+              </div>
+            </MobileCard>
+          </div>
+        </TouchScrollable>
+      ) : (
+        /* 桌面端原有網格佈局 */
         <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden">
-            
-            {/* 1. 靈魂維度 (左翼 3/12) */}
-            <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-y-auto no-scrollbar">
+          {/* 1. 靈魂維度 (左翼 3/12) */}
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-y-auto no-scrollbar">
                 <div className="glass-panel p-4 bg-[#020617] border-white/10 rounded-xl flex flex-col items-center text-center shrink-0 shadow-2xl relative overflow-hidden group">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(251,191,36,0.04)_0%,transparent_70%)] pointer-events-none" />
                     <div className="relative w-20 h-20 mb-4 group cursor-pointer z-10">
@@ -271,6 +416,18 @@ export const MyEsg: React.FC<{ language: Language; onNavigate: (view: View) => v
             </div>
 
         </div>
-    </div>
+      )}
+
+      {/* 移動端底部導航 */}
+      {isMobile && (
+        <MobileBottomNav
+          currentView={View.MY_ESG}
+          onNavigate={onNavigate}
+          language={language}
+          userName={userName}
+          userLevel={level}
+        />
+      )}
+    </ResponsivePageContainer>
   );
 };

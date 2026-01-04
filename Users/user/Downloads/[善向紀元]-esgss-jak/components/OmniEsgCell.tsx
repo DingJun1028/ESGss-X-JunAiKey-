@@ -1,19 +1,22 @@
 
-import React, { useState, useRef, useMemo } from 'react';
-import { 
-  BarChart3, TrendingUp, TrendingDown, Minus, LucideIcon, 
+import React, { useState, useMemo } from 'react';
+import {
+  BarChart3, TrendingUp, TrendingDown, Minus, LucideIcon,
   Activity, Puzzle, Tag, HelpCircle, ShieldCheck, Sparkles, Info,
-  ShieldAlert, RefreshCw, Flame
+  ShieldAlert, RefreshCw, Flame, Zap
 } from 'lucide-react';
-import { 
-    OmniEsgTrait, OmniEsgDataLink, OmniEsgMode, OmniEsgConfidence, 
-    OmniEsgColor, UniversalLabel, LogicWitness 
+import {
+    OmniEsgTrait, OmniEsgDataLink, OmniEsgMode, OmniEsgConfidence,
+    OmniEsgColor, UniversalLabel, LogicWitness
 } from '../types';
 import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { GLOBAL_GLOSSARY } from '../constants';
 import { universalIntelligence } from '../services/evolutionEngine';
 import { useCompany } from './providers/CompanyProvider';
 import { useTheme } from '../contexts/ThemeContext';
+
+// 引入 JunAiKey v5.0 免疫系統
+import { useEntropyForge, EntropyLevel, HealingStrategy } from '../src/core/rectification/EntropyForge';
 
 import { DataLinkIndicator } from './minimal/DataLinkIndicator';
 import { ConfidenceIndicator } from './minimal/ConfidenceIndicator';
@@ -28,6 +31,12 @@ const THEMES = {
   blue: { border: 'group-hover:border-blue-500/40', glow: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400', iconBg: 'bg-blue-500/10', gradient: 'from-blue-500/20' },
   slate: { border: 'group-hover:border-slate-400/40', glow: 'bg-slate-400', text: 'text-slate-600 dark:text-slate-400', iconBg: 'bg-slate-500/10', gradient: 'from-slate-500/20' },
   rose: { border: 'group-hover:border-rose-500/40', glow: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', iconBg: 'bg-rose-500/10', gradient: 'from-rose-500/20' },
+};
+
+const TREND_ICONS = {
+  up: TrendingUp,
+  down: TrendingDown,
+  neutral: Minus,
 };
 
 const getTheme = (color: OmniEsgColor) => THEMES[color] || THEMES.emerald;
@@ -54,6 +63,8 @@ interface OmniEsgCellBaseProps {
   };
   onAiAnalyze?: () => void;
   onClick?: () => void;
+  // JunAiKey v5.0 新增：自動化觸發
+  onAutomationTrigger?: () => void;
 }
 
 type OmniEsgCellProps = OmniEsgCellBaseProps & InjectedProxyProps;
@@ -68,14 +79,31 @@ const resolveLabel = (label: string | UniversalLabel): UniversalLabel => {
 };
 
 const OmniEsgCellBase: React.FC<OmniEsgCellProps> = React.memo((props) => {
-  const { 
+  const {
     componentId,
-    mode, label, value, subValue, confidence = 'high', verified = false, 
-    loading = false, dataLink, traits = [], tags = [], icon: Icon, color = 'emerald', 
-    className = '', trend, onClick, onAiAnalyze, witness,
+    mode, label, value: rawValue, subValue, confidence = 'high', verified = false,
+    loading = false, dataLink, traits = [], tags = [], icon: Icon, color = 'emerald',
+    className = '', trend, onClick, onAiAnalyze, onAutomationTrigger, witness,
     adaptiveTraits = [], trackInteraction, isHighFrequency, isAgentActive,
     growth, isCircuitOpen
   } = props;
+
+  // JunAiKey v5.0：整合 EntropyForge 免疫系統
+  const { value, isRectified, entropy, strategy, confidence: healConfidence, witnessSignature } =
+    useEntropyForge(rawValue, componentId || 'unknown');
+
+  // 驗證必填屬性
+  if (!mode) {
+    console.error('OmniEsgCell: mode is required');
+    return null;
+  }
+
+  // 驗證 mode 值
+  const validModes = ['card', 'list', 'compact', 'cell', 'badge'];
+  if (!validModes.includes(mode)) {
+    console.error(`OmniEsgCell: Invalid mode "${mode}". Valid modes:`, validModes);
+    return null;
+  }
   
   const { language } = useCompany();
   const { resolvedTheme } = useTheme();
@@ -98,11 +126,15 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = React.memo((props) => {
   if (loading) return <div className={`h-24 w-full bg-slate-200 dark:bg-white/5 animate-pulse rounded-3xl ${className}`} />;
 
   // 核心視覺邏輯切換
+  // JunAiKey v5.0：整合免疫系統視覺效果
+  const isHealed = isRectified && entropy !== 'ZERO';
+  const healGlowClass = isHealed && isDark ? 'shadow-[0_0_20px_rgba(245,158,11,0.3)] border-amber-500/50' : '';
+
   const wrapperClasses = `
     group relative overflow-visible transition-all duration-500 ease-out focus:outline-none focus:ring-2 focus:ring-celestial-purple/30
-    ${isDark 
-        ? 'backdrop-blur-3xl bg-slate-900/40 border-white/5 hover:bg-white/10 shadow-xl' 
-        : 'bg-white border-slate-200 hover:border-slate-300 shadow-[0_10px_30px_rgba(0,0,0,0.04)]'}
+    ${isDark
+        ? `backdrop-blur-3xl bg-slate-900/40 border-white/5 hover:bg-white/10 shadow-xl ${healGlowClass}`
+        : `bg-white border-slate-200 hover:border-slate-300 shadow-[0_10px_30px_rgba(0,0,0,0.04)] ${isHealed ? 'border-amber-300/50 shadow-amber-100' : ''}`}
     ${theme.border}
     ${isHighFrequency && isDark ? 'ring-1 ring-emerald-500/30 shadow-[0_0_25px_rgba(16,185,129,0.1)]' : ''}
     ${isCircuitOpen ? 'border-rose-500/50 grayscale-[0.5]' : ''}
@@ -113,15 +145,33 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = React.memo((props) => {
   const EvolutionStars = (
       <div className="flex gap-1 absolute top-3 right-4 z-20">
           {[...Array(5)].map((_, i) => (
-              <div 
-                key={i} 
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-1000 
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-1000
                     ${i < (growth?.evolutionLevel || 1) ? theme.glow + (isDark ? ' shadow-[0_0_8px_currentColor]' : '') : (isDark ? 'bg-gray-800' : 'bg-slate-200')}
-                `} 
+                `}
               />
           ))}
       </div>
   );
+
+  const TrendIndicator = trend ? (
+      <div className="absolute top-2 left-4 z-20 flex items-center gap-1">
+          {(() => {
+              const Icon = TREND_ICONS[trend.direction];
+              const isPositive = trend.direction === 'up';
+              const isNegative = trend.direction === 'down';
+              return (
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                      <Icon className={`w-3 h-3 ${isPositive ? 'text-emerald-400' : isNegative ? 'text-rose-400' : 'text-slate-400'}`} />
+                      <span className={`text-[9px] font-black tracking-widest uppercase ${isPositive ? 'text-emerald-400' : isNegative ? 'text-rose-400' : 'text-slate-400'}`}>
+                          {Math.abs(trend.value)}%
+                      </span>
+                  </div>
+              );
+          })()}
+      </div>
+  ) : null;
 
   const HeatWave = isHighFrequency && isDark ? (
       <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit] z-0">
@@ -172,16 +222,53 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = React.memo((props) => {
       );
   }
 
+  if (mode === 'compact') {
+    return (
+      <div
+        className={`${wrapperClasses} p-3 rounded-xl flex items-center gap-3 border shadow-sm`}
+        onClick={onClick}
+        onKeyDown={handleKeyDown}
+        role={onClick ? "button" : "region"}
+        tabIndex={onClick ? 0 : undefined}
+      >
+          {EvolutionStars}
+          {HeatWave}
+          <div className={`p-2 rounded-lg ${isDark ? theme.iconBg + ' ' + theme.text + ' border-white/5' : 'bg-slate-50 ' + theme.text + ' border-slate-100'} border shrink-0 relative transition-transform duration-500 group-hover:scale-110`}>
+              {Icon ? <Icon className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
+              {witness && (
+                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-celestial-gold rounded-full border border-white dark:border-slate-900 flex items-center justify-center">
+                  <ShieldCheck className="w-1.5 h-1.5 text-slate-900 dark:text-white" />
+                </div>
+              )}
+          </div>
+          <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                {LabelWithIcon}
+                {trend && (() => {
+                    const Icon = TREND_ICONS[trend.direction];
+                    const isPositive = trend.direction === 'up';
+                    const isNegative = trend.direction === 'down';
+                    return <Icon className={`w-3 h-3 ${isPositive ? 'text-emerald-400' : isNegative ? 'text-rose-400' : 'text-slate-400'}`} />;
+                })()}
+              </div>
+              <div className={`text-sm font-black font-mono tracking-tighter ${theme.text} transition-all duration-500 group-hover:scale-105`}>{value}</div>
+          </div>
+          <ConfidenceIndicator level={confidence} verified={verified} compact />
+      </div>
+    );
+  }
+
   if (mode === 'card') {
     return (
-      <div 
-        className={`${wrapperClasses} rounded-[2.5rem] overflow-hidden group border`} 
+      <div
+        className={`${wrapperClasses} rounded-[2.5rem] overflow-hidden group border`}
         onClick={onClick}
         onKeyDown={handleKeyDown}
         role={onClick ? "button" : "region"}
         tabIndex={onClick ? 0 : undefined}
       >
         {EvolutionStars}
+        {TrendIndicator}
         {HeatWave}
         <div className="relative z-10 p-7 flex flex-col h-full justify-between gap-6">
           <div className="flex justify-between items-start">
@@ -192,17 +279,36 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = React.memo((props) => {
                </div>
                <div className="flex flex-wrap gap-2">
                  {dataLink && <DataLinkIndicator type={dataLink} />}
+                 {traits && traits.length > 0 && traits.map((trait, index) => (
+                   <div key={index} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border
+                       ${isDark ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-purple-50 text-purple-600 border-purple-200'}`}>
+                     <Puzzle className="w-2.5 h-2.5" />
+                     {trait}
+                   </div>
+                 ))}
+                 {tags && tags.length > 0 && tags.map((tag, index) => (
+                   <div key={index} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border
+                       ${isDark ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                     <Tag className="w-2.5 h-2.5" />
+                     {tag}
+                   </div>
+                 ))}
                </div>
             </div>
-            <div className={`p-3.5 rounded-2xl border ${isDark ? 'border-white/5 ' + theme.iconBg + ' ' + theme.text : 'border-slate-100 bg-slate-50 ' + theme.text} transition-all duration-700 shrink-0 ml-3 group-hover:scale-110 group-hover:rotate-6`}>
+            <div className={`p-3.5 rounded-2xl border ${isDark ? 'border-white/5 ' + theme.iconBg + ' ' + theme.text : 'border-slate-100 bg-slate-50 ' + theme.text} transition-all duration-700 shrink-0 ml-3 group-hover:scale-110 group-hover:rotate-6 relative`}>
                {Icon ? <Icon className="w-6 h-6" /> : <BarChart3 className="w-6 h-6" />}
+               {witness && (
+                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-celestial-gold rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                   <ShieldCheck className="w-2 h-2 text-slate-900 dark:text-white" />
+                 </div>
+               )}
             </div>
           </div>
 
           <div className="mt-2">
              <QuantumValueEditor value={value || 0} theme={theme} />
           </div>
-          
+
           <div className="flex items-end justify-between border-t border-slate-100 dark:border-white/[0.03] pt-4">
              <div className="truncate flex-1 mr-3">
                 {subValue && <p className="text-[10px] text-slate-400 dark:text-gray-500 font-bold uppercase truncate tracking-widest">{subValue}</p>}
@@ -221,35 +327,108 @@ const OmniEsgCellBase: React.FC<OmniEsgCellProps> = React.memo((props) => {
 
   if (mode === 'list') {
     return (
-      <div 
-        className={`${wrapperClasses} p-4 rounded-2xl flex items-center justify-between border shadow-sm`} 
+      <div
+        className={`${wrapperClasses} p-4 rounded-2xl flex items-center justify-between border shadow-sm`}
         onClick={onClick}
         onKeyDown={handleKeyDown}
         role={onClick ? "button" : "listitem"}
         tabIndex={onClick ? 0 : undefined}
       >
+          {EvolutionStars}
           {HeatWave}
           <div className="flex items-center gap-5 min-w-0 flex-1 relative z-10">
               <div className={`p-3 rounded-xl ${isDark ? theme.iconBg + ' ' + theme.text + ' border-white/5' : 'bg-slate-50 ' + theme.text + ' border-slate-100'} border shrink-0 relative transition-transform duration-700 group-hover:scale-110`}>
                   {Icon ? <Icon className="w-5 h-5" /> : <Activity className="w-5 h-5" />}
                   {isAgentActive && isDark && <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-white animate-pulse" />}
+                  {witness && (
+                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-celestial-gold rounded-full border border-white dark:border-slate-900 flex items-center justify-center">
+                      <ShieldCheck className="w-1.5 h-1.5 text-slate-900 dark:text-white" />
+                    </div>
+                  )}
               </div>
               <div className="leading-tight min-w-0 flex-1">
                   <div className="flex items-center gap-3 overflow-hidden mb-1">
                     {LabelWithIcon}
                     <QuantumAiTrigger onClick={onAiAnalyze} label={labelText} />
                   </div>
-                  {subValue && <span className="text-slate-400 dark:text-gray-600 font-bold uppercase text-[9px] tracking-widest truncate">{subValue}</span>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {subValue && <span className="text-slate-400 dark:text-gray-600 font-bold uppercase text-[9px] tracking-widest truncate">{subValue}</span>}
+                    {traits && traits.length > 0 && traits.slice(0, 2).map((trait, index) => (
+                      <span key={index} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
+                          ${isDark ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-purple-50 text-purple-600 border-purple-200'}`}>
+                        <Puzzle className="w-2 h-2" />
+                        {trait}
+                      </span>
+                    ))}
+                    {tags && tags.length > 0 && tags.slice(0, 2).map((tag, index) => (
+                      <span key={index} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border
+                          ${isDark ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                        <Tag className="w-2 h-2" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
               </div>
           </div>
           <div className="text-right px-2 shrink-0 ml-5 relative z-10">
-              <div className={`text-lg font-black font-mono tracking-tighter whitespace-nowrap transition-all duration-700 group-hover:scale-110 ${theme.text}`}>{value}</div>
+              <div className="flex items-center gap-2">
+                <div className={`text-lg font-black font-mono tracking-tighter whitespace-nowrap transition-all duration-700 group-hover:scale-110 ${theme.text}`}>{value}</div>
+                {trend && (() => {
+                    const Icon = TREND_ICONS[trend.direction];
+                    const isPositive = trend.direction === 'up';
+                    const isNegative = trend.direction === 'down';
+                    return <Icon className={`w-4 h-4 ${isPositive ? 'text-emerald-400' : isNegative ? 'text-rose-400' : 'text-slate-400'} transition-all duration-300`} />;
+                })()}
+              </div>
               <div className="mt-0.5 flex justify-end">
                 <ConfidenceIndicator level={confidence} verified={verified} compact />
               </div>
           </div>
       </div>
     );
+  }
+
+  // === MODE: CELL ===
+  if (mode === 'cell') {
+      const cellInteractiveProps = onClick ? {
+          role: 'button',
+          tabIndex: 0,
+          onKeyDown: handleKeyDown,
+          'aria-label': `${label || 'Metric'}, value is ${value}`
+      } : {};
+
+      return (
+        <div className={`${wrapperClasses} p-4 rounded-xl flex flex-col justify-between h-full`} onClick={onClick} {...cellInteractiveProps}>
+            <div className="flex justify-between items-start">
+               {LabelWithIcon}
+               <QuantumAiTrigger onClick={onAiAnalyze} label={labelText} />
+            </div>
+            <div className={`text-xl font-bold text-white mt-2 ${theme.text} transition-all duration-500 group-hover:scale-105`}>
+                {value}
+            </div>
+             {trend && (
+                <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1 text-[10px]">
+                   {(() => {
+                       const Icon = TREND_ICONS[trend.direction];
+                       const isPositive = trend.direction === 'up';
+                       const isNegative = trend.direction === 'down';
+                       return (
+                           <>
+                               <Icon className={`w-3 h-3 ${isPositive ? 'text-emerald-400' : isNegative ? 'text-rose-400' : 'text-slate-400'}`} />
+                               <span className={`${isPositive ? 'text-emerald-400' : isNegative ? 'text-rose-400' : 'text-slate-400'}`}>
+                                   {Math.abs(trend.value)}%
+                               </span>
+                           </>
+                       );
+                   })()}
+                </div>
+             )}
+             {subValue && <p className="text-xs text-gray-500 mt-1">{subValue}</p>}
+             <div className="flex justify-end mt-2">
+               <ConfidenceIndicator level={confidence} verified={verified} compact />
+             </div>
+        </div>
+      );
   }
 
   return null;

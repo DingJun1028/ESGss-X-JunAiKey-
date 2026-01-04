@@ -11,7 +11,7 @@ import {
   Crosshair, GitMerge, FileText, Microscope, Star, Route, Share2,
   Building2, HardHat, Package, Puzzle, Wrench, Trophy, BookOpen, KeyRound,
   LayoutDashboard, LineChart, Handshake, Landmark, Scale, Recycle, Eye, Info,
-  FolderKanban
+  FolderKanban, Wrench as CreatorIcon
 } from 'lucide-react';
 
 export interface NavItem {
@@ -72,6 +72,7 @@ export const navigationConfig: NavSector[] = [
         { id: View.AGENT_TRAINING, icon: Star, label: 'Training', zh_label: '智能體訓練' },
         { id: View.SOUL_FORGE, icon: Sparkles, label: 'Soul Forge', zh_label: '數位靈魂熔爐' },
         { id: View.PROXY_MARKET, icon: Package, label: 'Proxy Market', zh_label: '代理市場' },
+        { id: View.UNIVERSAL_CREATOR_DASHBOARD, icon: CreatorIcon, label: 'Creator Hub', zh_label: 'Creator Control Center' },
     ]
   },
   {

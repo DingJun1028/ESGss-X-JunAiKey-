@@ -154,7 +154,7 @@ export const GlobalOperations: React.FC = () => {
                     <span className="text-[10px] font-mono text-white bg-white/5 px-2 py-0.5 rounded border border-white/10">LIVE_TELEMETRY</span>
                 </div>
                 <div className="h-28 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={100}>
                         <AreaChart data={selectedLoc.metrics.trend}>
                             <defs>
                                 <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">

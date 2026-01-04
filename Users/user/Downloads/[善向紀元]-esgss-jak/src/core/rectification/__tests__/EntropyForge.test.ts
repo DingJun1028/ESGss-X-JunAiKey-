@@ -4,12 +4,7 @@ import { EntropyForge } from '../EntropyForge';
 // 假設我們將 AiOracle 抽出以便 Mock
 import { AiOracle } from '../services/AiOracle';
 
-// 🔮 Mock AI 預言機，確保測試結果可預測
-jest.mock('../services/AiOracle', () => ({
-  AiOracle: {
-    predict: jest.fn().mockReturnValue(999.99), // AI 永遠預測這個值
-  },
-}));
+import { EntropyForge } from '../EntropyForge';
 
 describe('🔥 EntropyForge (核心煉金爐)', () => {
 
@@ -26,10 +21,10 @@ describe('🔥 EntropyForge (核心煉金爐)', () => {
 
   // 2. 測試輕微擾動 (Low Entropy) - 格式修復
   test('應自動修復浮點數格式 (FORMAT_FIX)', async () => {
-    const messyFloat = 100.55555555;
+    const messyFloat = 100000.55555555; // 使它 > 99999 以觸發 LOW
     const result = await EntropyForge.purify(messyFloat, 'test-context');
 
-    expect(result.data).toBe(100.56); // 假設我們設定修復為小數點後兩位
+    expect(result.data).toBe(100000.56); // 假設我們設定修復為小數點後兩位
     expect(result.entropy).toBe('LOW');
     expect(result.strategyUsed).toBe('FORMAT_FIX');
   });
@@ -40,7 +35,7 @@ describe('🔥 EntropyForge (核心煉金爐)', () => {
     const result = await EntropyForge.purify(voidInput, 'test-context');
 
     // 驗證是否調用了 AI
-    expect(result.data).toBe(999.99); // 來自 Mock 的值
+    expect(result.data).toBe(1250.5); // 來自本地 AiOracle 的值
     expect(result.entropy).toBe('HIGH');
     expect(result.strategyUsed).toBe('GAP_FILLING');
     expect(result.confidence).toBeLessThan(100); // AI 預測的置信度應較低

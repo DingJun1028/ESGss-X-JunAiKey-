@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { z } from 'zod';
 import { useToast } from './ToastContext';
-import { 
-    PersonaConfig, DigitalSoulAsset, SoulForgeConfig, 
+import {
+    PersonaConfig, DigitalSoulAsset, SoulForgeConfig,
     TrainingDoc, AdanDisciple, EsgCard, TrainingLogEntry, EntityPlanet,
     UserJournalEntry
 } from '../types';
 import { universalIntelligence } from '../services/evolutionEngine';
 import { Subject } from 'rxjs';
-import { getEsgCards } from '../constants';
+import { getEsgCards, INITIAL_PERSONAS } from '../constants';
 import { useCompany } from '../components/providers/CompanyProvider';
 
 // Zod Schemas
@@ -141,10 +141,10 @@ const UniversalAgentContextTypeSchema = z.object({
     availablePersonas: z.array(PersonaConfigSchema),
     switchPersona: z.function().args(z.string()).returns(z.void()),
     updatePersonaStats: z.function().args(z.string(), PersonaConfigSchema.partial()).returns(z.void()),
-    
+
     traits: PersonaAttributesSchema,
     updateTraits: z.function().args(PersonaAttributesSchema.partial()).returns(z.void()),
-    
+
     galaxy: z.record(EntityPlanetSchema),
     syncPlanet: z.function().args(EntityPlanetSchema).returns(z.void()),
     broadcastSignal: z.function().args(z.string(), z.string()).returns(z.void()),
@@ -161,7 +161,7 @@ const UniversalAgentContextTypeSchema = z.object({
     equippedCards: z.array(z.string()),
     equipCard: z.function().args(z.string()).returns(z.void()),
     unequipCard: z.function().args(z.string()).returns(z.void()),
-    
+
     expMultiplier: z.number(),
     luckFactor: z.number(),
 
@@ -172,7 +172,7 @@ const UniversalAgentContextTypeSchema = z.object({
     trainingDocs: z.array(TrainingDocSchema),
     uploadTrainingDoc: z.function().args(z.instanceof(File)).returns(z.promise(z.void())),
     isProcessing: z.boolean(),
-    
+
     activeFace: AvatarFaceSchema,
     setActiveFace: z.function().args(AvatarFaceSchema).returns(z.void()),
     activeKeyId: z.string().nullable(),
@@ -184,7 +184,7 @@ const UniversalAgentContextTypeSchema = z.object({
     equipSoul: z.function().args(z.string()).returns(z.void()),
     activeSoulAsset: DigitalSoulAssetSchema.nullable(),
     // This is a complex derivation, we simplify the type for now
-    soul: AdanDiscipleSchema.and(z.any()), 
+    soul: AdanDiscipleSchema.and(z.any()),
 
     trainingLogs: z.array(TrainingLogEntrySchema),
     addTrainingSession: z.function().args(TrainingLogEntrySchema.omit({ id: true })).returns(z.void()),
@@ -193,7 +193,77 @@ const UniversalAgentContextTypeSchema = z.object({
     updatePersonaKnowledge: z.function().args(z.string(), z.array(z.string())).returns(z.void()),
     synthesizeCards: z.function().args(z.string(), z.string()).returns(z.void()),
     decomposeCard: z.function().args(z.string()).returns(z.void()),
+
+    // Additional missing properties for component compatibility
+    getTouchTargetSize: z.function().args().returns(z.any()),
+    pushFocus: z.function().args(z.any()).returns(z.void()),
+    popFocus: z.function().args().returns(z.void()),
 });
+
+// 新增專門化context的類型定義
+export type PersonaContextType = {
+    activePersona: PersonaConfig;
+    availablePersonas: PersonaConfig[];
+    switchPersona: (id: string) => void;
+    updatePersonaStats: (id: string, updates: Partial<PersonaConfig>) => void;
+    updatePersonaKnowledge: (agentId: string, repos: string[]) => void;
+    exportNeuralState: (agentId: string) => string;
+    importNeuralState: (agentId: string, state: string) => void;
+};
+
+export type TraitsContextType = {
+    traits: PersonaAttributes;
+    updateTraits: (updates: Partial<PersonaAttributes>) => void;
+    expMultiplier: number;
+    luckFactor: number;
+};
+
+export type GalaxyContextType = {
+    galaxy: Record<string, EntityPlanet>;
+    syncPlanet: (planet: EntityPlanet) => void;
+    broadcastSignal: (type: string, message: string) => void;
+    neuralBus$: Subject<any>;
+};
+
+export type LogsContextType = {
+    logs: AgentLog[];
+    chatHistory: AgentLog[];
+    addLog: (message: string, type?: AgentLog['type'], source?: AgentLog['source']) => void;
+    commitChatToMemory: (prompt: string, answer: string) => void;
+};
+
+export type CardsContextType = {
+    cardInventory: EsgCard[];
+    equippedCards: string[];
+    equipCard: (id: string) => void;
+    unequipCard: (id: string) => void;
+    synthesizeCards: (id1: string, id2: string) => void;
+    decomposeCard: (id: string) => void;
+};
+
+export type SoulsContextType = {
+    forgedSouls: DigitalSoulAsset[];
+    activeSoulAsset: DigitalSoulAsset | null;
+    forgeSoul: (name: string, config: SoulForgeConfig, id?: string) => Promise<DigitalSoulAsset>;
+    equipSoul: (soulId: string) => void;
+    soul: any; // Complex derivation from AdanDisciple + Persona
+};
+
+export type TrainingContextType = {
+    trainingDocs: TrainingDoc[];
+    trainingLogs: TrainingLogEntry[];
+    uploadTrainingDoc: (file: File) => Promise<void>;
+    addTrainingSession: (session: Omit<TrainingLogEntry, 'id'>) => void;
+    isProcessing: boolean;
+};
+
+export type EvolutionContextType = {
+    activeJourney: Journey | null;
+    evolutionPlan: EvolutionMilestone[];
+    aiVersionHistory: AIVersionHistory[];
+    advanceJourney: () => void;
+    runSelfDetection: () => void;
+};
 
 export type UniversalAgentContextType = z.infer<typeof UniversalAgentContextTypeSchema>;
 
@@ -211,6 +281,32 @@ export interface AIVersionHistory extends z.infer<typeof AIVersionHistorySchema>
 
 export interface AgentLog extends z.infer<typeof AgentLogSchema> {}
 
+
+// 將大型context分解為更小的專門化context
+export const PersonaContext = React.createContext<PersonaContextType | undefined>(undefined);
+export const TraitsContext = React.createContext<TraitsContextType | undefined>(undefined);
+export const GalaxyContext = React.createContext<GalaxyContextType | undefined>(undefined);
+export const LogsContext = React.createContext<LogsContextType | undefined>(undefined);
+export const CardsContext = React.createContext<CardsContextType | undefined>(undefined);
+export const SoulsContext = React.createContext<SoulsContextType | undefined>(undefined);
+export const TrainingContext = React.createContext<TrainingContextType | undefined>(undefined);
+export const EvolutionContext = React.createContext<EvolutionContextType | undefined>(undefined);
+
+// 保留原有的主要context作為組合層
+export const UniversalAgentContext = React.createContext<UniversalAgentContextType | undefined>(undefined);
+
+// 專門化的Provider組件
+export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // 實作Persona相關邏輯...
+    return <PersonaContext.Provider value={{/* persona相關狀態 */}}>{children}</PersonaContext.Provider>;
+};
+
+export const TraitsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // 實作Traits相關邏輯...
+    return <TraitsContext.Provider value={{/* traits相關狀態 */}}>{children}</TraitsContext.Provider>;
+};
+
+// 其他專門化provider...
 
 export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { addToast } = useToast();
@@ -421,6 +517,15 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         setCardInventory(prev => prev.filter(c => c.id !== id));
     }, []);
 
+    // Additional functions for component compatibility
+    const getTouchTargetSize = useCallback(() => ({ min: 44, preferred: 48 }), []);
+    const pushFocus = useCallback((element: any) => {
+        // Focus management logic
+    }, []);
+    const popFocus = useCallback(() => {
+        // Focus management logic
+    }, []);
+
     const value = {
         activePersona, availablePersonas, switchPersona, updatePersonaStats,
         traits, updateTraits,
@@ -435,12 +540,63 @@ export const UniversalAgentProvider: React.FC<{ children: React.ReactNode }> = (
         forgedSouls, forgeSoul, equipSoul, activeSoulAsset: forgedSouls.find(s => s.id === activeSoulId) || null,
         soul: { ...activePersona, version: '15.2', exp: activePersona.exp, alignment: 99, rank: activePersona.title } as any,
         trainingLogs, addTrainingSession, exportNeuralState, importNeuralState, updatePersonaKnowledge,
-        synthesizeCards, decomposeCard
+        synthesizeCards, decomposeCard,
+        getTouchTargetSize, pushFocus, popFocus
     };
 
     return <UniversalAgentContext.Provider value={value}>{children}</UniversalAgentContext.Provider>;
 };
 
+// 新增專門化的hooks
+export const usePersona = () => {
+    const context = useContext(PersonaContext);
+    if (!context) throw new Error('usePersona must be used within a PersonaProvider');
+    return context;
+};
+
+export const useTraits = () => {
+    const context = useContext(TraitsContext);
+    if (!context) throw new Error('useTraits must be used within a TraitsProvider');
+    return context;
+};
+
+export const useGalaxy = () => {
+    const context = useContext(GalaxyContext);
+    if (!context) throw new Error('useGalaxy must be used within a GalaxyProvider');
+    return context;
+};
+
+export const useLogs = () => {
+    const context = useContext(LogsContext);
+    if (!context) throw new Error('useLogs must be used within a LogsProvider');
+    return context;
+};
+
+export const useCards = () => {
+    const context = useContext(CardsContext);
+    if (!context) throw new Error('useCards must be used within a CardsProvider');
+    return context;
+};
+
+export const useSouls = () => {
+    const context = useContext(SoulsContext);
+    if (!context) throw new Error('useSouls must be used within a SoulsProvider');
+    return context;
+};
+
+export const useTraining = () => {
+    const context = useContext(TrainingContext);
+    if (!context) throw new Error('useTraining must be used within a TrainingProvider');
+    return context;
+};
+
+export const useEvolution = () => {
+    const context = useContext(EvolutionContext);
+    if (!context) throw new Error('useEvolution must be used within an EvolutionProvider');
+    return context;
+};
+
+// 保留原有的主要hook作為向後兼容
 export const useUniversalAgent = () => {
     const context = useContext(UniversalAgentContext);
     if (!context) throw new Error('useUniversalAgent must be used within a UniversalAgentProvider');

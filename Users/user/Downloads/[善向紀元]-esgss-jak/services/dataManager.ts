@@ -23,6 +23,18 @@ export interface DataOperationResult<T = any> {
     timestamp: number;
     duration: number;
     affectedRows?: number;
+    recordsProcessed?: number;
+    taskId?: string;
+    message?: string;
+    totalRecordsProcessed?: number;
+    sourcesProcessed?: number;
+    errorsCount?: number;
+    dataPoints?: number;
+    groupsCount?: number;
+    keyId?: string;
+    totalConfigs?: number;
+    itemSize?: number;
+    itemId?: string;
   };
 }
 

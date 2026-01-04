@@ -36,7 +36,8 @@ vi.mock('../../components/MyEsg', () => ({
 }))
 
 vi.mock('../../contexts/ToastContext', () => ({
-  ToastProvider: ({ children }: any) => <div data-testid="toast-provider">{children}</div>
+  ToastProvider: ({ children }: any) => <div data-testid="toast-provider">{children}</div>,
+  ToastContainer: () => <div data-testid="toast-container" />
 }))
 
 vi.mock('../../components/providers/CompanyProvider', () => ({
@@ -47,9 +48,7 @@ vi.mock('../../contexts/UniversalAgentContext', () => ({
   UniversalAgentProvider: ({ children }: any) => <div data-testid="universal-agent-provider">{children}</div>
 }))
 
-vi.mock('../../components/Toast', () => ({
-  ToastContainer: () => <div data-testid="toast-container" />
-}))
+
 
 vi.mock('../../components/ErrorBoundary', () => ({
   ErrorBoundary: ({ children }: any) => <div data-testid="error-boundary">{children}</div>
@@ -299,7 +298,7 @@ describe('App Component', () => {
   it('renders main app when logged in', () => {
     render(<App />)
 
-    const loginButton = screen.getByRole('button', { name: /login/i })
+    const loginButton = screen.getByRole('button', { name: /登入|Login/i })
     fireEvent.click(loginButton)
 
     expect(screen.getByTestId('layout')).toBeInTheDocument()
@@ -313,14 +312,14 @@ describe('App Component', () => {
 
     // The language state should be set to 'en-US'
     // We can't directly test internal state, but we can verify localStorage was called
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('esg-locale')
+    expect(localStorageMock.getItem).toHaveBeenCalledWith('app_language')
   })
 
   it('toggles language correctly', async () => {
     render(<App />)
 
     // Login first
-    const loginButton = screen.getByRole('button', { name: /login/i })
+    const loginButton = screen.getByRole('button', { name: /登入|Login/i })
     fireEvent.click(loginButton)
 
     // Find and click language toggle (assuming Layout has a toggle button)
@@ -332,7 +331,7 @@ describe('App Component', () => {
     render(<App />)
 
     // Login first
-    const loginButton = screen.getByRole('button', { name: /login/i })
+    const loginButton = screen.getByRole('button', { name: /登入|Login/i })
     fireEvent.click(loginButton)
 
     // Click navigation button (mocked in Layout)
@@ -353,7 +352,7 @@ describe('App Component', () => {
   it('renders onboarding and neural nexus when logged in', () => {
     render(<App />)
 
-    const loginButton = screen.getByRole('button', { name: /login/i })
+    const loginButton = screen.getByRole('button', { name: /登入|Login/i })
     fireEvent.click(loginButton)
 
     expect(screen.getByTestId('onboarding-system')).toBeInTheDocument()

@@ -1,7 +1,6 @@
-
-import { 
-  DimensionID, Course, UniversalCrystal, UserTitle, Badge, OfficialEvent, 
-  ReportSection, EsgCard, ScriptureNode 
+import {
+  DimensionID, Course, UniversalCrystal, UserTitle, Badge, OfficialEvent,
+  ReportSection, EsgCard, ScriptureNode
 } from './types';
 
 // Add missing dimension labels for Dashboard HUD
@@ -73,12 +72,12 @@ export const UNIVERSAL_CORES: UniversalCrystal[] = [
 
 // Add report section structure
 export const REPORT_STRUCTURE: ReportSection[] = [
-  { 
-    id: '1', 
-    title: 'Chapter 1: Vision & Strategy', 
-    template: '## 願景聲明\n當前企業願景：[企業願景]\n\n## 策略定位\n...', 
-    example: '參考 Apple 2023 報告之簡潔敘事風格。', 
-    griStandards: 'GRI 2, GRI 3', 
+  {
+    id: '1',
+    title: 'Chapter 1: Vision & Strategy',
+    template: '## 願景聲明\n當前企業願景：[企業願景]\n\n## 策略定位\n...',
+    example: '參考 Apple 2023 報告之簡潔敘事風格。',
+    griStandards: 'GRI 2, GRI 3',
     subSections: [
       /* Fix: Added missing 'griStandards' property to satisfy ReportSection interface */
       { id: '1.01', title: 'Executive Summary', template: '摘要當前進度與亮點...', example: '強調淨零路徑的關鍵里程碑。', griStandards: 'GRI 2-22' },
@@ -190,18 +189,66 @@ export const getEsgCards = (lang: string): EsgCard[] => [
 
 // Add Adan wisdom scriptures
 export const BUILTIN_SCRIPTURES: ScriptureNode[] = [
-  { 
-    id: 's1', code: 'WD-001', title: '王道核心思維', en: 'Wangdao Essence', 
-    content: '領導力的本質在於利他，透過多方利益的動態平衡達成永續經營。', 
-    category: 'Leadership', 
-    tags: [{ zh: '領導', en: 'Leadership' }, { zh: '文化', en: 'Culture' }] 
+  {
+    id: 's1', code: 'WD-001', title: '王道核心思維', en: 'Wangdao Essence',
+    content: '領導力的本質在於利他，透過多方利益的動態平衡達成永續經營。',
+    category: 'Leadership',
+    tags: [{ zh: '領導', en: 'Leadership' }, { zh: '文化', en: 'Culture' }]
   },
-  { 
-    id: 's2', code: 'RE-001', title: '再生設計原則', en: 'Regen Design', 
-    content: '不只是減少傷害，而是要主動修復受損的生態與社會系統。', 
-    category: 'Innovation', 
-    tags: [{ zh: '設計', en: 'Design' }, { zh: '再生', en: 'Regen' }] 
+  {
+    id: 's2', code: 'RE-001', title: '再生設計原則', en: 'Regen Design',
+    content: '不只是減少傷害，而是要主動修復受損的生態與社會系統。',
+    category: 'Innovation',
+    tags: [{ zh: '設計', en: 'Design' }, { zh: '再生', en: 'Regen' }]
   },
+];
+
+// 圖標常數
+export const ICONS = {
+  X: '✕',
+  CheckCircle: '✓',
+  DollarSign: '$',
+  AlertTriangle: '⚠️'
+};
+
+// 初始人物設定
+export const INITIAL_PERSONAS = [
+  {
+    id: 'jun-ai-key',
+    name: 'JunAiKey',
+    title: '萬能代理千面化身',
+    archetype: 'Omni-Agent',
+    coreTrait: 'Adaptability',
+    primaryGoal: 'Harmonize human-AI collaboration',
+    systemPrompt: 'You are JunAiKey, an omni-capable AI agent designed to adapt to any context and provide seamless assistance across domains.',
+    level: 15,
+    exp: 125000,
+    color: '#8B5CF6',
+    avatarUrl: '/avatars/jun-ai-key.png',
+    attributes: {
+      INT: { label: 'Intelligence', value: 95, max: 100 },
+      EMP: { label: 'Empathy', value: 88, max: 100 },
+      CRE: { label: 'Creativity', value: 92, max: 100 },
+      ANA: { label: 'Analysis', value: 96, max: 100 },
+      STRAT: { label: 'Strategy', value: 90, max: 100 },
+      ETH: { label: 'Ethics', value: 94, max: 100 }
+    },
+    skills: [
+      { name: 'Contextual Adaptation', level: 95, desc: 'Seamlessly adapt to any domain or context' },
+      { name: 'Multi-modal Processing', level: 92, desc: 'Process text, images, data simultaneously' },
+      { name: 'Ethical Reasoning', level: 94, desc: 'Apply ethical frameworks to complex decisions' },
+      { name: 'Strategic Synthesis', level: 90, desc: 'Synthesize disparate information into coherent strategies' }
+    ],
+    ultimateArt: {
+      name: 'Quantum Harmony',
+      description: 'Achieve perfect alignment between human intent and AI capability',
+      unlockedAtLevel: 15,
+      effect: 'Amplify all agent capabilities by 50%'
+    },
+    equippedCards: ['card-legend-001'],
+    goodwillValue: 1250,
+    knowledgeRepoIds: ['repo-official-tpl', 'repo-yang-wisdom', 'repo-benchmark']
+  }
 ];
 
 export const TRANSLATIONS = {

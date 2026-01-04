@@ -1,8 +1,8 @@
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { 
-    Binary, Image as ImageIcon, Video, Mic, Sparkles, Wand2, Search, MapPin, 
-    Loader2, Upload, Play, Download, Trash2, Maximize2, Layers, 
+import React, { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react';
+import {
+    Binary, Image as ImageIcon, Video, Mic, Sparkles, Wand2, Search, MapPin,
+    Loader2, Upload, Play, Download, Trash2, Maximize2, Layers,
     ArrowRight, Globe, ShieldCheck, Cpu, Volume2, Film,
     Zap, Activity, ExternalLink, BrainCircuit, Database, PenTool,
     Fingerprint, Radio, Triangle, Atom, Info, Camera, VideoOff,
@@ -10,9 +10,9 @@ import {
     ArrowDown, ChevronRight, Gauge, RefreshCw, Settings,
     Layout
 } from 'lucide-react';
-import { 
-    ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, 
-    PolarRadiusAxis, Radar, Tooltip 
+import {
+    ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis,
+    PolarRadiusAxis, Radar, Tooltip
 } from 'recharts';
 import { Language, UniversalKnowledgeNode } from '../types';
 import { UniversalPageHeader } from './UniversalPageHeader';
@@ -22,7 +22,40 @@ import { runMcpAction, performWebSearch, analyzeMedia, streamChat } from '../ser
 import { universalIntelligence, SystemVital } from '../services/evolutionEngine';
 import { marked } from 'marked';
 
-export const HypercubeAiLab: React.FC<{ language: Language }> = ({ language }) => {
+// Constants moved outside component to prevent recreation
+const CORES = [
+    { id: 'perception', name: '感知', nameEn: 'Sense', icon: Radio, color: 'text-cyan-400' },
+    { id: 'cognition', name: '認知', nameEn: 'Think', icon: BrainCircuit, color: 'text-amber-400' },
+    { id: 'memory', name: '記憶', nameEn: 'Mem', icon: Database, color: 'text-purple-400' },
+    { id: 'expression', name: '表達', nameEn: 'Gen', icon: PenTool, color: 'text-pink-400' },
+] as const;
+
+// Sub-components for better performance
+const CoreButton: React.FC<{
+    core: {
+        id: string;
+        name: string;
+        nameEn: string;
+        icon: React.ComponentType<any>;
+        color: string;
+    };
+    isSelected: boolean;
+    onToggle: () => void;
+}> = memo(({ core, isSelected, onToggle }) => (
+    <button
+        onClick={onToggle}
+        className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-1.5 ${
+            isSelected
+                ? 'bg-white/10 border-white/30 scale-[1.03] shadow-lg'
+                : 'bg-black/20 border-white/5 opacity-30 grayscale'
+        }`}
+    >
+        <core.icon className={`w-4 h-4 ${core.color}`} />
+        <span className="text-[7px] font-black text-gray-500 uppercase">{core.name}</span>
+    </button>
+));
+
+export const HypercubeAiLab: React.FC<{ language: Language }> = memo(({ language }) => {
     const isZh = language === 'zh-TW';
     const { addToast } = useToast();
     const { addNote } = useCompany();
@@ -47,12 +80,13 @@ export const HypercubeAiLab: React.FC<{ language: Language }> = ({ language }) =
         return () => { subV.unsubscribe(); clearInterval(subNodes); };
     }, []);
 
-    const cores = [
-        { id: 'perception', name: isZh ? '感知' : 'Sense', icon: Radio, color: 'text-cyan-400' },
-        { id: 'cognition', name: isZh ? '認知' : 'Think', icon: BrainCircuit, color: 'text-amber-400' },
-        { id: 'memory', name: isZh ? '記憶' : 'Mem', icon: Database, color: 'text-purple-400' },
-        { id: 'expression', name: isZh ? '表達' : 'Gen', icon: PenTool, color: 'text-pink-400' },
-    ];
+    // Use memoized cores data
+    const cores = useMemo(() =>
+        CORES.map(core => ({
+            ...core,
+            name: isZh ? core.name : core.nameEn
+        })), [isZh]
+    );
 
     const radarData = useMemo(() => {
         if (!vitals) return [];
@@ -63,7 +97,7 @@ export const HypercubeAiLab: React.FC<{ language: Language }> = ({ language }) =
         ];
     }, [vitals]);
 
-    const handleExecute = async () => {
+    const handleExecute = useCallback(async () => {
         if (!prompt) return;
         setIsProcessing(true); setResultText(null);
         universalIntelligence.triggerSynergy(synergyChain);
@@ -75,7 +109,11 @@ export const HypercubeAiLab: React.FC<{ language: Language }> = ({ language }) =
             addToast('reward', isZh ? '顯化完成並自動備份' : 'Manifested & Auto-Synced', 'Synergy');
         } catch (e: any) { addToast('error', e.message, 'Fault'); }
         finally { setIsProcessing(false); }
-    };
+    }, [prompt, synergyChain, activeTool, addNote, addToast, isZh]);
+
+    const toggleCore = useCallback((coreId: string) => {
+        setSynergyChain(prev => prev.includes(coreId) ? prev.filter(c => c !== coreId) : [...prev, coreId]);
+    }, []);
 
     return (
         <div className="h-full flex flex-col min-h-0 overflow-hidden space-y-2">
@@ -98,14 +136,12 @@ export const HypercubeAiLab: React.FC<{ language: Language }> = ({ language }) =
                         <h4 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex justify-between">CORE_ORCHESTRATION <Activity className="w-3 h-3 text-emerald-500"/></h4>
                         <div className="grid grid-cols-2 gap-2 flex-1 items-center">
                             {cores.map(core => (
-                                <button 
-                                    key={core.id} 
-                                    onClick={() => setSynergyChain(prev => prev.includes(core.id) ? prev.filter(c => c !== core.id) : [...prev, core.id])}
-                                    className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-1.5 ${synergyChain.includes(core.id) ? 'bg-white/10 border-white/30 scale-[1.03] shadow-lg' : 'bg-black/20 border-white/5 opacity-30 grayscale'}`}
-                                >
-                                    <core.icon className={`w-4 h-4 ${core.color}`} />
-                                    <span className="text-[7px] font-black text-gray-500 uppercase">{core.name}</span>
-                                </button>
+                                <CoreButton
+                                    key={core.id}
+                                    core={core}
+                                    isSelected={synergyChain.includes(core.id)}
+                                    onToggle={() => toggleCore(core.id)}
+                                />
                             ))}
                         </div>
                     </div>
@@ -190,8 +226,8 @@ export const HypercubeAiLab: React.FC<{ language: Language }> = ({ language }) =
                 <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
                     <div className="flex-1 glass-bento p-5 bg-slate-950 border-emerald-500/20 rounded-[2rem] shadow-2xl flex flex-col relative overflow-hidden">
                         <h4 className="zh-main text-[9px] text-emerald-500 uppercase tracking-widest mb-4 flex items-center gap-2 relative z-10"><Activity className="w-3 h-3" /> Neural_Vitals_Heat</h4>
-                        <div className="flex-1 min-h-0 w-full relative z-10">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <div className="flex-1 min-h-0 w-full relative z-10" style={{ minHeight: '200px', minWidth: '200px' }}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={200} minHeight={200}>
                                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                                     <PolarGrid stroke="rgba(255,255,255,0.03)" />
                                     <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 7, fontWeight: 900 }} />
@@ -220,4 +256,4 @@ export const HypercubeAiLab: React.FC<{ language: Language }> = ({ language }) =
             </div>
         </div>
     );
-};
+});

@@ -165,8 +165,41 @@ jobs:
     - name: Deploy to development environment
       run: |
         echo "Deploying to development environment..."
-        # 這裡可以添加部署到開發環境的腳本
-        # 例如：更新Kubernetes deployment、觸發ArgoCD等
+        # 獲取最新的映像標籤
+        IMAGE_TAG=$(echo ${{ steps.meta.outputs.tags }} | cut -d',' -f1)
+
+        # 創建部署腳本
+        cat > deploy-dev.sh << EOF
+        #!/bin/bash
+        set -e
+
+        echo "Starting deployment to DEV environment..."
+
+        # 拉取最新的映像
+        docker pull $IMAGE_TAG
+
+        # 停止舊容器
+        docker-compose -f docker-compose.dev.yml down || true
+
+        # 更新映像標籤
+        sed -i "s|image:.*|image: $IMAGE_TAG|g" docker-compose.dev.yml
+
+        # 啟動新服務
+        docker-compose -f docker-compose.dev.yml up -d
+
+        # 等待服務啟動
+        sleep 30
+
+        # 健康檢查
+        curl -f http://localhost:80/health || (echo "Health check failed" && exit 1)
+
+        # 清理舊映像
+        docker image prune -f
+
+        echo "DEV deployment completed successfully!"
+        EOF
+
+        chmod +x deploy-dev.sh
 
   # 建構與部署到生產環境
   build-and-deploy-prod:
@@ -232,8 +265,48 @@ jobs:
     - name: Deploy to production
       run: |
         echo "Deploying to production environment..."
-        # 這裡可以添加生產環境部署腳本
-        # 例如：藍綠部署、滾動更新等
+        # 獲取最新的映像標籤
+        IMAGE_TAG=$(echo ${{ steps.meta.outputs.tags }} | cut -d',' -f1)
+
+        # 創建生產部署腳本
+        cat > deploy-prod.sh << EOF
+        #!/bin/bash
+        set -e
+
+        echo "Starting deployment to PROD environment..."
+
+        # 備份當前運行狀態
+        docker tag \$(docker-compose -f docker-compose.prod.yml ps -q esg-dashboard) esg-dashboard:backup-\$(date +%Y%m%d_%H%M%S) || true
+
+        # 拉取最新的映像
+        docker pull $IMAGE_TAG
+
+        # 藍綠部署：啟動新版本服務
+        sed -i "s|image:.*|image: $IMAGE_TAG|g" docker-compose.prod.yml
+        docker-compose -f docker-compose.prod.yml up -d esg-dashboard-new || docker-compose -f docker-compose.prod.yml up -d esg-dashboard
+
+        # 等待新服務啟動
+        sleep 60
+
+        # 健康檢查新服務
+        NEW_CONTAINER=\$(docker-compose -f docker-compose.prod.yml ps -q esg-dashboard-new || docker-compose -f docker-compose.prod.yml ps -q esg-dashboard)
+        docker exec \$NEW_CONTAINER curl -f http://localhost/health || (echo "New service health check failed" && exit 1)
+
+        # 切換流量到新服務
+        # 如果使用負載平衡器，這裡需要更新配置
+
+        # 停止舊服務
+        docker-compose -f docker-compose.prod.yml up -d esg-dashboard
+        docker-compose -f docker-compose.prod.yml stop esg-dashboard-old || true
+        docker-compose -f docker-compose.prod.yml rm -f esg-dashboard-old || true
+
+        # 清理舊映像（保留最近3個）
+        docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | grep esg-dashboard | sort -k2 -r | tail -n +4 | awk '{print \$1}' | xargs -r docker rmi || true
+
+        echo "PROD deployment completed successfully!"
+        EOF
+
+        chmod +x deploy-prod.sh
 
   # 效能測試
   performance-test:

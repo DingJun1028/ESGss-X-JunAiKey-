@@ -1,17 +1,19 @@
 
 import React, { useState } from 'react';
-import { View, Language, ThemeMode } from '../types';
-import { 
-  Home, Bot, Network, GraduationCap, 
+import { View, Language, ThemeMode, Permission } from '../types';
+import {
+  Home, Bot, Network, GraduationCap,
   ChevronRight, Zap, Command,
-  Globe, DollarSign, Database, 
+  Globe, DollarSign, Database,
   Settings, Binary, ListTodo, StickyNote, Target,
-  Crown, Wallet, Users, Sun, Moon, Laptop, FileCode, Sparkles
+  Crown, Wallet, Users, Sun, Moon, Laptop, FileCode, Sparkles,
+  Shield, Eye, Brain
 } from 'lucide-react';
 import { AiAssistant } from './AiAssistant';
 import { CommandPalette } from './CommandPalette';
 import { useCompany } from './providers/CompanyProvider';
 import { useTheme } from '../contexts/ThemeContext';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface LayoutProps {
   currentView: View;
@@ -32,27 +34,40 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const { userName, level, goodwillBalance } = useCompany();
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { hasPermission } = usePermissions();
   const isZh = language === 'zh-TW';
 
-  const navSectors = [
-    { title: 'CMD', items: [
-      { id: View.MY_ESG, icon: Home, label: isZh ? '北極星' : 'Cockpit' },
-      { id: View.HYPERCUBE_LAB, icon: Binary, label: isZh ? 'AI 實驗室' : 'AI Lab' },
-      { id: View.CARD_GAME_ARENA_NEW, icon: Target, label: isZh ? 'ESG競技場' : 'ESG Arena' },
-      { id: View.FINANCE, icon: DollarSign, label: isZh ? '財務' : 'Finance' },
-      { id: View.CARBON_WALLET, icon: Wallet, label: isZh ? '碳錢包' : 'Wallet' },
-      { id: View.BUSINESS_INTEL, icon: Globe, label: isZh ? 'AMICE' : 'AMICE' },
-      { id: View.RESEARCH_HUB, icon: Database, label: isZh ? 'RAG' : 'RAG' },
-      { id: View.UNIVERSAL_NOTES, icon: StickyNote, label: isZh ? '筆記' : 'Notes' },
-      { id: View.AGENT_TASKS, icon: ListTodo, label: isZh ? '任務' : 'Tasks' },
-    ]},
-    { title: 'SYS', items: [
-      { id: View.ACADEMY, icon: GraduationCap, label: isZh ? '學院' : 'Academy' },
-      { id: View.TECHNICAL_DOCS, icon: FileCode, label: isZh ? '聖典' : 'Docs' },
-      { id: View.ADMIN_PANEL, icon: Crown, label: isZh ? '管理端' : 'Admin' },
-      { id: View.SETTINGS, icon: Settings, label: isZh ? '設定' : 'Config' },
-    ]}
+  const allNavItems = [
+    // CORE sector with permissions
+    { sector: 'CORE', id: 'genesis_prime_os', icon: Shield, label: isZh ? '創世紀 OS' : 'Genesis OS', permission: Permission.VIEW_GENESIS_PRIME_OS },
+    { sector: 'CORE', id: 'omni_context_engine', icon: Network, label: isZh ? '脈絡引擎' : 'Context Engine', permission: Permission.VIEW_OMNI_CONTEXT_ENGINE },
+    { sector: 'CORE', id: 'omni_sovereign_governance', icon: Crown, label: isZh ? '主權治理' : 'Sovereign Gov', permission: Permission.VIEW_OMNI_SOVEREIGN_GOVERNANCE },
+    { sector: 'CORE', id: 'foundational_intelligence', icon: Brain, label: isZh ? '基礎智慧' : 'Intelligence', permission: Permission.VIEW_FOUNDATIONAL_INTELLIGENCE },
+    // CMD sector
+    { sector: 'CMD', id: View.MY_ESG, icon: Home, label: isZh ? '北極星' : 'Cockpit', permission: Permission.VIEW_MY_ESG },
+    { sector: 'CMD', id: View.HYPERCUBE_LAB, icon: Binary, label: isZh ? 'AI 實驗室' : 'AI Lab', permission: Permission.VIEW_UNIVERSAL_AGENT },
+    { sector: 'CMD', id: View.CARD_GAME_ARENA_NEW, icon: Target, label: isZh ? 'ESG競技場' : 'ESG Arena', permission: Permission.VIEW_DASHBOARD },
+    { sector: 'CMD', id: View.FINANCE, icon: DollarSign, label: isZh ? '財務' : 'Finance', permission: Permission.VIEW_DASHBOARD },
+    { sector: 'CMD', id: View.CARBON_WALLET, icon: Wallet, label: isZh ? '碳錢包' : 'Wallet', permission: Permission.VIEW_DASHBOARD },
+    { sector: 'CMD', id: View.BUSINESS_INTEL, icon: Globe, label: isZh ? 'AMICE' : 'AMICE', permission: Permission.VIEW_RESEARCH_HUB },
+    { sector: 'CMD', id: View.RESEARCH_HUB, icon: Database, label: isZh ? 'RAG' : 'RAG', permission: Permission.VIEW_RESEARCH_HUB },
+    { sector: 'CMD', id: View.UNIVERSAL_NOTES, icon: StickyNote, label: isZh ? '筆記' : 'Notes', permission: Permission.VIEW_DASHBOARD },
+    { sector: 'CMD', id: View.AGENT_TASKS, icon: ListTodo, label: isZh ? '任務' : 'Tasks', permission: Permission.VIEW_DASHBOARD },
+    // SYS sector
+    { sector: 'CMD', id: View.ACADEMY, icon: GraduationCap, label: isZh ? '學院' : 'Academy', permission: Permission.VIEW_DASHBOARD },
+    { sector: 'CMD', id: View.TECHNICAL_DOCS, icon: FileCode, label: isZh ? '聖典' : 'Docs', permission: Permission.VIEW_DASHBOARD },
+    { sector: 'SYS', id: View.ADMIN_PANEL, icon: Crown, label: isZh ? '管理端' : 'Admin', permission: Permission.ADMIN_ACCESS },
+    { sector: 'SYS', id: View.SETTINGS, icon: Settings, label: isZh ? '設定' : 'Config', permission: Permission.VIEW_DASHBOARD },
   ];
+
+  // Filter items based on permissions
+  const filteredNavItems = allNavItems.filter(item => hasPermission(item.permission));
+
+  // Group by sector
+  const navSectors = ['CORE', 'CMD', 'SYS'].map(sectorTitle => ({
+    title: sectorTitle,
+    items: filteredNavItems.filter(item => item.sector === sectorTitle)
+  })).filter(sector => sector.items.length > 0);
 
   const themeIcons = {
       light: <Sun className="w-4 h-4 text-amber-500" />,

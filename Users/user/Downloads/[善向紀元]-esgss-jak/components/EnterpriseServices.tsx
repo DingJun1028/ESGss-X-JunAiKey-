@@ -14,7 +14,7 @@ import { globalCache } from '../services/scalability';
 
 export const EnterpriseServices: React.FC<{ language: Language }> = ({ language }) => {
     const isZh = language === 'zh-TW';
-    const { validateForm, RULES } = useFormValidation(language);
+    const { validateForm, RULES } = useFormValidation(language === 'zh-TW' ? 'zh-TW' : 'en');
 
     // 擴展性優化 hooks
     const { preloadResources } = useResourcePreloader();

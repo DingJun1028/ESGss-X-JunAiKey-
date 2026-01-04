@@ -58,14 +58,24 @@ export enum View {
     FLOWLU_INTEGRATION = 'flowlu_integration',
     SUPPLIER_CRM = 'supplier_crm',
     SUPPLIER_SURVEY = 'supplier_survey',
-    AGENT_TASKS = 'agent_tasks'
+    MARKETING_STRATEGY = 'marketing_strategy',
+    ENTERPRISE_SERVICES = 'enterprise_services',
+    AGENT_TASKS = 'agent_tasks',
+    UNIVERSAL_CREATOR_DASHBOARD = 'universal_creator_dashboard'
 }
 
 export const TaskStatusSchema = z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED']);
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
 
-export const TaskPrioritySchema = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
-export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
+export enum TaskPriority {
+    LOW = 'LOW',
+    MEDIUM = 'MEDIUM',
+    HIGH = 'HIGH',
+    CRITICAL = 'CRITICAL'
+}
+
+export const TaskPrioritySchema = z.nativeEnum(TaskPriority);
+export type TaskPriorityType = z.infer<typeof TaskPrioritySchema>;
 
 export const AgentTaskSchema = z.object({
     id: z.string(),
@@ -174,7 +184,7 @@ export const EsgCardSchema = z.object({
     stats: z.object({ defense: z.number(), offense: z.number() }),
     imageUrl: z.string().optional(),
 });
-export type EsgCard = z.infer<typeof EsgCardSchema> & { cardType: EsgCardType };
+export type EsgCard = z.infer<typeof EsgCardSchema>;
 
 export interface ScriptureNode {
     id: string;
@@ -272,7 +282,7 @@ export interface Toast {
 
 export type OmniEsgTrait = 'learning' | 'optimization' | 'bridging' | 'evolution' | 'seamless' | 'gap-filling';
 export type OmniEsgDataLink = 'live' | 'ai' | 'blockchain';
-export type OmniEsgMode = 'card' | 'list';
+export type OmniEsgMode = 'card' | 'list' | 'compact' | 'cell' | 'badge';
 export type OmniEsgConfidence = 'high' | 'medium' | 'low';
 export type OmniEsgColor = 'emerald' | 'gold' | 'purple' | 'blue' | 'cyan' | 'rose' | 'slate';
 
@@ -490,13 +500,222 @@ export interface ProxyProduct {
     pitchScript: string;
 }
 
+// JunAiKey 五維靈魂架構 - 深度整合
+export enum SoulDimension {
+  COVENANT = 'COVENANT',      // 聖約層 - 系統指引與道德準則
+  ESSENCE = 'ESSENCE',        // 本質層 - 角色人設與性格定義
+  MEMORY = 'MEMORY',          // 記憶層 - 知識庫與RAG資料
+  POWER = 'POWER',            // 權能層 - 技能樹與工具調用
+  SPIRIT_BASE = 'SPIRIT_BASE' // 靈基層 - 模型參數與運算配置
+}
+
+export enum SkillType {
+  ACTIVE = 'ACTIVE',          // 主動技 - 顯式調用工具
+  PASSIVE = 'PASSIVE',        // 被動技 - 隱式持續效果
+  COMPOSITE = 'COMPOSITE'     // 組合技 - 多技能協同
+}
+
+export enum EntropyLevel {
+  ZERO = 'ZERO',              // 秩序 - 數據正常
+  LOW = 'LOW',                // 輕微混亂 - 小問題
+  HIGH = 'HIGH',              // 嚴重混亂 - 大問題
+  CRITICAL = 'CRITICAL'       // 完全混沌 - 系統級問題
+}
+
+export enum HealingStrategy {
+  PASS_THROUGH = 'PASS_THROUGH',    // 直通 - 數據正常
+  FORMAT_FIX = 'FORMAT_FIX',        // 格式修復 - 修復數據格式
+  GAP_FILLING = 'GAP_FILLING',      // 填補 - 使用預測值
+  AI_ENHANCEMENT = 'AI_ENHANCEMENT', // AI增強 - 智慧修復
+  ROLLBACK = 'ROLLBACK'             // 回滾 - 使用安全值
+}
+
+export interface SoulContract {
+  id: string;
+  prompt: string;                    // 系統指引詞
+  safetyRules: string[];             // 安全約束規則
+  ethicalBoundaries: string[];       // 道德邊界
+  behavioralLimits: string[];        // 行為限制
+}
+
+export interface SoulEssence {
+  id: string;
+  name: string;                      // 代理名稱
+  archetype: string;                 // 原型分類
+  tone: string;                      // 語氣風格
+  backstory: string;                 // 背景故事
+  personalityTraits: string[];       // 性格特質
+  communicationStyle: string;        // 溝通風格
+}
+
+export interface SoulMemory {
+  id: string;
+  knowledgeBaseIds: string[];        // 知識庫ID列表
+  vectorStoreIds: string[];          // 向量存儲ID
+  retentionPolicy: {
+    maxAge: number;                  // 最大保留時間(天)
+    compressionThreshold: number;    // 壓縮閾值
+    archiveStrategy: string;         // 歸檔策略
+  };
+  contextWindow: number;             // 上下文窗口大小
+}
+
+export interface SoulSkill {
+  id: string;
+  name: string;                      // 技能名稱
+  type: SkillType;                   // 技能類型
+  description: string;               // 技能描述
+  parameters: Record<string, any>;   // 參數配置
+  cooldown?: number;                 // 冷卻時間(秒)
+  energyCost: number;                // 能量消耗
+  mastery: number;                   // 熟練度(0-100)
+  lastUsed?: number;                 // 最後使用時間
+}
+
+export interface SoulAuthority {
+  id: string;
+  skills: SoulSkill[];               // 技能樹
+  permissions: string[];             // 權限列表
+  accessLevel: number;               // 訪問等級
+  rateLimits: {
+    requestsPerMinute: number;       // 每分鐘請求數
+    tokensPerRequest: number;        // 每請求token數
+  };
+}
+
+export interface SoulFoundation {
+  id: string;
+  modelConfig: {
+    provider: 'openai' | 'gemini' | 'claude' | 'local';
+    model: string;                   // 模型名稱
+    temperature: number;             // 創造性(0-2)
+    maxTokens: number;               // 最大token數
+    topP?: number;                   // 核取樣參數
+    frequencyPenalty?: number;       // 頻率懲罰
+  };
+  performanceMetrics: {
+    responseTime: number;            // 平均響應時間
+    tokenEfficiency: number;         // token使用效率
+    accuracy: number;                // 準確率
+  };
+}
+
+export interface SoulAvatar {
+  id: string;
+  baseAgentId: string;               // 基礎代理ID
+  personaMask: Record<string, any>;  // 人設面具
+  capabilityFilter: string[];        // 能力過濾器
+  contextOverride?: Record<string, any>; // 上下文覆蓋
+  sessionIsolation: boolean;         // 會話隔離
+  lifetime: number;                  // 生命週期(秒)
+  createdAt: number;
+}
+
+export interface SoulResonance {
+  agentId: string;
+  avatarId: string;
+  interactionCount: number;
+  resonanceScore: number;            // 共鳴分數(0-100)
+  entropyHistory: number[];          // 熵值歷史
+  evolutionLog: Array<{
+    timestamp: number;
+    action: string;
+    entropyDelta: number;
+  }>;
+}
+
+export interface EvolutionProposal {
+  id: string;
+  pattern: string;                   // 檢測到的模式
+  confidence: number;                // 信心度
+  suggestedSkill: SoulSkill;         // 建議技能
+  trainingData: any[];               // 訓練數據
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'IMPLEMENTED';
+  createdAt: number;
+}
+
+// 完整的五維靈魂架構
 export interface AgentSoul5D {
-    id: string;
-    essence: { name: string; tone: string; backstory: string };
-    covenant: { prompt: string; safety: string };
-    memory: { knowledgeBaseIds: string[]; retentionDays: number };
-    authority: { skillIds: string[]; permissions: string[] };
-    foundation: { model: string; temperature: number; tokens: number };
+  id: string;
+  name: string;
+  version: string;
+  status: 'ACTIVE' | 'TRAINING' | 'ARCHIVED';
+
+  // 五維靈魂結構
+  covenant: SoulContract;            // 聖約層
+  essence: SoulEssence;              // 本質層
+  memory: SoulMemory;                // 記憶層
+  authority: SoulAuthority;          // 權能層
+  foundation: SoulFoundation;        // 靈基層
+
+  // 動態化身支持
+  avatars: SoulAvatar[];             // 可用的化身
+  activeAvatar?: string;             // 當前活動化身ID
+
+  // 進化與學習
+  resonance: SoulResonance;          // 共鳴數據
+  evolutionProposals: EvolutionProposal[]; // 進化建議
+
+  // 元數據
+  createdAt: number;
+  lastModified: number;
+  creator: string;
+  tags: string[];
+}
+
+// 超立方進化協議
+export interface TesseractEvolutionProtocol {
+  targetAgent: string;
+
+  // 四維統一目標
+  optimization: {
+    performanceTarget: number;       // 效能提升目標(%)
+    compressionTarget: number;       // 體積壓縮目標(%)
+    simplicityScore: number;         // 簡單性評分
+  };
+
+  expansion: {
+    newFeatures: string[];           // 新功能衍生
+    resilienceImprovements: string[];// 韌性增強
+  };
+
+  integration: {
+    modularCompliance: boolean;      // 模組化合規性
+    standardInterfaces: string[];    // 標準介面
+  };
+
+  innovation: {
+    paradigmShifts: string[];        // 範式轉移
+    adaptiveCapabilities: string[];  // 自適應能力
+  };
+
+  status: 'PLANNING' | 'EXECUTING' | 'COMPLETED' | 'FAILED';
+  progress: number;
+}
+
+// 雙向同步橋接器
+export interface BidirectionalSyncBridge {
+  sourceSystem: 'ESG_SYSTEM' | 'BOOST_SPACE' | 'JUNAIKEY_HUB';
+  targetSystem: 'ESG_SYSTEM' | 'BOOST_SPACE' | 'JUNAIKEY_HUB';
+
+  mappings: {
+    entityMappings: Record<string, string>;    // 實體映射
+    fieldMappings: Record<string, string>;     // 字段映射
+    workflowMappings: Record<string, string>;  // 工作流映射
+  };
+
+  syncRules: {
+    triggerEvents: string[];          // 觸發事件
+    conflictResolution: 'SOURCE_WINS' | 'TARGET_WINS' | 'MERGE' | 'MANUAL';
+    frequency: 'REAL_TIME' | 'MINUTELY' | 'HOURLY' | 'DAILY';
+  };
+
+  healthMetrics: {
+    lastSync: number;
+    successRate: number;
+    latency: number;
+    errorCount: number;
+  };
 }
 
 export interface SkillNode {
@@ -508,13 +727,7 @@ export interface SkillNode {
     status: 'Ready' | 'Cooldown' | 'Locked';
 }
 
-export interface EvolutionProposal {
-    id: string;
-    pattern: string;
-    suggestedSkill: string;
-    confidence: number;
-    status: 'Pending' | 'Approved' | 'Rejected';
-}
+
 
 export interface CarbonMarketHistory {
     time: string;
@@ -595,3 +808,243 @@ export interface ProjectMilestone {
 }
 
 export type VocationType = 'Architect' | 'Alchemist' | 'Scribe' | 'Envoy' | 'Seeker' | 'Guardian';
+
+// User Roles and Permissions
+export enum Permission {
+    ADMIN_ACCESS = 'ADMIN_ACCESS',
+    VIEW_MY_ESG = 'VIEW_MY_ESG',
+    VIEW_DASHBOARD = 'VIEW_DASHBOARD',
+    VIEW_RESEARCH_HUB = 'VIEW_RESEARCH_HUB',
+    VIEW_AUDIT = 'VIEW_AUDIT',
+    VIEW_UNIVERSAL_AGENT = 'VIEW_UNIVERSAL_AGENT',
+    VIEW_ARCHITECT_CONSOLE = 'VIEW_ARCHITECT_CONSOLE',
+    VIEW_FIREWALL_GUARDIAN = 'VIEW_FIREWALL_GUARDIAN',
+    VIEW_SITUATION_LOGS = 'VIEW_SITUATION_LOGS',
+    VIEW_OMNIPOTENT_MATRIX = 'VIEW_OMNIPOTENT_MATRIX',
+    VIEW_UNIVERSAL_MODULE_12A = 'VIEW_UNIVERSAL_MODULE_12A',
+    VIEW_ESG_WAR_ROOM = 'VIEW_ESG_WAR_ROOM',
+    VIEW_ANNUAL_REPORT_GENERATOR = 'VIEW_ANNUAL_REPORT_GENERATOR',
+    // Core System Permissions
+    VIEW_GENESIS_PRIME_OS = 'VIEW_GENESIS_PRIME_OS',
+    VIEW_OMNI_CONTEXT_ENGINE = 'VIEW_OMNI_CONTEXT_ENGINE',
+    VIEW_OMNI_SOVEREIGN_GOVERNANCE = 'VIEW_OMNI_SOVEREIGN_GOVERNANCE',
+    VIEW_FOUNDATIONAL_INTELLIGENCE = 'VIEW_FOUNDATIONAL_INTELLIGENCE',
+}
+
+export enum AnalysisType {
+    STATISTICAL = 'STATISTICAL',
+    TREND = 'TREND',
+    CORRELATION = 'CORRELATION',
+    COMPARISON = 'COMPARISON',
+    DISTRIBUTION = 'DISTRIBUTION',
+    CUSTOM = 'CUSTOM'
+}
+
+export enum UserRole {
+    ADMIN = 'ADMIN',
+    ESG_MANAGER = 'ESG_MANAGER',
+    ANALYST = 'ANALYST',
+    AUDITOR = 'AUDITOR',
+    VIEWER = 'VIEWER',
+}
+
+export const RolePermissions: Record<UserRole, Permission[]> = {
+    [UserRole.ADMIN]: Object.values(Permission),
+    [UserRole.ESG_MANAGER]: [
+        Permission.VIEW_MY_ESG,
+        Permission.VIEW_DASHBOARD,
+        Permission.VIEW_RESEARCH_HUB,
+        Permission.VIEW_AUDIT,
+        Permission.VIEW_UNIVERSAL_AGENT,
+        Permission.VIEW_ESG_WAR_ROOM,
+        Permission.VIEW_ANNUAL_REPORT_GENERATOR,
+        Permission.VIEW_GENESIS_PRIME_OS,
+        Permission.VIEW_OMNI_CONTEXT_ENGINE,
+        Permission.VIEW_OMNI_SOVEREIGN_GOVERNANCE,
+        Permission.VIEW_FOUNDATIONAL_INTELLIGENCE,
+    ],
+    [UserRole.ANALYST]: [
+        Permission.VIEW_MY_ESG,
+        Permission.VIEW_DASHBOARD,
+        Permission.VIEW_RESEARCH_HUB,
+        Permission.VIEW_OMNI_CONTEXT_ENGINE,
+        Permission.VIEW_FOUNDATIONAL_INTELLIGENCE,
+    ],
+    [UserRole.AUDITOR]: [
+        Permission.VIEW_AUDIT,
+        Permission.VIEW_UNIVERSAL_AGENT,
+        Permission.VIEW_ARCHITECT_CONSOLE,
+        Permission.VIEW_SITUATION_LOGS,
+        Permission.VIEW_OMNI_SOVEREIGN_GOVERNANCE,
+        Permission.VIEW_FOUNDATIONAL_INTELLIGENCE,
+    ],
+    [UserRole.VIEWER]: [
+        Permission.VIEW_MY_ESG,
+        Permission.VIEW_DASHBOARD,
+    ],
+};
+
+// Additional Type Definitions for Modern React Development
+
+export interface ApiResponse<T = any> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    message?: string;
+    timestamp?: number;
+}
+
+export interface PaginatedResponse<T = any> {
+    data: T[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
+export interface ComponentProps {
+    className?: string;
+    children?: React.ReactNode;
+    style?: React.CSSProperties;
+    onClick?: (event: React.MouseEvent) => void;
+    onChange?: (event: React.ChangeEvent) => void;
+}
+
+export interface ChartDataPoint {
+    x: number | string;
+    y: number;
+    label?: string;
+    color?: string;
+}
+
+export interface DashboardWidget {
+    id: string;
+    title: string;
+    type: 'chart' | 'metric' | 'list' | 'table';
+    size: 'small' | 'medium' | 'large';
+    position: { x: number; y: number };
+    data?: any;
+    config?: Record<string, any>;
+}
+
+export interface NotificationSettings {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    frequency: 'immediate' | 'daily' | 'weekly';
+}
+
+export interface UserPreferences {
+    language: Language;
+    theme: ThemeMode;
+    notifications: NotificationSettings;
+    timezone: string;
+    dateFormat: string;
+}
+
+export interface SearchFilters {
+    query?: string;
+    category?: string;
+    dateRange?: { start: string; end: string };
+    status?: string;
+    tags?: string[];
+}
+
+export interface ExportOptions {
+    format: 'pdf' | 'excel' | 'csv' | 'json';
+    includeCharts: boolean;
+    includeData: boolean;
+    dateRange?: { start: string; end: string };
+}
+
+export interface ValidationRule {
+    field: string;
+    rule: string;
+    value?: any;
+    message: string;
+}
+
+export interface FormField {
+    name: string;
+    label: string;
+    type: 'text' | 'email' | 'password' | 'number' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'date' | 'file';
+    required?: boolean;
+    placeholder?: string;
+    validation?: ValidationRule[];
+    options?: { label: string; value: any }[];
+    defaultValue?: any;
+}
+
+export interface ModalConfig {
+    title: string;
+    content: React.ReactNode;
+    size?: 'small' | 'medium' | 'large' | 'fullscreen';
+    closable?: boolean;
+    footer?: React.ReactNode;
+    onClose?: () => void;
+    onConfirm?: () => void;
+}
+
+export interface LoadingState {
+    isLoading: boolean;
+    progress?: number;
+    message?: string;
+}
+
+export interface ErrorState {
+    hasError: boolean;
+    error?: Error;
+    message?: string;
+    retry?: () => void;
+}
+
+export interface AsyncState<T = any> extends LoadingState, ErrorState {
+    data?: T;
+    refetch?: () => Promise<void>;
+}
+
+// Additional API-related types
+export interface ApiEndpoint {
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+    path: string;
+    description: string;
+    parameters?: Record<string, any>;
+    response?: Record<string, any>;
+    authentication?: boolean;
+}
+
+// Context types for better type safety
+export interface ThemeContextValue {
+    theme: ThemeMode;
+    setTheme: (theme: ThemeMode) => void;
+}
+
+export interface ToastContextValue {
+    toasts: Toast[];
+    addToast: (toast: Omit<Toast, 'id'>) => void;
+    removeToast: (id: string) => void;
+    clearToasts: () => void;
+}
+
+export interface AuthContextValue {
+    user: any;
+    isAuthenticated: boolean;
+    login: (credentials: any) => Promise<void>;
+    logout: () => void;
+    permissions: Permission[];
+}
+
+// Additional utility types
+export type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+export type UnionToIntersection<U> = (
+    U extends any ? (k: U) => void : never
+) extends (k: infer I) => void
+    ? I
+    : never;
+
+export type ValueOf<T> = T[keyof T];
+
+export type NonNullable<T> = T extends null | undefined ? never : T;

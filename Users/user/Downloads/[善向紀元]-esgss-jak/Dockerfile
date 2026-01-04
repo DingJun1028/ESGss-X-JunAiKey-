@@ -1,5 +1,5 @@
 # 多階段建構ESG儀表板 - 優化版本
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # 安裝依賴階段 - 使用多層快取優化
 FROM base AS deps

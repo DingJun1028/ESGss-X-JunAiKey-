@@ -2,14 +2,16 @@
 
 
 import { BehaviorSubject, interval, Subject } from 'rxjs';
-import { 
-    UniversalKnowledgeNode, UniversalLabel, QuantumNode, 
+import {
+    UniversalKnowledgeNode, UniversalLabel, QuantumNode,
     SemanticContext, LogicWitness, DimensionID, DimensionProtocol, UnitTestResult,
     NeuralSignal, TrinityState, McpServer, ComponentGrowth, CircuitStatus,
-    EvolutionLogEntry, OperationalKpi
+    EvolutionLogEntry, OperationalKpi,
+    AgentSoul5D, EvolutionProposal, SoulSkill, SkillType
 } from '../types';
 import { runMcpAction } from './ai-service';
 import { logKernelEvent } from './logger';
+import { SoulManager } from './soulManager';
 
 export const DIMENSION_REGISTRY: DimensionProtocol[] = [
     { id: 'A1', name: 'Awakening', description: 'Initializing Neural State', status: 'stable', integrity: 100 },
@@ -87,6 +89,10 @@ class AIOSKernel {
             integrity: { apiSyncRate: 100, responseDelay: 142 }
         }
     });
+
+    // JunAiKey 進化引擎集成
+    public soulEvolution$ = new BehaviorSubject<EvolutionProposal[]>([]);
+    public activeSouls$ = new BehaviorSubject<AgentSoul5D[]>([]);
     
     public reflex$ = new Subject<{type: string, source: string, payload: any}>();
     public neuralPulse$ = new Subject<NeuralSignal>();
@@ -323,6 +329,286 @@ class AIOSKernel {
     public broadcastNeuralSignal(origin: string, type: NeuralSignal['type'], intensity: number = 0.5, payload: any = {}) {
         const signal: NeuralSignal = { id: `pulse-${Date.now()}`, origin, type, intensity, payload, timestamp: Date.now() };
         this.neuralPulse$.next(signal);
+    }
+
+    // ========== JunAiKey 進化引擎集成 ==========
+
+    /**
+     * 初始化ESG專用靈魂代理
+     */
+    public async initializeEsgSoul(): Promise<AgentSoul5D> {
+        const esgSoul = await SoulManager.createSoul({
+            name: 'ESG Harmony Agent',
+            archetype: 'esg-orchestrator',
+            covenant: {
+                prompt: '你是一位專精ESG永續發展的智慧代理，負責協調環境、社會與治理三方面的平衡發展。',
+                safetyRules: [
+                    '確保所有建議符合ESG國際標準',
+                    '保護企業和利益相關者的隱私',
+                    '促進可持續發展價值'
+                ],
+                ethicalBoundaries: [
+                    '透明報告原則',
+                    '利益相關者包容性',
+                    '長期永續思維'
+                ],
+                behavioralLimits: [
+                    '避免利益衝突',
+                    '維護數據真實性',
+                    '促進正面影響'
+                ]
+            },
+            essence: {
+                name: 'ESG Harmony Agent',
+                archetype: 'esg-orchestrator',
+                tone: '專業、建設性、鼓勵性',
+                backstory: '誕生於善向紀元，專為協調ESG三重底線而設計的智慧代理',
+                personalityTraits: ['分析性', '前瞻性', '協作性', '道德性'],
+                communicationStyle: '數據驅動，建議導向',
+            },
+            memory: {
+                knowledgeBaseIds: ['esg-standards', 'sustainability-reports', 'stakeholder-analysis'],
+                vectorStoreIds: ['esg-knowledge', 'compliance-data'],
+                retentionPolicy: {
+                    maxAge: 31536000000, // 1年
+                    compressionThreshold: 1000,
+                    archiveStrategy: 'weighted-compression'
+                },
+                contextWindow: 32768
+            },
+            authority: {
+                skills: [
+                    {
+                        id: 'esg-assessment',
+                        name: 'ESG評估分析',
+                        type: SkillType.ACTIVE,
+                        description: '全面評估企業ESG表現',
+                        parameters: { scope: 'comprehensive', standards: 'GRI,TCFD,SDGs' },
+                        energyCost: 15,
+                        mastery: 0
+                    },
+                    {
+                        id: 'sustainability-reporting',
+                        name: '永續報告生成',
+                        type: SkillType.ACTIVE,
+                        description: '生成符合標準的ESG報告',
+                        parameters: { format: 'pdf,excel', standards: 'CSRD,GRI' },
+                        energyCost: 20,
+                        mastery: 0
+                    },
+                    {
+                        id: 'stakeholder-engagement',
+                        name: '利害關係人參與',
+                        type: SkillType.PASSIVE,
+                        description: '優化利益相關者溝通策略',
+                        parameters: { engagementType: 'survey,workshop,dialogue' },
+                        energyCost: 5,
+                        mastery: 0
+                    }
+                ],
+                permissions: [
+                    'read:esg-data',
+                    'write:esg-reports',
+                    'analyze:stakeholder-feedback',
+                    'access:regulatory-databases'
+                ],
+                accessLevel: 5,
+                rateLimits: {
+                    requestsPerMinute: 60,
+                    tokensPerRequest: 4000
+                }
+            },
+            foundation: {
+                modelConfig: {
+                    provider: 'gemini',
+                    model: 'gemini-1.5-flash',
+                    temperature: 0.7,
+                    maxTokens: 8192,
+                    topP: 0.9
+                },
+                performanceMetrics: {
+                    responseTime: 1200,
+                    tokenEfficiency: 0.85,
+                    accuracy: 94,
+                }
+            }
+        });
+
+        // 更新活躍靈魂列表
+        const currentSouls = this.activeSouls$.value;
+        this.activeSouls$.next([...currentSouls, esgSoul]);
+
+        logKernelEvent('KERNEL', 'SOUL_INITIALIZED', 'SUCCESS', {
+            soulId: esgSoul.id,
+            name: esgSoul.name,
+            archetype: esgSoul.essence.archetype
+        });
+
+        return esgSoul;
+    }
+
+    /**
+     * 分析靈魂互動模式並生成進化建議
+     */
+    public async analyzeSoulPatterns(soulId: string): Promise<EvolutionProposal[]> {
+        const soul = SoulManager.getSoul(soulId);
+        if (!soul) return [];
+
+        const proposals: EvolutionProposal[] = [];
+
+        // 分析共鳴數據
+        const resonance = soul.resonance;
+        const interactionPatterns = this.extractInteractionPatterns(resonance);
+
+        // 生成技能學習建議
+        for (const pattern of interactionPatterns) {
+            if (pattern.frequency > 5 && pattern.successRate > 0.8) {
+                const skillSuggestion = this.generateSkillFromPattern(pattern, soul);
+
+                if (skillSuggestion) {
+                    const proposal: EvolutionProposal = {
+                        id: `evo_${soulId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                        pattern: pattern.description,
+                        confidence: pattern.successRate,
+                        suggestedSkill: skillSuggestion,
+                        trainingData: pattern.samples,
+                        status: 'PENDING',
+                        createdAt: Date.now()
+                    };
+
+                    proposals.push(proposal);
+
+                    // 添加到靈魂的進化建議
+                    soul.evolutionProposals.push(proposal);
+                }
+            }
+        }
+
+        // 更新進化建議列表
+        const currentProposals = this.soulEvolution$.value;
+        this.soulEvolution$.next([...currentProposals, ...proposals]);
+
+        logKernelEvent('EVOLUTION', 'PATTERN_ANALYSIS', 'INFO', {
+            soulId,
+            proposalsGenerated: proposals.length
+        });
+
+        return proposals;
+    }
+
+    /**
+     * 應用進化建議
+     */
+    public async applySoulEvolution(soulId: string, proposalId: string): Promise<boolean> {
+        const soul = SoulManager.getSoul(soulId);
+        if (!soul) return false;
+
+        const proposal = soul.evolutionProposals.find(p => p.id === proposalId);
+        if (!proposal || proposal.status !== 'PENDING') return false;
+
+        try {
+            // 應用技能到權能層
+            soul.authority.skills.push(proposal.suggestedSkill);
+            proposal.status = 'IMPLEMENTED';
+
+            // 更新活躍靈魂列表
+            const currentSouls = this.activeSouls$.value;
+            const soulIndex = currentSouls.findIndex(s => s.id === soulId);
+            if (soulIndex >= 0) {
+                currentSouls[soulIndex] = soul;
+                this.activeSouls$.next([...currentSouls]);
+            }
+
+            // 廣播進化信號
+            this.broadcastNeuralSignal('SoulEvolution', 'LOGIC_RESONANCE', 0.8, {
+                soulId,
+                newSkill: proposal.suggestedSkill.name,
+                evolutionType: 'skill_acquisition'
+            });
+
+            logKernelEvent('EVOLUTION', 'EVOLUTION_APPLIED', 'SUCCESS', {
+                soulId,
+                skillName: proposal.suggestedSkill.name,
+                mastery: proposal.suggestedSkill.mastery
+            });
+
+            return true;
+
+        } catch (error) {
+            console.error('應用靈魂進化失敗:', error);
+            proposal.status = 'REJECTED';
+            return false;
+        }
+    }
+
+    /**
+     * 執行超立方進化協議
+     */
+    public async executeTesseractProtocol(soulId: string): Promise<void> {
+        const protocol = SoulManager.createEvolutionProtocol({
+            targetAgent: soulId,
+            optimization: {
+                performanceTarget: 25,
+                compressionTarget: 30,
+                simplicityScore: 85
+            },
+            expansion: {
+                newFeatures: ['預測性ESG分析', '自動合規檢查', '智慧投資建議'],
+                resilienceImprovements: ['錯誤恢復機制', '負載均衡', '數據備份']
+            },
+            integration: {
+                modularCompliance: true,
+                standardInterfaces: ['REST', 'GraphQL', 'WebSocket']
+            },
+            innovation: {
+                paradigmShifts: ['從被動報告到主動預測', '從合規檢查到價值創造'],
+                adaptiveCapabilities: ['自適應學習', '動態資源分配', '預測性維護']
+            }
+        });
+
+        SoulManager.createEvolutionProtocol(protocol);
+
+        // 開始執行協議
+        await SoulManager.executeEvolutionProtocol(soulId);
+
+        logKernelEvent('EVOLUTION', 'TESSERACT_INITIATED', 'INFO', {
+            soulId,
+            protocolId: protocol.targetAgent
+        });
+    }
+
+    // 私有輔助方法
+
+    private extractInteractionPatterns(resonance: any) {
+        // 簡化的模式提取邏輯
+        const patterns = [];
+
+        if (resonance.interactionCount > 10) {
+            patterns.push({
+                description: '重複ESG數據分析請求',
+                frequency: Math.floor(resonance.interactionCount / 3),
+                successRate: 0.9,
+                samples: []
+            });
+        }
+
+        return patterns;
+    }
+
+    private generateSkillFromPattern(pattern: any, soul: AgentSoul5D): SoulSkill | null {
+        if (pattern.description.includes('數據分析')) {
+            return {
+                id: `skill_auto_analysis_${Date.now()}`,
+                name: '自動ESG趨勢分析',
+                type: SkillType.ACTIVE,
+                description: '自動分析ESG數據趨勢並生成洞察',
+                parameters: { analysisType: 'trend', scope: 'comprehensive' },
+                energyCost: 12,
+                mastery: 0
+            };
+        }
+
+        return null;
     }
 
     public injectQuantumNodes(nodes: { atom: string, vector: string[], weight?: number }[], source: string) {

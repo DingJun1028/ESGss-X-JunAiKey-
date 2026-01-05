@@ -1,12 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import { ToastProvider } from './contexts/ToastContext';
-import { UniversalAgentProvider } from './contexts/UniversalAgentContext';
-import { CompanyProvider } from './components/providers/CompanyProvider';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { ThemeProvider } from './contexts/ThemeContext';
+import App from './src/App';
 import { injectGenesisData } from './utils/seed';
 
 const rootElement = document.getElementById('root');
@@ -20,16 +15,6 @@ injectGenesisData();
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <ThemeProvider>
-        <ToastProvider>
-          <UniversalAgentProvider>
-            <CompanyProvider>
-              <App />
-            </CompanyProvider>
-          </UniversalAgentProvider>
-        </ToastProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <App />
   </React.StrictMode>
 );

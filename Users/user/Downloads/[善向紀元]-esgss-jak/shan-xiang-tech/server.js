@@ -425,6 +425,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// API 健康檢查端點 (與其他服務一致)
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'shan-xiang-tech',
+    version: '1.0.0-alpha',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 404 處理
 app.use('*', (req, res) => {
   res.status(404).json({

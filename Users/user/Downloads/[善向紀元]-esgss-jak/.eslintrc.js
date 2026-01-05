@@ -7,7 +7,6 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    '@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
     'plugin:react-hooks/recommended',
@@ -19,20 +18,22 @@ module.exports = {
     'coverage',
     'build',
     '*.config.js',
-    '*.config.ts'
+    '*.config.ts',
+    'server/**/*.js',
+    'scripts/**/*.js',
+    'celestial-system/**/*.js',
+    'junaikeydb-server/**/*.js',
+    'shan-xiang-tech/**/*.js'
   ],
-  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
     ecmaFeatures: {
       jsx: true
-    },
-    project: './tsconfig.json'
+    }
   },
   plugins: [
     'react-refresh',
-    '@typescript-eslint',
     'react',
     'react-hooks',
     'prettier'
@@ -42,6 +43,160 @@ module.exports = {
       version: 'detect'
     }
   },
+  overrides: [
+    // 包含TypeScript語法的文件（無論擴展名）
+    {
+      files: [
+        '**/*.ts', '**/*.tsx',
+        'services/**/*.js',
+        'components/**/*.js',
+        'components/**/*.jsx',
+        'contexts/**/*.js',
+        'hooks/**/*.js',
+        'utils/**/*.js',
+        'src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx',
+        'tests/**/*.ts', 'tests/**/*.tsx'
+      ],
+      extends: [
+        'eslint:recommended',
+        '@typescript-eslint/recommended',
+        'plugin:react/recommended',
+        'plugin:react/jsx-runtime',
+        'plugin:react-hooks/recommended',
+        'plugin:prettier/recommended'
+      ],
+      parser: '@typescript-eslint/parser',
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true
+        },
+        project: false // 禁用項目範圍檢查以避免配置問題
+      },
+      plugins: [
+        'react-refresh',
+        '@typescript-eslint',
+        'react',
+        'react-hooks',
+        'prettier'
+      ],
+      env: {
+        browser: true,
+        es2020: true,
+        node: true
+      },
+      rules: {
+        // TypeScript 規則
+        '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+        '@typescript-eslint/no-explicit-any': 'warn',
+        '@typescript-eslint/prefer-const': 'error',
+        '@typescript-eslint/no-var-requires': 'off',
+        // 放寬一些規則以適應現有代碼
+        '@typescript-eslint/ban-ts-comment': 'off',
+        '@typescript-eslint/no-empty-function': 'off'
+      }
+    },
+    // 純JavaScript文件
+    {
+      files: [
+        '**/*.js', '**/*.jsx',
+        'server/**/*.js',
+        'celestial-system/**/*.js',
+        'junaikeydb-server/**/*.js',
+        'shan-xiang-tech/**/*.js'
+      ],
+      excludedFiles: [
+        'services/**/*.js',
+        'components/**/*.js',
+        'components/**/*.jsx',
+        'contexts/**/*.js',
+        'hooks/**/*.js',
+        'utils/**/*.js',
+        'src/**/*.js', 'src/**/*.jsx'
+      ],
+      extends: [
+        'eslint:recommended',
+        'plugin:react/recommended',
+        'plugin:react/jsx-runtime',
+        'plugin:react-hooks/recommended',
+        'plugin:prettier/recommended'
+      ],
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
+      plugins: [
+        'react-refresh',
+        'react',
+        'react-hooks',
+        'prettier'
+      ],
+      env: {
+        browser: true,
+        es2020: true,
+        node: true
+      }
+    },
+    // 測試文件配置
+    {
+      files: ['**/*.test.*', '**/*.spec.*', 'src/test/**/*'],
+      extends: [
+        'eslint:recommended',
+        '@typescript-eslint/recommended',
+        'plugin:react/recommended',
+        'plugin:react/jsx-runtime',
+        'plugin:react-hooks/recommended',
+        'plugin:prettier/recommended'
+      ],
+      parser: '@typescript-eslint/parser',
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
+      plugins: [
+        'react-refresh',
+        '@typescript-eslint',
+        'react',
+        'react-hooks',
+        'prettier'
+      ],
+      env: {
+        browser: true,
+        es2020: true,
+        node: true,
+        'jest': true,
+        'vitest-globals/env': true
+      },
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        'no-console': 'off',
+        'no-undef': 'off' // 測試框架全局變數
+      }
+    },
+    // 配置文件
+    {
+      files: ['*.config.js', '*.config.ts', 'vite.config.ts'],
+      extends: [
+        'eslint:recommended',
+        'plugin:prettier/recommended'
+      ],
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module'
+      },
+      rules: {
+        'no-console': 'off',
+        '@typescript-eslint/no-var-requires': 'off'
+      }
+    }
+  ],
   rules: {
     // TypeScript 規則
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

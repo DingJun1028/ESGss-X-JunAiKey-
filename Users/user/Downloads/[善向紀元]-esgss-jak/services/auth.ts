@@ -1,4 +1,5 @@
 // 身份驗證與授權服務 - M8安全治理模組
+import React from 'react';
 import { BehaviorSubject } from 'rxjs';
 
 // 用戶角色枚舉

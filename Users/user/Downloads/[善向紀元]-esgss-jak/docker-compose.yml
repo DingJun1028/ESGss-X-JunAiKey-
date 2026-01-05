@@ -1,24 +1,54 @@
-# version: '3.8'  # 已棄用，移除以避免警告
+# ESG Sunshine Universal System - 統一整合配置
+# 整合所有子系統：前端、後端、資料庫、AI服務等
 
 services:
-  # ESG儀表板前端
-  esg-dashboard:
+  # ===========================================
+  # API 網關 - 統一入口點
+  # ===========================================
+  api-gateway:
+    image: nginx:alpine
+    container_name: esg-api-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-gateway.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl/certs:ro
+    depends_on:
+      - esg-backend
+      - esg-api
+      - junaikeydb-backend
+      - shan-xiang-backend
+    networks:
+      - esg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================
+  # 前端應用
+  # ===========================================
+  esg-frontend:
     build:
       context: .
       dockerfile: Dockerfile
       target: runner
-    container_name: esg-dashboard
+    container_name: esg-frontend
     ports:
-      - "80:80"
-      - "443:443"
+      - "3000:80"
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=https://api.esg-dashboard.com
+      - VITE_API_URL=http://api-gateway:80/api
+      - VITE_JUNAIKEY_URL=http://api-gateway:80/junaikey
+      - VITE_SHANXIANG_URL=http://api-gateway:80/shanxiang
     volumes:
       - nginx_logs:/var/log/nginx
       - nginx_cache:/tmp/nginx_cache
     depends_on:
-      - esg-api
+      - api-gateway
     networks:
       - esg-network
     restart: unless-stopped
@@ -29,31 +59,138 @@ services:
       retries: 3
       start_period: 40s
 
-  # ESG API後端 (模擬)
-  esg-api:
-    image: node:20-alpine
-    container_name: esg-api
-    working_dir: /app
+  # ===========================================
+  # ESG 主後端服務器
+  # ===========================================
+  esg-backend:
+    build:
+      context: ./server
+      dockerfile: ../Dockerfile.backend
+    container_name: esg-backend
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=postgresql://esg_user:esg_password@esg-db:5432/esg_dashboard
-      - REDIS_URL=redis://esg-redis:6379
-      - JWT_SECRET=${JWT_SECRET:-default-jwt-secret}
-    volumes:
-      - ./api:/app
-      - /app/node_modules
-    command: sh -c "npm install && npm run build && npm start"
+      - DB_HOST=esg-db
+      - DB_PORT=5432
+      - DB_NAME=esg_db
+      - DB_USER=esg_user
+      - DB_PASSWORD=esg_password
+      - REDIS_HOST=esg-redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-esg-jwt-secret-key}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AITABLE_API_KEY=${AITABLE_API_KEY}
+      - STRAICO_API_KEY=${STRAICO_API_KEY}
+      - BOOSTSPACE_WEBHOOK_URL=${BOOSTSPACE_WEBHOOK_URL}
     depends_on:
-      - esg-db
-      - esg-redis
+      esg-db:
+        condition: service_healthy
+      esg-redis:
+        condition: service_healthy
+    networks:
+      - esg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # ESG API 服務器 (舊版兼容)
+  # ===========================================
+  esg-api:
+    build:
+      context: ./api
+      dockerfile: ../Dockerfile.backend
+    container_name: esg-api
+    ports:
+      - "3002:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=esg-db
+      - DB_PORT=5432
+      - DB_NAME=esg_db
+      - DB_USER=esg_user
+      - DB_PASSWORD=esg_password
+      - REDIS_HOST=esg-redis
+      - REDIS_PORT=6379
+    depends_on:
+      esg-db:
+        condition: service_healthy
     networks:
       - esg-network
     restart: unless-stopped
 
-  # PostgreSQL資料庫
+  # ===========================================
+  # JunAiKey 資料庫服務器
+  # ===========================================
+  junaikeydb-backend:
+    build:
+      context: ./junaikeydb-server
+      dockerfile: Dockerfile
+    container_name: junaikeydb-backend
+    ports:
+      - "3003:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgres://junaikeydb_admin:${DB_PASSWORD:-junaikeydb_secret}@junaikeydb-db:5432/junaikeydb_db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ADMIN_SECRET=${ADMIN_SECRET}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./junaikeydb-server/uploads:/app/uploads
+    depends_on:
+      - junaikeydb-db
+      - junaikeydb-redis
+    networks:
+      - esg-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Shan Xiang Tech AI 代理平台
+  # ===========================================
+  shan-xiang-backend:
+    build:
+      context: ./shan-xiang-tech
+      dockerfile: Dockerfile.api
+    container_name: shan-xiang-backend
+    ports:
+      - "3004:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - esg-network
+    restart: unless-stopped
+
+  # ===========================================
+  # JunAiKey CLI 工具 (作為服務運行)
+  # ===========================================
+  junaikey-cli:
+    build:
+      context: ./jun-ai-key
+      dockerfile: ../Dockerfile
+    container_name: junaikey-cli
+    command: ["node", "index.js", "--help"]
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - esg-network
+    profiles:
+      - tools  # 可選啟動
+
+  # ===========================================
+  # 資料庫服務
+  # ===========================================
+
+  # ESG 主資料庫
   esg-db:
     image: postgres:15-alpine
     container_name: esg-db
@@ -75,7 +212,28 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis快取
+  # JunAiKey 專用資料庫
+  junaikeydb-db:
+    image: pgvector/pgvector:pg16
+    container_name: junaikeydb-db
+    environment:
+      - POSTGRES_DB=junaikeydb_db
+      - POSTGRES_USER=junaikeydb_admin
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-junaikeydb_secret}
+    volumes:
+      - junaikeydb_postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5433:5432"
+    networks:
+      - esg-network
+    restart: unless-stopped
+
+  # ===========================================
+  # 快取服務
+  # ===========================================
+
+  # ESG Redis 快取
   esg-redis:
     image: redis:7-alpine
     container_name: esg-redis
@@ -92,6 +250,16 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+
+  # JunAiKey Redis 快取
+  junaikeydb-redis:
+    image: redis:alpine
+    container_name: junaikeydb-redis
+    ports:
+      - "6380:6379"
+    networks:
+      - esg-network
+    restart: unless-stopped
 
   # Nginx反向代理 (用於生產環境的多服務配置)
   esg-proxy:
@@ -133,79 +301,72 @@ services:
       - monitoring
 
   # 萬能智庫服務
-  junaikeydb-backend:
-    build: ./junaikeydb-server
-    container_name: junaikeydb-backend
-    restart: always
-    depends_on:
-      - junaikeydb-db
-      - junaikeydb-redis
-    environment:
-      PORT: 3000
-      DATABASE_URL: postgres://junaikeydb_admin:${DB_PASSWORD:-junaikeydb_secret}@junaikeydb-db:5432/junaikeydb_db
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      ADMIN_SECRET: ${ADMIN_SECRET}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+
+  # ===========================================
+  # 監控服務 (可選)
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: esg-prometheus
+    ports:
+      - "9090:9090"
     volumes:
-      - ./junaikeydb-server/uploads:/app/uploads
-    networks:
-      - esg-network
-  junaikeydb-db:
-    image: pgvector/pgvector:pg16
-    container_name: junaikeydb-db
-    environment:
-      POSTGRES_DB: junaikeydb_db
-      POSTGRES_USER: junaikeydb_admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-junaikeydb_secret}
-    volumes:
-      - junaikeydb_postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
     networks:
       - esg-network
     restart: unless-stopped
-  junaikeydb-redis:
-    image: redis:alpine
-    container_name: junaikeydb-redis
-    networks:
-      - esg-network
-    restart: unless-stopped
-  junaikeydb-worker:
-    build: ./junaikeydb-server
-    container_name: junaikeydb-worker
-    command: node worker.js
-    restart: always
-    depends_on:
-      - junaikeydb-backend
-      - junaikeydb-redis
-    environment:
-      DATABASE_URL: postgres://junaikeydb_admin:${DB_PASSWORD:-junaikeydb_secret}@junaikeydb-db:5432/junaikeydb_db
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-    networks:
-      - esg-network
-  junaikeydb-tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: junaikeydb-tunnel
-    restart: always
-    command: tunnel run
-    environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
-    networks:
-      - esg-network
     profiles:
-      - junaikeydb  # 可選啟動
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: esg-grafana
+    ports:
+      - "3005:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - esg-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
 
 volumes:
+  # 資料庫持久化
   postgres_data:
     driver: local
+  junaikeydb_postgres_data:
+    driver: local
+
+  # 快取持久化
   redis_data:
     driver: local
-  prometheus_data:
-    driver: local
+
+  # Web服務持久化
   nginx_logs:
     driver: local
   nginx_cache:
     driver: local
-  junaikeydb_postgres_data:
+
+  # 監控持久化
+  prometheus_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:

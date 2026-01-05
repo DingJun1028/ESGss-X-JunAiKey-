@@ -1,241 +1,354 @@
-
 import React, { useState, useMemo } from 'react';
-import { Language, AuditLogEntry } from '../types';
-import { ShieldCheck, Clock, Hash, Link as LinkIcon, AlertCircle, X, FileCheck, Calendar, User, Code, Search, Filter } from 'lucide-react';
+import { Language } from '../types';
+import {
+    ShieldCheck, Clock, Hash, Link as LinkIcon, AlertCircle, X,
+    FileCheck, Calendar, User, Code, Search, Filter, Eye,
+    Database, Lock, CheckCircle2, DollarSign, Link
+} from 'lucide-react';
 import { useCompany } from './providers/CompanyProvider';
 import { UniversalPageHeader } from './UniversalPageHeader';
 
-interface AuditTrailProps {
-  language: Language;
+interface AuditLog {
+    id: string;
+    timestamp: number;
+    action: string;
+    user: string;
+    details: string;
+    hash: string;
+    category: 'security' | 'data' | 'financial' | 'compliance' | 'system';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    blockchainHash?: string;
 }
 
-export const AuditTrail: React.FC<AuditTrailProps> = ({ language }) => {
-  const isZh = language === 'zh-TW';
-  const { auditLogs } = useCompany();
-  const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
+const SAMPLE_AUDIT_LOGS: AuditLog[] = [
+    {
+        id: 'log-1',
+        timestamp: Date.now() - 300000,
+        action: 'ESG數據更新',
+        user: 'system',
+        details: '環境指標數據已更新，Scope 1排放量: 125.4 tCO2e',
+        hash: '0x8f7a1b2c3d4e5f6789abcdef0123456789abcdef',
+        category: 'data',
+        severity: 'medium',
+        blockchainHash: '0xb1c2d3e4f567890123456789abcdef0123456789'
+    },
+    {
+        id: 'log-2',
+        timestamp: Date.now() - 600000,
+        action: '用戶登入',
+        user: 'jun',
+        details: '管理員用戶成功登入系統',
+        hash: '0x1a2b3c4d5e6f7890123456789abcdef0123456789',
+        category: 'security',
+        severity: 'low'
+    },
+    {
+        id: 'log-3',
+        timestamp: Date.now() - 900000,
+        action: '碳權交易',
+        user: 'system',
+        details: '購買100單位碳權，價值$8,500',
+        hash: '0x2b3c4d5e6f7890123456789abcdef0123456789',
+        category: 'financial',
+        severity: 'high',
+        blockchainHash: '0xc2d3e4f567890123456789abcdef0123456789'
+    },
+    {
+        id: 'log-4',
+        timestamp: Date.now() - 1200000,
+        action: '合規檢查',
+        user: 'compliance-bot',
+        details: 'GRI標準合規性檢查完成，所有指標均符合要求',
+        hash: '0x3c4d5e6f7890123456789abcdef0123456789',
+        category: 'compliance',
+        severity: 'medium'
+    }
+];
 
-  const pageData = {
-      title: { zh: '稽核軌跡', en: 'Audit Trail' },
-      desc: { zh: '區塊鏈驗證之不可篡改紀錄 (Linked to System Actions)', en: 'Blockchain Verified Immutable Logs' },
-      tag: { zh: '信任核心', en: 'Trust Core' }
-  };
+export const AuditTrail: React.FC<{ language: Language }> = ({ language }) => {
+    const isZh = language === 'zh-TW';
+    const { auditLogs: companyAuditLogs } = useCompany();
 
-  // Filter States
-  const [filterAction, setFilterAction] = useState('');
-  const [filterUser, setFilterUser] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  // Filtering Logic
-  const filteredLogs = useMemo(() => {
-    return auditLogs.filter(log => {
-      const matchAction = log.action.toLowerCase().includes(filterAction.toLowerCase());
-      const matchUser = log.user.toLowerCase().includes(filterUser.toLowerCase());
-      
-      let matchDate = true;
-      if (startDate) {
-        matchDate = matchDate && log.timestamp >= new Date(startDate).setHours(0,0,0,0);
-      }
-      if (endDate) {
-        matchDate = matchDate && log.timestamp <= new Date(endDate).setHours(23,59,59,999);
-      }
-
-      return matchAction && matchUser && matchDate;
+    const [logs] = useState<AuditLog[]>(SAMPLE_AUDIT_LOGS);
+    const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+    const [filter, setFilter] = useState({
+        category: 'all',
+        severity: 'all',
+        search: ''
     });
-  }, [auditLogs, filterAction, filterUser, startDate, endDate]);
 
-  // If logs are empty (total), show a placeholder
-  const hasLogs = auditLogs.length > 0;
+    // Combine company audit logs with sample logs
+    const allLogs = useMemo(() => {
+        return [...logs, ...companyAuditLogs.map(log => ({
+            id: log.id,
+            timestamp: log.timestamp,
+            action: log.action,
+            user: log.user,
+            details: log.details,
+            hash: log.hash,
+            category: 'system' as const,
+            severity: 'medium' as const,
+            blockchainHash: log.hash.startsWith('0x') ? log.hash : undefined
+        }))];
+    }, [logs, companyAuditLogs]);
 
-  return (
-    <div className="space-y-8 animate-fade-in relative pb-12">
-        <UniversalPageHeader 
-            icon={ShieldCheck}
-            title={pageData.title}
-            description={pageData.desc}
-            language={language}
-            tag={pageData.tag}
-        />
+    const filteredLogs = useMemo(() => {
+        return allLogs.filter(log => {
+            const matchesCategory = filter.category === 'all' || log.category === filter.category;
+            const matchesSeverity = filter.severity === 'all' || log.severity === filter.severity;
+            const matchesSearch = !filter.search ||
+                log.action.toLowerCase().includes(filter.search.toLowerCase()) ||
+                log.details.toLowerCase().includes(filter.search.toLowerCase()) ||
+                log.user.toLowerCase().includes(filter.search.toLowerCase());
 
-        {/* Filter Bar */}
-        {hasLogs && (
-            <div className="glass-panel p-4 rounded-xl border border-white/10 flex flex-col md:flex-row gap-4 items-center">
-                <div className="flex items-center gap-2 text-gray-400 text-sm font-bold uppercase tracking-wider shrink-0">
-                    <Filter className="w-4 h-4" />
-                    {isZh ? '篩選' : 'Filter'}
-                </div>
-                
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-                        <input 
-                            type="text" 
-                            placeholder={isZh ? "搜尋動作..." : "Filter by Action..."}
-                            value={filterAction}
-                            onChange={(e) => setFilterAction(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:ring-1 focus:ring-celestial-emerald outline-none transition-all placeholder-gray-600"
-                        />
-                    </div>
-                    <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-                        <input 
-                            type="text" 
-                            placeholder={isZh ? "搜尋使用者..." : "Filter by User..."}
-                            value={filterUser}
-                            onChange={(e) => setFilterUser(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:ring-1 focus:ring-celestial-emerald outline-none transition-all placeholder-gray-600"
-                        />
-                    </div>
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-                        <input 
-                            type="date" 
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:ring-1 focus:ring-celestial-emerald outline-none [color-scheme:dark] placeholder-gray-600"
-                            placeholder={isZh ? "開始日期" : "Start Date"}
-                        />
-                    </div>
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-                        <input 
-                            type="date" 
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:ring-1 focus:ring-celestial-emerald outline-none [color-scheme:dark] placeholder-gray-600"
-                            placeholder={isZh ? "結束日期" : "End Date"}
-                        />
-                    </div>
-                </div>
-                
-                {(filterAction || filterUser || startDate || endDate) && (
-                    <button 
-                        onClick={() => { setFilterAction(''); setFilterUser(''); setStartDate(''); setEndDate(''); }}
-                        className="px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 rounded-lg transition-colors whitespace-nowrap"
-                    >
-                        {isZh ? '清除' : 'Clear'}
-                    </button>
-                )}
+            return matchesCategory && matchesSeverity && matchesSearch;
+        });
+    }, [allLogs, filter]);
+
+    const getCategoryIcon = (category: string) => {
+        switch (category) {
+            case 'security': return <ShieldCheck className="w-4 h-4" />;
+            case 'data': return <Database className="w-4 h-4" />;
+            case 'financial': return <DollarSign className="w-4 h-4" />;
+            case 'compliance': return <FileCheck className="w-4 h-4" />;
+            case 'system': return <Code className="w-4 h-4" />;
+            default: return <Clock className="w-4 h-4" />;
+        }
+    };
+
+    const getSeverityColor = (severity: string) => {
+        switch (severity) {
+            case 'critical': return 'text-rose-400 border-rose-500/30';
+            case 'high': return 'text-orange-400 border-orange-500/30';
+            case 'medium': return 'text-amber-400 border-amber-500/30';
+            case 'low': return 'text-emerald-400 border-emerald-500/30';
+            default: return 'text-gray-400 border-gray-500/30';
+        }
+    };
+
+    const formatTimestamp = (timestamp: number) => {
+        return new Date(timestamp).toLocaleString();
+    };
+
+    const truncateHash = (hash: string) => {
+        if (hash.length <= 12) return hash;
+        return `${hash.slice(0, 6)}...${hash.slice(-6)}`;
+    };
+
+    return (
+        <div className="h-full flex flex-col min-h-0 overflow-hidden space-y-2">
+            <div className="shrink-0 pb-1 border-b border-white/5">
+                <UniversalPageHeader
+                    icon={ShieldCheck}
+                    title={{ zh: '稽核軌跡 (Audit Trail)', en: 'Audit Trail' }}
+                    description={{ zh: '區塊鏈哈希流與不可變操作日誌', en: 'Blockchain Hashes & Immutable Operation Logs.' }}
+                    language={language}
+                    tag={{ zh: '區塊鏈 v4.2', en: 'BLOCKCHAIN_v4.2' }}
+                />
             </div>
-        )}
 
-        <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 min-h-[400px]">
-            {!hasLogs ? (
-                <div className="flex flex-col items-center justify-center h-[400px] text-gray-500">
-                    <AlertCircle className="w-12 h-12 mb-4 opacity-50" />
-                    <p>{isZh ? '尚無稽核紀錄。請執行系統操作（如修改設定、生成報告）以產生紀錄。' : 'No audit logs found. Perform system actions (e.g., change settings, generate reports) to create logs.'}</p>
-                </div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider border-b border-white/10">
-                                <th className="p-4 pl-6 font-medium whitespace-nowrap">{isZh ? '時間戳記' : 'Timestamp'}</th>
-                                <th className="p-4 font-medium whitespace-nowrap">{isZh ? '動作' : 'Action'}</th>
-                                <th className="p-4 font-medium whitespace-nowrap">{isZh ? '使用者' : 'User'}</th>
-                                <th className="p-4 font-medium w-1/3">{isZh ? '詳情' : 'Details'}</th>
-                                <th className="p-4 font-medium whitespace-nowrap">{isZh ? '雜湊值 (Hash)' : 'Hash'}</th>
-                                <th className="p-4 font-medium text-right pr-6 whitespace-nowrap">{isZh ? '驗證' : 'Verification'}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-sm divide-y divide-white/5">
-                            {filteredLogs.length > 0 ? (
-                                filteredLogs.map((log) => (
-                                    <tr 
-                                        key={log.id} 
-                                        className="hover:bg-white/5 transition-colors group cursor-pointer"
-                                        onClick={() => setSelectedLog(log)}
-                                    >
-                                        <td className="p-4 pl-6 text-gray-300 flex items-center gap-2 whitespace-nowrap">
-                                            <Clock className="w-3 h-3 text-gray-500" />
-                                            {new Date(log.timestamp).toLocaleTimeString()} <span className="text-xs text-gray-500">{new Date(log.timestamp).toLocaleDateString()}</span>
-                                        </td>
-                                        <td className="p-4 font-medium text-white whitespace-nowrap">{log.action}</td>
-                                        <td className="p-4 text-celestial-purple whitespace-nowrap">{log.user}</td>
-                                        <td className="p-4 text-gray-300 break-words max-w-xs">{log.details}</td>
-                                        <td className="p-4 font-mono text-xs text-gray-500 flex items-center gap-1 whitespace-nowrap">
-                                            <Hash className="w-3 h-3" />
-                                            {log.hash.substring(0, 8)}...{log.hash.substring(log.hash.length-4)}
-                                        </td>
-                                        <td className="p-4 text-right pr-6 whitespace-nowrap">
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
-                                                <LinkIcon className="w-3 h-3" /> Verified
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={6} className="p-12 text-center text-gray-500">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Search className="w-8 h-8 opacity-20" />
-                                            <p>{isZh ? '無符合篩選條件的紀錄' : 'No logs match your filters.'}</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
-
-        {/* Certificate Modal */}
-        {selectedLog && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedLog(null)}>
-                <div 
-                    className="w-full max-w-lg bg-white text-black rounded-2xl overflow-hidden shadow-2xl relative"
-                    onClick={e => e.stopPropagation()}
-                >
-                    {/* Header Design */}
-                    <div className="h-2 bg-gradient-to-r from-emerald-500 to-blue-500" />
-                    <button onClick={() => setSelectedLog(null)} className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-gray-500" />
-                    </button>
-
-                    <div className="p-8 text-center">
-                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-emerald-100">
-                            <FileCheck className="w-8 h-8 text-emerald-600" />
+            <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden">
+                {/* 1. 篩選器與統計 (3/12) */}
+                <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
+                    <div className="glass-bento p-4 bg-slate-950 border-white/10 rounded-[2rem] text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-full flex items-center justify-center">
+                            <Lock className="w-8 h-8 text-white" />
                         </div>
-                        
-                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-1">Digital Certificate of Authenticity</h3>
-                        <p className="text-gray-500 text-sm uppercase tracking-widest mb-8">Secured by JunAiKey Chain</p>
+                        <h3 className="text-lg font-bold text-white mb-1">{isZh ? '總日誌數' : 'Total Logs'}</h3>
+                        <div className="text-3xl font-mono font-black text-white mb-2">{allLogs.length}</div>
+                        <div className="text-sm text-gray-400">{isZh ? '不可變記錄' : 'Immutable Records'}</div>
+                    </div>
 
-                        <div className="space-y-4 text-left border-t border-b border-gray-100 py-6">
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-xs font-bold uppercase flex items-center gap-2"><Calendar className="w-3 h-3"/> Timestamp</span>
-                                <span className="font-mono text-sm">{new Date(selectedLog.timestamp).toISOString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-xs font-bold uppercase flex items-center gap-2"><User className="w-3 h-3"/> Signer</span>
-                                <span className="font-mono text-sm">{selectedLog.user}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-xs font-bold uppercase flex items-center gap-2"><ShieldCheck className="w-3 h-3"/> Action Type</span>
-                                <span className="font-bold text-sm bg-gray-100 px-2 py-1 rounded">{selectedLog.action}</span>
-                            </div>
+                    {/* 篩選器 */}
+                    <div className="glass-bento p-4 bg-slate-900/60 border-white/10 rounded-[2rem] space-y-4">
+                        <div className="flex items-center gap-2 text-sm font-bold text-white">
+                            <Filter className="w-4 h-4 text-blue-400" />
+                            {isZh ? '篩選器' : 'Filters'}
+                        </div>
+
+                        <div className="space-y-3">
                             <div>
-                                <span className="text-gray-500 text-xs font-bold uppercase flex items-center gap-2 mb-1"><Code className="w-3 h-3"/> Transaction Hash</span>
-                                <div className="font-mono text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100 break-all">
-                                    {selectedLog.hash}
+                                <label className="text-[10px] text-gray-500 uppercase font-black mb-2 block">{isZh ? '類別' : 'Category'}</label>
+                                <select
+                                    value={filter.category}
+                                    onChange={(e) => setFilter(prev => ({ ...prev, category: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-blue-500/50 focus:outline-none"
+                                >
+                                    <option value="all">{isZh ? '全部' : 'All'}</option>
+                                    <option value="security">{isZh ? '安全' : 'Security'}</option>
+                                    <option value="data">{isZh ? '數據' : 'Data'}</option>
+                                    <option value="financial">{isZh ? '財務' : 'Financial'}</option>
+                                    <option value="compliance">{isZh ? '合規' : 'Compliance'}</option>
+                                    <option value="system">{isZh ? '系統' : 'System'}</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase font-black mb-2 block">{isZh ? '嚴重性' : 'Severity'}</label>
+                                <select
+                                    value={filter.severity}
+                                    onChange={(e) => setFilter(prev => ({ ...prev, severity: e.target.value }))}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-blue-500/50 focus:outline-none"
+                                >
+                                    <option value="all">{isZh ? '全部' : 'All'}</option>
+                                    <option value="critical">{isZh ? '關鍵' : 'Critical'}</option>
+                                    <option value="high">{isZh ? '高' : 'High'}</option>
+                                    <option value="medium">{isZh ? '中' : 'Medium'}</option>
+                                    <option value="low">{isZh ? '低' : 'Low'}</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase font-black mb-2 block">{isZh ? '搜尋' : 'Search'}</label>
+                                <div className="relative">
+                                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={filter.search}
+                                        onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
+                                        placeholder={isZh ? '搜尋操作...' : 'Search actions...'}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-2 text-white text-sm focus:border-blue-500/50 focus:outline-none"
+                                    />
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div className="mt-8 flex items-center justify-between">
-                            {/* Simulated QR Code */}
-                            <div className="w-16 h-16 bg-gray-900 text-white flex items-center justify-center text-[8px] font-mono leading-none break-all p-1">
-                                {selectedLog.hash.substring(0,64)}
+                {/* 2. 日誌列表 (6/12) */}
+                <div className="col-span-12 lg:col-span-6 flex flex-col gap-3 min-h-0 overflow-hidden">
+                    <div className="glass-bento p-5 flex flex-col bg-slate-950 border-white/10 min-h-0 rounded-[2rem]">
+                        <div className="flex justify-between items-center mb-6 shrink-0">
+                            <h3 className="zh-main text-[11px] text-white uppercase flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-emerald-400" /> Immutable_Audit_Logs</h3>
+                            <div className="text-sm text-gray-400">
+                                {isZh ? '顯示' : 'Showing'} {filteredLogs.length} {isZh ? '條記錄' : 'records'}
                             </div>
-                            <div className="text-right">
-                                <div className="text-emerald-600 font-bold font-serif text-lg">Verified</div>
-                                <div className="text-xs text-gray-400">Block Height: #{Math.floor(selectedLog.timestamp / 10000)}</div>
-                            </div>
+                        </div>
+
+                        <div className="flex-1 min-h-0 overflow-auto space-y-3">
+                            {filteredLogs.map(log => (
+                                <div
+                                    key={log.id}
+                                    className={`glass-bento p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.01] cursor-pointer group ${
+                                        selectedLog?.id === log.id
+                                            ? 'border-white/30 bg-white/5'
+                                            : 'border-white/10 bg-slate-900/40'
+                                    }`}
+                                    onClick={() => setSelectedLog(log)}
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-start gap-3">
+                                            <div className={`p-2 rounded-xl ${getSeverityColor(log.severity)}`}>
+                                                {getCategoryIcon(log.category)}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
+                                                    {log.action}
+                                                </h4>
+                                                <div className="text-[10px] text-gray-500 uppercase font-black mt-1">
+                                                    {log.user} • {formatTimestamp(log.timestamp)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[8px] text-gray-500 uppercase font-black mb-1">
+                                                {log.severity}
+                                            </div>
+                                            {log.blockchainHash && (
+                                                <div className="flex items-center gap-1 text-[8px] text-emerald-400 uppercase font-black">
+                                                    <Link className="w-3 h-3" />
+                                                    {isZh ? '鏈上' : 'On-chain'}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <p className="text-[11px] text-gray-400 mb-3 line-clamp-2">{log.details}</p>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-[10px] font-mono text-gray-500">
+                                            Hash: {truncateHash(log.hash)}
+                                        </div>
+                                        <button className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
+                                            <Eye className="w-3 h-3" />
+                                            {isZh ? '詳情' : 'Details'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
+
+                {/* 3. 日誌詳情與區塊鏈驗證 (3/12) */}
+                <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-hidden">
+                    {selectedLog ? (
+                        <div className="flex-1 glass-bento p-4 flex flex-col bg-slate-900/60 border-white/10 min-h-0 rounded-[2rem]">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className={`p-2 rounded-xl ${getSeverityColor(selectedLog.severity)}`}>
+                                    {getCategoryIcon(selectedLog.category)}
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-white">{selectedLog.action}</h4>
+                                    <div className="text-[10px] text-gray-500 uppercase font-black">{selectedLog.category}</div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 space-y-4">
+                                <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-black mb-2">{isZh ? '操作詳情' : 'Action Details'}</div>
+                                    <p className="text-[11px] text-gray-300 leading-relaxed">{selectedLog.details}</p>
+                                </div>
+
+                                <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-black mb-2">{isZh ? '執行者' : 'Executed By'}</div>
+                                    <div className="text-sm font-mono text-white">{selectedLog.user}</div>
+                                    <div className="text-[10px] text-gray-500 mt-1">{formatTimestamp(selectedLog.timestamp)}</div>
+                                </div>
+
+                                <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-black mb-2">{isZh ? '嚴重性等級' : 'Severity Level'}</div>
+                                    <div className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${getSeverityColor(selectedLog.severity)}`}>
+                                        {selectedLog.severity}
+                                    </div>
+                                </div>
+
+                                {selectedLog.blockchainHash && (
+                                    <div>
+                                        <div className="text-[10px] text-gray-500 uppercase font-black mb-2">{isZh ? '區塊鏈驗證' : 'Blockchain Verification'}</div>
+                                        <div className="bg-black/40 rounded-xl p-3 border border-emerald-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                                <div className="text-[10px] font-bold text-emerald-400 uppercase">{isZh ? '已驗證' : 'Verified'}</div>
+                                            </div>
+                                            <div className="text-[8px] font-mono text-gray-400 break-all">
+                                                {selectedLog.blockchainHash}
+                                            </div>
+                                            <div className="text-[8px] text-emerald-400 mt-2 uppercase font-black">
+                                                {isZh ? '此記錄已永久存儲在區塊鏈上' : 'This record is permanently stored on blockchain'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-black mb-2">{isZh ? '數據完整性哈希' : 'Data Integrity Hash'}</div>
+                                    <div className="bg-black/40 rounded-xl p-3 border border-white/10">
+                                        <div className="text-[8px] font-mono text-gray-400 break-all">
+                                            {selectedLog.hash}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex-1 glass-bento p-4 flex flex-col items-center justify-center bg-slate-900/40 border-white/5 min-h-0 rounded-[2rem] text-center">
+                            <FileCheck className="w-12 h-12 text-gray-600 mb-4" />
+                            <div className="text-sm text-gray-500">{isZh ? '選擇一個日誌查看詳情' : 'Select a log to view details'}</div>
+                        </div>
+                    )}
+                </div>
             </div>
-        )}
-    </div>
-  );
+        </div>
+    );
 };

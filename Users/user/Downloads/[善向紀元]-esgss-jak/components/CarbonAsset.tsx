@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { OmniEsgCell } from './OmniEsgCell';
 import { Language } from '../types';
-import { 
-    Leaf, TrendingUp, PieChart, MapPin, Loader2, Zap, Calculator, 
-    Fuel, Save, DollarSign, AlertTriangle, Cloud, RefreshCw, 
-    ExternalLink, Wand2, Power, Link as LinkIcon, Radio, ChevronRight, Activity, Globe, Search, Database, AlertCircle, 
+import {
+    Leaf, TrendingUp, PieChart, MapPin, Loader2, Zap, Calculator,
+    Fuel, Save, DollarSign, AlertTriangle, Cloud, RefreshCw,
+    ExternalLink, Wand2, Power, Link as LinkIcon, Radio, ChevronRight, Activity, Globe, Search, Database, AlertCircle,
     Flame, Sparkles, Heart
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -21,17 +20,20 @@ import { UniversalPageHeader } from './UniversalPageHeader';
 import { z } from 'zod';
 
 const EMISSION_DATA = [
-  { name: 'Jan', scope1: 120, scope3: 300 }, { name: 'Feb', scope1: 115, scope3: 290 },
-  { name: 'Mar', scope1: 130, scope3: 310 }, { name: 'Apr', scope1: 110, scope3: 280 },
-  { name: 'May', scope1: 105, scope3: 270 }, { name: 'Jun', scope1: 100, scope3: 260 },
+  { name: 'Jan', scope1: 120, scope2: 250, scope3: 300 },
+  { name: 'Feb', scope1: 115, scope2: 245, scope3: 290 },
+  { name: 'Mar', scope1: 130, scope2: 260, scope3: 310 },
+  { name: 'Apr', scope1: 110, scope2: 240, scope3: 280 },
+  { name: 'May', scope1: 105, scope2: 235, scope3: 270 },
+  { name: 'Jun', scope1: 100, scope2: 230, scope3: 260 },
 ];
 
 export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
   const isZh = language === 'zh-TW';
   const { addToast } = useToast();
-  const { carbonData, updateCarbonData, awardXp, addJournalEntry } = useCompany();
+  const { carbonData, updateCarbonData, awardXp, addJournalEntry, budget, setBudget, carbonCredits, setCarbonCredits, addAuditLog } = useCompany();
   const { observeAction } = useUniversalAgent();
-  
+
   const [mapQuery, setMapQuery] = useState('');
   const [isMapping, setIsMapping] = useState(false);
   const [mapResult, setMapResult] = useState<{text: string, sources?: any[]} | null>(null);
@@ -40,6 +42,11 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
   const [fuelInput, setFuelInput] = useState(carbonData.fuelConsumption);
   const [elecInput, setElecInput] = useState(carbonData.electricityConsumption);
   const [inputErrors, setInputErrors] = useState<Record<string, string>>({});
+
+  // Trading state
+  const [isTrading, setIsTrading] = useState(false);
+  const [tradeAmount, setTradeAmount] = useState(100);
+  const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
 
   // Alchemistry state
   const [isTransmuting, setIsTransmuting] = useState(false);
@@ -64,10 +71,10 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
   const calculateEmissions = async () => {
       setInputErrors({});
       const result = carbonSchema.safeParse({ fuel: fuelInput, electricity: elecInput });
-      
+
       if (!result.success) {
           const fieldErrors: Record<string, string> = {};
-          result.error.errors.forEach(err => {
+          result.error.issues.forEach(err => {
               if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
           });
           setInputErrors(fieldErrors);
@@ -87,7 +94,7 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
       setIsTransmuting(true);
       setAlchResult(null);
       addToast('info', isZh ? '啟動「原罪煉金」減碳演算序列...' : 'Initiating Sins Transmutation...', 'Alchemist');
-      
+
       try {
           const res = await runMcpAction('carbon_reduction_calculation', {
               currentUsage: elecInput,
@@ -119,7 +126,7 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
   return (
     <div className="h-full flex flex-col min-h-0 overflow-hidden space-y-2">
         <div className="shrink-0 pb-1 border-b border-white/5">
-            <UniversalPageHeader 
+            <UniversalPageHeader
                 icon={Leaf}
                 title={{ zh: '碳資產全方位管控 (Inventory)', en: 'Carbon Asset Command' }}
                 description={{ zh: '即時排放監控與影子定價一覽全方位', en: 'Inventory & Pricing Matrix: At-a-glance carbon governance.' }}
@@ -129,7 +136,7 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
         </div>
 
         <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden">
-            
+
             {/* 1. 排放流矩陣 & 煉金氣泡 (6/12) */}
             <div className="col-span-12 lg:col-span-6 flex flex-col gap-3 min-h-0 overflow-hidden">
                 {/* 減碳成就氣泡 */}
@@ -172,6 +179,7 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
                         <h3 className="zh-main text-[11px] text-white uppercase flex items-center gap-2"><PieChart className="w-3.5 h-3.5 text-emerald-400" /> Emissions_Flow_Matrix</h3>
                         <div className="flex gap-4">
                             <div className="flex items-center gap-1 text-[8px] font-black uppercase text-gray-500"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Scope 1</div>
+                            <div className="flex items-center gap-1 text-[8px] font-black uppercase text-gray-500"><div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Scope 2</div>
                             <div className="flex items-center gap-1 text-[8px] font-black uppercase text-gray-500"><div className="w-1.5 h-1.5 rounded-full bg-celestial-gold" /> Scope 3</div>
                         </div>
                     </div>
@@ -180,6 +188,7 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
                             <AreaChart data={EMISSION_DATA} margin={{ top: 5, right: 5, left: -30, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorS1" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
+                                    <linearGradient id="colorS2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
                                     <linearGradient id="colorS3" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#fbbf24" stopOpacity={0.2}/><stop offset="95%" stopColor="#fbbf24" stopOpacity={0}/></linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.02)" vertical={false} />
@@ -187,6 +196,7 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
                                 <YAxis stroke="#334155" fontSize={8} tickLine={false} axisLine={false} />
                                 <Tooltip contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', fontSize: '9px' }} />
                                 <Area type="monotone" dataKey="scope1" stackId="1" stroke="#10b981" fill="url(#colorS1)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="scope2" stackId="1" stroke="#3b82f6" fill="url(#colorS2)" strokeWidth={2} />
                                 <Area type="monotone" dataKey="scope3" stackId="1" stroke="#fbbf24" fill="url(#colorS3)" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
@@ -237,11 +247,77 @@ export const CarbonAsset: React.FC<{ language: Language }> = ({ language }) => {
                             </div>
                         </div>
                         <div className="bg-celestial-gold/5 border border-celestial-gold/20 rounded-3xl p-6 text-center shadow-2xl relative overflow-hidden h-full flex flex-col justify-center">
-                            <div className="text-[9px] font-black text-celestial-gold uppercase tracking-widest mb-1 opacity-60">Estimated_Internal_Fund</div>
-                            <div className="text-4xl font-mono font-black text-white tracking-tighter">
-                                ${((carbonData.scope1 + carbonData.scope2) * shadowPrice).toLocaleString()}
+                            <div className="text-[9px] font-black text-celestial-gold uppercase tracking-widest mb-1 opacity-60">Carbon_Trading_Hub</div>
+                            <div className="text-2xl font-mono font-black text-white tracking-tighter mb-2">
+                                {carbonCredits.toLocaleString()} Credits
                             </div>
-                            <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-emerald-400 font-bold uppercase"><Activity className="w-3.5 h-3.5" /> Potential Re-investment</div>
+                            <div className="text-[9px] font-black text-celestial-gold/60 uppercase tracking-widest mb-3">Budget: ${budget.toLocaleString()}</div>
+
+                            {/* Trading Controls */}
+                            <div className="space-y-3 w-full">
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setTradeType('buy')}
+                                        className={`flex-1 py-2 px-3 text-[8px] font-black uppercase rounded-xl transition-all ${
+                                            tradeType === 'buy'
+                                                ? 'bg-emerald-500 text-black shadow-lg'
+                                                : 'bg-white/10 text-white hover:bg-white/20'
+                                        }`}
+                                    >
+                                        BUY
+                                    </button>
+                                    <button
+                                        onClick={() => setTradeType('sell')}
+                                        className={`flex-1 py-2 px-3 text-[8px] font-black uppercase rounded-xl transition-all ${
+                                            tradeType === 'sell'
+                                                ? 'bg-rose-500 text-black shadow-lg'
+                                                : 'bg-white/10 text-white hover:bg-white/20'
+                                        }`}
+                                    >
+                                        SELL
+                                    </button>
+                                </div>
+
+                                <input
+                                    type="number"
+                                    value={tradeAmount}
+                                    onChange={(e) => setTradeAmount(Number(e.target.value))}
+                                    className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-center text-white text-sm font-mono"
+                                    placeholder="Amount"
+                                    min="1"
+                                />
+
+                                <button
+                                    onClick={() => {
+                                        const cost = tradeAmount * shadowPrice;
+                                        if (tradeType === 'buy') {
+                                            if (budget >= cost) {
+                                                setBudget(budget - cost);
+                                                setCarbonCredits(carbonCredits + tradeAmount);
+                                                addAuditLog(`碳權購買: ${tradeAmount} 單位`, `成本: ${cost}`);
+                                                addToast('success', `購買 ${tradeAmount} 碳權成功!`, 'Trading');
+                                                awardXp(50);
+                                            } else {
+                                                addToast('error', '預算不足!', 'Error');
+                                            }
+                                        } else {
+                                            if (carbonCredits >= tradeAmount) {
+                                                setBudget(budget + cost);
+                                                setCarbonCredits(carbonCredits - tradeAmount);
+                                                addAuditLog(`碳權出售: ${tradeAmount} 單位`, `收入: ${cost}`);
+                                                addToast('success', `出售 ${tradeAmount} 碳權成功!`, 'Trading');
+                                                awardXp(30);
+                                            } else {
+                                                addToast('error', '碳權餘額不足!', 'Error');
+                                            }
+                                        }
+                                    }}
+                                    disabled={isTrading || tradeAmount <= 0}
+                                    className="w-full py-3 bg-celestial-gold text-black font-black text-[10px] uppercase rounded-xl shadow-lg hover:bg-celestial-gold/80 disabled:opacity-50 transition-all"
+                                >
+                                    {tradeType === 'buy' ? `買入 ${(tradeAmount * shadowPrice).toLocaleString()}` : `賣出 ${(tradeAmount * shadowPrice).toLocaleString()}`}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

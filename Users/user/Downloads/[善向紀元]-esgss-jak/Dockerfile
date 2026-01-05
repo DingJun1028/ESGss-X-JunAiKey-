@@ -11,7 +11,7 @@ COPY package*.json ./
 COPY .npmrc* ./
 
 # 安裝依賴並清理快取
-RUN npm ci --only=production --no-audit --no-fund && npm cache clean --force
+RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # 建構階段 - 分離依賴和源碼
 FROM base AS builder

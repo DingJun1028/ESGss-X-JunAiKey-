@@ -35,7 +35,7 @@ const InfoBlock = ({ title, icon: Icon, color, children, tag, className = "" }: 
     </div>
 );
 
-export const MyEsg: React.FC<{ language: Language; onNavigate: (view: View) => void }> = ({ language, onNavigate }) => {
+export const MyEsg: React.FC<{ language: Language; onNavigate: (view: View | string) => void }> = ({ language, onNavigate }) => {
   const { userName, xp, level, awardXp, updateGoodwillBalance, esgScores, totalScore, goodwillBalance } = useCompany();
   const { traits, updateTraits } = useUniversalAgent();
   const { addToast } = useToast();

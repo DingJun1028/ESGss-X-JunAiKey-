@@ -17,7 +17,7 @@ import { usePermissions } from '../hooks/usePermissions';
 
 interface LayoutProps {
   currentView: View;
-  onNavigate: (view: View) => void;
+  onNavigate: (view: string | View) => void;
   children: React.ReactNode;
   language: Language;
   onToggleLanguage: () => void;
@@ -47,6 +47,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { sector: 'CMD', id: View.MY_ESG, icon: Home, label: isZh ? '北極星' : 'Cockpit', permission: Permission.VIEW_MY_ESG },
     { sector: 'CMD', id: View.HYPERCUBE_LAB, icon: Binary, label: isZh ? 'AI 實驗室' : 'AI Lab', permission: Permission.VIEW_UNIVERSAL_AGENT },
     { sector: 'CMD', id: View.CARD_GAME_ARENA_NEW, icon: Target, label: isZh ? 'ESG競技場' : 'ESG Arena', permission: Permission.VIEW_DASHBOARD },
+    { sector: 'CMD', id: View.CARD_ARENA, icon: Sparkles, label: isZh ? '萬能卡牌' : 'Omni Cards', permission: Permission.VIEW_DASHBOARD },
     { sector: 'CMD', id: View.FINANCE, icon: DollarSign, label: isZh ? '財務' : 'Finance', permission: Permission.VIEW_DASHBOARD },
     { sector: 'CMD', id: View.CARBON_WALLET, icon: Wallet, label: isZh ? '碳錢包' : 'Wallet', permission: Permission.VIEW_DASHBOARD },
     { sector: 'CMD', id: View.BUSINESS_INTEL, icon: Globe, label: isZh ? 'AMICE' : 'AMICE', permission: Permission.VIEW_RESEARCH_HUB },

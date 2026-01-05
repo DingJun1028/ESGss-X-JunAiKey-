@@ -1,224 +1,196 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Language } from '../types';
-import { Coins, ArrowUpRight, ArrowDownLeft, ShoppingBag, Package, Sparkles, AlertCircle, Loader2, Wallet, CreditCard, TrendingUp, Star } from 'lucide-react';
-import { OmniEsgCell } from './OmniEsgCell';
+import {
+    Coins, Wallet, Send, ArrowDown, ArrowUp, History,
+    TrendingUp, Shield, Zap, Users, DollarSign
+} from 'lucide-react';
 import { useCompany } from './providers/CompanyProvider';
-import { useToast } from '../contexts/ToastContext';
-import { getEsgCards } from '../constants';
-import { withUniversalProxy, InjectedProxyProps } from './hoc/withUniversalProxy';
 import { UniversalPageHeader } from './UniversalPageHeader';
-import { useUniversalAgent } from '../contexts/UniversalAgentContext';
 
-interface GoodwillCoinProps {
-  language: Language;
+interface Transaction {
+    id: string;
+    type: 'received' | 'sent' | 'earned' | 'spent';
+    amount: number;
+    description: string;
+    timestamp: number;
+    counterparty?: string;
 }
 
-interface VaultAgentProps extends InjectedProxyProps {
-    goodwillBalance: number;
-    isZh: boolean;
-    handleTransaction: (type: 'send' | 'receive') => void;
-    isTransacting: boolean;
-    openingPack: boolean;
-    luckFactor: number; // 傳入幸運係數
-}
+const SAMPLE_TRANSACTIONS: Transaction[] = [
+    {
+        id: 'tx-1',
+        type: 'earned',
+        amount: 150,
+        description: '完成碳資產分析任務',
+        timestamp: Date.now() - 3600000,
+        counterparty: '系統'
+    },
+    {
+        id: 'tx-2',
+        type: 'spent',
+        amount: -50,
+        description: '購買AI洞察服務',
+        timestamp: Date.now() - 7200000,
+        counterparty: 'AI服務'
+    },
+    {
+        id: 'tx-3',
+        type: 'received',
+        amount: 200,
+        description: 'ESG改善獎勵',
+        timestamp: Date.now() - 10800000,
+        counterparty: '系統'
+    }
+];
 
-const VaultAgentBase: React.FC<VaultAgentProps> = ({ 
-    goodwillBalance, isZh, handleTransaction, isTransacting, openingPack, luckFactor,
-    adaptiveTraits, trackInteraction 
-}) => {
+export const GoodwillCoin: React.FC<{ language: Language }> = ({ language }) => {
+    const isZh = language === 'zh-TW';
+    const { goodwillBalance, updateGoodwillBalance, addAuditLog } = useCompany();
+
+    const [transactions] = useState<Transaction[]>(SAMPLE_TRANSACTIONS);
+    const [transferAmount, setTransferAmount] = useState('');
+    const [recipient, setRecipient] = useState('');
+    const [isTransferring, setIsTransferring] = useState(false);
+
+    const handleTransfer = async () => {
+        const amount = parseInt(transferAmount);
+        if (!amount || amount <= 0 || amount > goodwillBalance || !recipient.trim()) return;
+
+        setIsTransferring(true);
+        // Simulate transfer
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        updateGoodwillBalance(-amount);
+        addAuditLog(`轉帳善意幣`, `轉給 ${recipient} ${amount} GWC`);
+
+        setTransferAmount('');
+        setRecipient('');
+        setIsTransferring(false);
+    };
+
+    const totalEarned = transactions.filter(tx => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0);
+    const totalSpent = Math.abs(transactions.filter(tx => tx.amount < 0).reduce((sum, tx) => sum + tx.amount, 0));
+
     return (
-        <div className="glass-panel p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col justify-between relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Coins className="w-32 h-32 text-white" />
-            </div>
-            
-            <div className="relative z-10">
-                <div className="flex justify-between items-start mb-6">
-                    <div className="p-3 rounded-xl bg-celestial-gold/20 text-celestial-gold border border-celestial-gold/30">
-                        <Wallet className="w-6 h-6" />
-                    </div>
-                    <div className="text-right">
-                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">{isZh ? '我的錢包' : 'My Wallet'}</div>
-                        <div className="text-3xl font-bold text-white font-mono">{goodwillBalance.toLocaleString()}</div>
-                        <div className="text-[10px] text-celestial-gold font-bold">GWC</div>
-                    </div>
-                </div>
-
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl mb-6 flex justify-between items-center">
-                    <div>
-                        <div className="text-[10px] text-emerald-400 font-black uppercase">Goodwill Luck</div>
-                        <div className="text-lg font-bold text-white">{luckFactor.toFixed(2)}x</div>
-                    </div>
-                    <TrendingUp className="w-5 h-5 text-emerald-400" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                    <button 
-                        onClick={() => { handleTransaction('send'); trackInteraction?.('click'); }} 
-                        disabled={isTransacting || openingPack}
-                        className="flex items-center justify-center gap-2 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition-all border border-white/5 disabled:opacity-50"
-                    >
-                        <ArrowUpRight className="w-4 h-4 text-rose-400" /> {isZh ? '發送' : 'Send'}
-                    </button>
-                    <button 
-                        onClick={() => { handleTransaction('receive'); trackInteraction?.('click'); }} 
-                        disabled={isTransacting || openingPack}
-                        className="flex items-center justify-center gap-2 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold transition-all border border-white/5 disabled:opacity-50"
-                    >
-                        <ArrowDownLeft className="w-4 h-4 text-emerald-400" /> {isZh ? '接收' : 'Receive'}
-                    </button>
-                </div>
+        <div className="h-full flex flex-col min-h-0 overflow-hidden space-y-2">
+            <div className="shrink-0 pb-1 border-b border-white/5">
+                <UniversalPageHeader
+                    icon={Coins}
+                    title={{ zh: '善意幣錢包 (Goodwill Coin)', en: 'Goodwill Coin Wallet' }}
+                    description={{ zh: 'Web3風格代幣經濟與交易歷史', en: 'Web3-Style Token Economy & Transaction History.' }}
+                    language={language}
+                    tag={{ zh: '代幣經濟 v2.1', en: 'TOKEN_ECONOMY_v2.1' }}
+                />
             </div>
 
-            <div className="mt-auto pt-6 border-t border-white/5 relative z-10">
-                <p className="text-[10px] text-gray-500 leading-relaxed italic">
-                    {isZh ? '* 善向幣 (GWC) 可用於兌換卡冊與贊助永續專案。' : '* Goodwill Coins (GWC) can redeem cards & sponsor projects.'}
-                </p>
+            <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden">
+                {/* 1. 錢包概覽 (4/12) */}
+                <div className="col-span-12 lg:col-span-4 flex flex-col gap-3 min-h-0 overflow-hidden">
+                    <div className="glass-bento p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20 rounded-[2rem] text-center">
+                        <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                            <Coins className="w-10 h-10 text-white" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-1">{isZh ? '善意幣餘額' : 'Goodwill Balance'}</h3>
+                        <div className="text-5xl font-mono font-black text-white tracking-tighter">
+                            {goodwillBalance.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-amber-300 mt-2">GWC</div>
+                    </div>
+
+                    {/* 統計卡片 */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="glass-bento p-4 bg-emerald-500/10 border-emerald-500/20 rounded-2xl text-center">
+                            <ArrowUp className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
+                            <div className="text-lg font-mono font-bold text-white">{totalEarned}</div>
+                            <div className="text-[10px] text-emerald-300 uppercase font-black">{isZh ? '總收入' : 'Total Earned'}</div>
+                        </div>
+                        <div className="glass-bento p-4 bg-rose-500/10 border-rose-500/20 rounded-2xl text-center">
+                            <ArrowDown className="w-6 h-6 text-rose-400 mx-auto mb-2" />
+                            <div className="text-lg font-mono font-bold text-white">{totalSpent}</div>
+                            <div className="text-[10px] text-rose-300 uppercase font-black">{isZh ? '總支出' : 'Total Spent'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. 轉帳功能 (4/12) */}
+                <div className="col-span-12 lg:col-span-4 flex flex-col gap-3 min-h-0 overflow-hidden">
+                    <div className="glass-bento p-5 bg-slate-950 border-white/10 rounded-[2rem]">
+                        <h3 className="zh-main text-[11px] text-white mb-6 flex items-center gap-2 uppercase"><Send className="w-3.5 h-3.5 text-blue-400" /> Transfer_Goodwill_Coin</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase font-black mb-2 block">{isZh ? '接收者' : 'Recipient'}</label>
+                                <input
+                                    type="text"
+                                    value={recipient}
+                                    onChange={(e) => setRecipient(e.target.value)}
+                                    placeholder={isZh ? '輸入接收者地址或名稱' : 'Enter recipient address or name'}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-white text-sm focus:border-blue-500/50 focus:outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] text-gray-500 uppercase font-black mb-2 block">{isZh ? '轉帳金額' : 'Transfer Amount'}</label>
+                                <input
+                                    type="number"
+                                    value={transferAmount}
+                                    onChange={(e) => setTransferAmount(e.target.value)}
+                                    placeholder="0"
+                                    min="1"
+                                    max={goodwillBalance}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-white text-sm font-mono focus:border-blue-500/50 focus:outline-none"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleTransfer}
+                                disabled={isTransferring || !transferAmount || !recipient || parseInt(transferAmount) > goodwillBalance}
+                                className="w-full py-4 bg-blue-500 text-white font-black text-sm uppercase rounded-xl shadow-lg hover:bg-blue-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            >
+                                {isTransferring ? <Zap className="w-4 h-4 animate-pulse" /> : <Send className="w-4 h-4" />}
+                                {isTransferring ? (isZh ? '轉帳中...' : 'Transferring...') : (isZh ? '確認轉帳' : 'Confirm Transfer')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. 交易歷史 (4/12) */}
+                <div className="col-span-12 lg:col-span-4 flex flex-col gap-3 min-h-0 overflow-hidden">
+                    <div className="glass-bento p-5 bg-slate-900/60 border-white/10 rounded-[2rem]">
+                        <div className="flex justify-between items-center mb-6 shrink-0">
+                            <h3 className="zh-main text-[11px] text-white uppercase flex items-center gap-2"><History className="w-3.5 h-3.5 text-purple-400" /> Transaction_History</h3>
+                        </div>
+
+                        <div className="flex-1 min-h-0 overflow-auto space-y-3">
+                            {transactions.map(transaction => (
+                                <div key={transaction.id} className="glass-bento p-3 rounded-xl bg-slate-900/40 border border-white/10">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            {transaction.type === 'earned' && <ArrowUp className="w-4 h-4 text-emerald-400" />}
+                                            {transaction.type === 'spent' && <ArrowDown className="w-4 h-4 text-rose-400" />}
+                                            {transaction.type === 'received' && <ArrowDown className="w-4 h-4 text-blue-400" />}
+                                            {transaction.type === 'sent' && <ArrowUp className="w-4 h-4 text-orange-400" />}
+                                            <span className="text-sm font-bold text-white capitalize">{transaction.type}</span>
+                                        </div>
+                                        <span className={`text-sm font-mono font-bold ${
+                                            transaction.amount > 0 ? 'text-emerald-400' : 'text-rose-400'
+                                        }`}>
+                                            {transaction.amount > 0 ? '+' : ''}{transaction.amount} GWC
+                                        </span>
+                                    </div>
+
+                                    <p className="text-[11px] text-gray-400 mb-2">{transaction.description}</p>
+
+                                    <div className="flex items-center justify-between text-[10px] text-gray-500">
+                                        <span>{transaction.counterparty}</span>
+                                        <span>{new Date(transaction.timestamp).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
-};
-
-const VaultAgent = withUniversalProxy(VaultAgentBase);
-
-export const GoodwillCoin: React.FC<GoodwillCoinProps> = ({ language }) => {
-  const isZh = language === 'zh-TW';
-  const { goodwillBalance, updateGoodwillBalance, addAuditLog, unlockCard, collectedCards } = useCompany();
-  const { luckFactor } = useUniversalAgent(); // 取得幸運係數
-  const { addToast } = useToast();
-  const [isTransacting, setIsTransacting] = useState(false);
-  const [openingPack, setOpeningPack] = useState(false);
-
-  const pageData = {
-      title: { zh: '善向幣市集', en: 'Goodwill Marketplace' },
-      desc: { zh: '兌換 ESG 知識卡片與虛擬資產', en: 'Redeem ESG Knowledge Cards & Virtual Assets' },
-      tag: { zh: '經濟核心', en: 'Econ Core' }
-  };
-
-  const ESG_CARDS = useMemo(() => getEsgCards(language), [language]);
-
-  const handleTransaction = (type: 'send' | 'receive') => {
-      setIsTransacting(true);
-      const amount = Math.floor(Math.random() * 50) + 10;
-      setTimeout(() => {
-          if (type === 'send') {
-              if (goodwillBalance < amount) addToast('error', isZh ? '餘額不足' : 'Insufficient Balance', 'Failed');
-              else {
-                  updateGoodwillBalance(-amount);
-                  addToast('success', isZh ? `已發送 ${amount} GWC` : `Sent ${amount} GWC`, 'Success');
-              }
-          } else {
-              updateGoodwillBalance(amount);
-              addToast('success', isZh ? `已接收 ${amount} GWC` : `Received ${amount} GWC`, 'Success');
-          }
-          setIsTransacting(false);
-      }, 1000);
-  };
-
-  const handleBuyPack = (cost: number, packName: string) => {
-      if (goodwillBalance < cost) {
-          addToast('error', isZh ? '餘額不足' : 'Insufficient GWC', 'Marketplace');
-          return;
-      }
-
-      setOpeningPack(true);
-      updateGoodwillBalance(-cost);
-      
-      setTimeout(() => {
-          let results = [];
-          for (let i = 0; i < 15; i++) {
-              // 幸運 Roll 點邏輯
-              const roll = Math.random();
-              const legendaryThreshold = 0.99 - (0.01 * luckFactor); // 幸運值越高，門檻越低
-              const epicThreshold = 0.95 - (0.02 * luckFactor);
-              const rareThreshold = 0.80 - (0.05 * luckFactor);
-
-              let rarityPool = ESG_CARDS.filter(c => c.rarity === 'Common');
-              if (roll > legendaryThreshold) rarityPool = ESG_CARDS.filter(c => c.rarity === 'Legendary');
-              else if (roll > epicThreshold) rarityPool = ESG_CARDS.filter(c => c.rarity === 'Epic');
-              else if (roll > rareThreshold) rarityPool = ESG_CARDS.filter(c => c.rarity === 'Rare');
-
-              const randomCard = rarityPool[Math.floor(Math.random() * rarityPool.length)] || ESG_CARDS[0];
-              unlockCard(randomCard.id);
-              results.push(randomCard);
-          }
-          
-          const legendaryCount = results.filter(c => c.rarity === 'Legendary').length;
-          
-          addAuditLog('Marketplace Purchase', `Bought ${packName}. Received 15 cards. Legendary: ${legendaryCount}`);
-          addToast('reward', isZh ? `獲得 15 張卡片！(包含 ${legendaryCount} 張傳說卡)` : `Acquired 15 Cards! (${legendaryCount} Legendary)`, 'Pack Opened', 6000);
-          setOpeningPack(false);
-      }, 2500);
-  };
-
-  return (
-    <div className="space-y-8 animate-fade-in pb-12">
-        <UniversalPageHeader 
-            icon={Coins}
-            title={pageData.title}
-            description={pageData.desc}
-            language={language}
-            tag={pageData.tag}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <VaultAgent 
-                id="UserVault"
-                label="Digital Vault"
-                goodwillBalance={goodwillBalance}
-                isZh={isZh}
-                handleTransaction={handleTransaction}
-                isTransacting={isTransacting}
-                openingPack={openingPack}
-                luckFactor={luckFactor}
-            />
-
-            <div className="md:col-span-2 glass-panel p-6 rounded-2xl relative overflow-hidden">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-celestial-purple" />
-                        {isZh ? '善向卡牌包 (15張/包)' : 'Card Booster Packs (15/pack)'}
-                    </h3>
-                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-400 font-black uppercase">
-                        <Star className="w-3 h-3 fill-current" /> Goodwill Boost Active
-                    </div>
-                </div>
-                
-                {openingPack && (
-                    <div className="absolute inset-0 bg-slate-900/90 z-20 flex flex-col items-center justify-center backdrop-blur-sm animate-fade-in">
-                        <div className="relative">
-                            <Package className="w-20 h-20 text-celestial-gold animate-bounce" />
-                            <Sparkles className="absolute -top-4 -right-4 w-10 h-10 text-celestial-gold animate-pulse" />
-                        </div>
-                        <span className="text-celestial-gold font-bold mt-4 animate-pulse">
-                            {isZh ? `幸運值 ${luckFactor.toFixed(2)}x 正在影響結果...` : `Luck Factor ${luckFactor.toFixed(2)}x influencing results...`}
-                        </span>
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-5 rounded-2xl border border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10 transition-all cursor-pointer group relative" onClick={() => handleBuyPack(500, 'Standard Pack')}>
-                        <div className="flex justify-between items-start mb-4">
-                            <Package className="w-10 h-10 text-blue-400" />
-                            <span className="px-3 py-1 bg-white/10 rounded-lg text-xs font-bold text-white border border-white/10">500 GWC</span>
-                        </div>
-                        <h4 aria-label="Section Title" className="font-bold text-white mb-1">Standard Pack</h4>
-                        <p className="text-xs text-gray-400">Contains 15 random ESG cards. Better drops with higher Goodwill.</p>
-                    </div>
-
-                    <div className="p-5 rounded-2xl border border-celestial-gold/30 bg-celestial-gold/5 hover:bg-celestial-gold/10 transition-all cursor-pointer group relative overflow-hidden" onClick={() => handleBuyPack(1200, 'Premium Pack')}>
-                        <div className="absolute top-0 right-0 p-2 bg-celestial-gold text-black text-[8px] font-black uppercase tracking-widest">High Rarity</div>
-                        <div className="flex justify-between items-start mb-4">
-                            <Sparkles className="w-10 h-10 text-celestial-gold animate-pulse" />
-                            <span className="px-3 py-1 bg-celestial-gold text-black rounded-lg text-xs font-bold shadow-lg">1200 GWC</span>
-                        </div>
-                        <h4 aria-label="Section Title" className="font-bold text-white mb-1">Premium Pack</h4>
-                        <p className="text-xs text-gray-400">Guaranteed 3 Rare+ cards. Massive bonus from Luck Factor.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-  );
 };

@@ -9,9 +9,13 @@ export enum View {
     DASHBOARD = 'dashboard',
     BUSINESS_INTEL = 'business_intel',
     STRATEGY = 'strategy',
+    STRATEGY_HUB = 'strategy_hub',
     REGENERATIVE = 'regenerative',
     CARBON = 'carbon',
+    CARBON_ASSET = 'carbon_asset',
+    CARBON_WALLET = 'carbon_wallet',
     REPORT = 'report',
+    REPORT_GEN = 'report_gen',
     ADAN_ZONE = 'adan_zone',
     YANG_BO = 'yang_bo',
     ACADEMY = 'academy',
@@ -26,13 +30,21 @@ export enum View {
     API_ZONE = 'api_zone',
     UNIVERSAL_BACKEND = 'universal_backend',
     RESEARCH_HUB = 'research_hub',
+    ANALYTICS_DASHBOARD = 'analytics_dashboard',
     DIAGNOSTICS = 'diagnostics',
     TALENT = 'talent',
+    TALENT_PASSPORT = 'talent_passport',
     INTEGRATION = 'integration',
+    INTEGRATION_HUB = 'integration_hub',
     CULTURE = 'culture',
+    CULTURE_BOT = 'culture_bot',
     FINANCE = 'finance',
+    FINANCE_SIM = 'finance_sim',
     AUDIT = 'audit',
+    AUDIT_TRAIL = 'audit_trail',
     GOODWILL = 'goodwill',
+    GOODWILL_COIN = 'goodwill_coin',
+    GAMIFICATION = 'gamification',
     SETTINGS = 'settings',
     HEALTH_CHECK = 'health_check',
     UNIVERSAL_TOOLS = 'universal_tools',
@@ -54,14 +66,17 @@ export enum View {
     HYPERCUBE_LAB = 'hypercube_lab',
     ADMIN_PANEL = 'admin_panel',
     ECOSYSTEM_RADAR = 'ecosystem_radar',
-    CARBON_WALLET = 'carbon_wallet',
     FLOWLU_INTEGRATION = 'flowlu_integration',
     SUPPLIER_CRM = 'supplier_crm',
     SUPPLIER_SURVEY = 'supplier_survey',
     MARKETING_STRATEGY = 'marketing_strategy',
     ENTERPRISE_SERVICES = 'enterprise_services',
     AGENT_TASKS = 'agent_tasks',
-    UNIVERSAL_CREATOR_DASHBOARD = 'universal_creator_dashboard'
+    UNIVERSAL_CREATOR_DASHBOARD = 'universal_creator_dashboard',
+    OMNI_MANAGER = 'omni_manager',
+    CARD_ARENA = 'card_arena',
+    UNIVERSAL_AGENT = 'universal_agent',
+    ESG_AI_ASSISTANT = 'esg_ai_assistant'
 }
 
 export const TaskStatusSchema = z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED']);
@@ -130,6 +145,7 @@ export const UserTitleSchema = z.object({
     text: z.string(),
     rarity: z.enum(['Common', 'Rare', 'Epic', 'Legendary']),
     bonusEffect: z.string().optional(),
+    description: z.string().optional(),
 });
 export type UserTitle = z.infer<typeof UserTitleSchema>;
 
@@ -185,6 +201,51 @@ export const EsgCardSchema = z.object({
     imageUrl: z.string().optional(),
 });
 export type EsgCard = z.infer<typeof EsgCardSchema>;
+
+// Sample ESG Cards data
+const sampleEsgCards: EsgCard[] = [
+    {
+        id: '1',
+        title: '永續發展',
+        term: 'Sustainable Development',
+        definition: '滿足當代需求而不損害後代滿足需求的能力',
+        description: '實現經濟、社會和環境三方面的平衡發展',
+        rarity: 'Legendary',
+        attribute: 'Vision',
+        cardType: 'Knowledge',
+        collectionSet: 'Core ESG',
+        stats: { defense: 95, offense: 85 }
+    },
+    {
+        id: '2',
+        title: '碳足跡',
+        term: 'Carbon Footprint',
+        definition: '個人、組織或產品的溫室氣體排放總量',
+        description: '衡量活動對氣候變化的影響',
+        rarity: 'Epic',
+        attribute: 'Governance',
+        cardType: 'Case',
+        collectionSet: 'Climate',
+        stats: { defense: 80, offense: 75 }
+    },
+    {
+        id: '3',
+        title: '企業社會責任',
+        term: 'Corporate Social Responsibility',
+        definition: '企業對社會和環境的責任',
+        description: '超越法律要求的自願行動',
+        rarity: 'Rare',
+        attribute: 'Knowledge',
+        cardType: 'Action',
+        collectionSet: 'Corporate',
+        stats: { defense: 70, offense: 65 }
+    }
+];
+
+export const getEsgCards = (language: Language): EsgCard[] => {
+    // In a real implementation, this would filter/localize based on language
+    return sampleEsgCards;
+};
 
 export interface ScriptureNode {
     id: string;

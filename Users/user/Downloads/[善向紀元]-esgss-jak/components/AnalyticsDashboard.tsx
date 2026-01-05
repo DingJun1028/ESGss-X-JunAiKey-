@@ -4,7 +4,7 @@ import { Language } from '../types';
 import {
     BarChart3, TrendingUp, Users, Eye, Clock, Target,
     Activity, Download, Filter, Calendar, PieChart,
-    ArrowUp, ArrowDown, Minus, RefreshCw, Settings
+    ArrowUp, ArrowDown, Minus, RefreshCw, Settings, X, CheckCircle, DollarSign, AlertTriangle
 } from 'lucide-react';
 import { analyticsService, AnalyticsMetrics, UserEvent, ABTest } from '../services/analytics';
 import { useResponsive } from '../hooks/useResponsive';

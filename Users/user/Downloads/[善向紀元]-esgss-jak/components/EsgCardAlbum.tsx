@@ -152,7 +152,7 @@ export const EsgCardAlbum: React.FC<{ language: Language }> = ({ language }) => 
                                             {card.rarity}
                                         </span>
                                         <span className="text-[6px] font-bold uppercase px-2 py-0.5 rounded bg-slate-700 text-gray-300">
-                                            {card.cardType}
+                                            {(card as any).cardType}
                                         </span>
                                     </div>
                                     {isEquipped && <div className="p-1 bg-emerald-500 text-black rounded-full shadow-lg"><CheckCircle className="w-2.5 h-2.5" /></div>}

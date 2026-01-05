@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { QuantumAiTrigger } from './QuantumAiTrigger';
 
 interface QuantumSliderProps {
   label: string;
@@ -10,10 +11,11 @@ interface QuantumSliderProps {
   unit?: string;
   onChange: (value: number) => void;
   color?: 'emerald' | 'purple' | 'gold' | 'blue';
+  onAiPrediction?: () => void;
 }
 
-export const QuantumSlider: React.FC<QuantumSliderProps> = ({ 
-  label, value, min, max, step = 1, unit = '', onChange, color = 'emerald' 
+export const QuantumSlider: React.FC<QuantumSliderProps> = ({
+  label, value, min, max, step = 1, unit = '', onChange, color = 'emerald', onAiPrediction
 }) => {
   
   const percentage = ((value - min) / (max - min)) * 100;
@@ -29,9 +31,12 @@ export const QuantumSlider: React.FC<QuantumSliderProps> = ({
     <div className="space-y-3 group">
       <div className="flex justify-between items-center text-sm">
         <span className="text-gray-300 font-medium group-hover:text-white transition-colors">{label}</span>
-        <span className="font-mono text-white bg-white/5 px-2 py-0.5 rounded border border-white/10">
-          {value} {unit}
-        </span>
+        <div className="flex items-center gap-2">
+          {onAiPrediction && <QuantumAiTrigger onClick={onAiPrediction} />}
+          <span className="font-mono text-white bg-white/5 px-2 py-0.5 rounded border border-white/10">
+            {value} {unit}
+          </span>
+        </div>
       </div>
       <div className="relative h-2 w-full bg-slate-800 rounded-full border border-white/10">
         <div 

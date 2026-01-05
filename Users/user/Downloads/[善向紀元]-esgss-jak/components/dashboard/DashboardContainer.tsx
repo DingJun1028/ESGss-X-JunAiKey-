@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   RefreshCw, Settings, Share, Download, Edit3, Eye,
-  Grid, Layout, Maximize2, Minimize2, Filter, Calendar
+  Grid, Layout, Maximize2, Minimize2, Filter, Calendar, AlertTriangle
 } from 'lucide-react';
 import {
   DashboardConfig, WidgetConfig, DashboardState, DashboardEvent,
